@@ -45,17 +45,21 @@ Not in MVP:
 
 Core project documents live in `/docs`.
 
-### Key files
-- `docs/world-structure.md`
-- `docs/planet-definitions.md`
-- `docs/screens-spec.md`
-- `docs/mvp-contract.md`
-- `docs/architecture.md`
-- `docs/decision-log.md`
-- `docs/visual-reference.md`
-- `docs/future-reference.md`
-- `docs/github-issues-pack-v2.md`
-- `ROADMAP.md`
+### Docs Index
+
+| File | Purpose |
+|---|---|
+| `docs/world-structure.md` | Canonical reference for all world objects (RA, Planets, Satellites, Meta Stars) |
+| `docs/planet-definitions.md` | The 7 Planets: names, themes, seed data, map positions |
+| `docs/screens-spec.md` | Structural spec for every MVP screen and route |
+| `docs/mvp-contract.md` | Hard scope contract: what is and is not in MVP |
+| `docs/architecture.md` | Tech stack, repo structure, schema, module boundaries |
+| `docs/decision-log.md` | All key technical and product decisions with rationale |
+| `docs/visual-reference.md` | Art direction, color system, typography, motion rules |
+| `docs/future-reference.md` | Post-MVP concepts (locked, not to be built in MVP) |
+| `docs/github-issues-pack-v2.md` | Full issue pack (ISSUE-00 through ISSUE-16) |
+| `docs/backlog.md` | Ideas that surface during development but are out of current scope |
+| `ROADMAP.md` | Phases, milestones, execution order, success metrics |
 
 ---
 

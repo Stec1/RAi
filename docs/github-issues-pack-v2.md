@@ -579,7 +579,7 @@ Render all public Meta Stars on the Explore map with correct visual representati
 **Technical Notes**
 
 - `nameHash` function must be in `packages/shared/utils/hash.ts` and used identically on frontend and backend
-- Stars with `coreRoomConfig = null` use type-based default colors
+- Stars with `atmosphereParams = null` use type-based default colors
 
 **Merge Checklist**
 
