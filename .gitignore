@@ -138,5 +138,14 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# pnpm
+pnpm-debug.log*
+
+# Turbo (reserved)
+.turbo
+
+# Vercel
+.vercel
+
 .DS_Store
 .claude/
