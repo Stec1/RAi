@@ -1,8 +1,11 @@
 import Fastify from 'fastify';
+import healthRoutes from './routes/health.js';
 
 const server = Fastify({
   logger: true,
 });
+
+await server.register(healthRoutes);
 
 const start = async () => {
   try {
