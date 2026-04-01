@@ -30,7 +30,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Deploy to Vercel
-        working-directory: apps/web
         run: |
           npx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
           npx vercel build --prod --token="$VERCEL_TOKEN"
