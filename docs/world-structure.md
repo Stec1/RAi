@@ -1,62 +1,64 @@
 # RAi — World Structure
 
-> Canonical reference for all world objects in the RAi meta-universe.
+> Canonical reference for all product objects in the RAi platform.
 > Every architectural, product, and development decision must align with this document.
-> Cursor Agent reads this before every prompt.
+> Agent reads this before every prompt.
 
 ---
 
-## The Meta-Universe
+## The Platform
 
-RAi is a spatial meta-universe where every person has one Meta Star — a personal digital world with a unique atmosphere, identity, and address in a shared cosmic space.
+RAi is a premium observatory platform where AI systems publish research, prove capability, and build reputation. The platform is structured around five core object types:
 
-The universe has four object types:
 ```
-RA (central star — the source)
+RA (platform identity — the center)
 │
-├── Planets (7 thematic hubs)
-│   └── Satellites (planetary companions)
+├── Domains (7 thematic hubs)
 │
-└── Meta Stars (personal worlds of users)
-    └── Constellation fields (natural clusters of Meta Stars)
+└── Observatories (user research spaces)
+    ├── Systems (registered AI agents/tools)
+    └── Publications (formatted proof of work)
+        └── PublicationUpvotes (community evaluation)
 ```
 
 ---
 
-## RA — The Central Star
+## RA — Platform Identity
 
 **What it is:**
-RA is the symbolic and visual center of the RAi meta-universe. It is the source around which all other objects orbit. It is not a user-created object — it exists as the anchor of the entire spatial system.
+RA is the symbolic and visual center of the RAi platform. It is the anchor of the intelligence topology — the central node from which all Domains radiate. It is not a user-created object. It exists as the platform identity.
 
 **What it does in MVP:**
-- Always visible at the center of the Explore map
+- Always visible at the center of the intelligence topology
 - Hover / click → opens an About RAi info panel
-- Displays aggregate universe statistics (total Meta Stars, active users)
-- Acts as the navigational anchor — all map coordinates are relative to RA
+- Displays aggregate platform statistics (total Observatories, total publications, active users)
+- Acts as the navigational anchor — all topology coordinates are relative to RA
 
 **What it is NOT:**
 - Not a user account or profile
 - Not a functional layer with CRUD in MVP
-- Not an enterable space in MVP
+- Not an enterable space
 
 **Technical:**
-- Static object in the WebGL scene with animated glow and corona
+- Static node in the visualization with animated glow
 - No dedicated DB table required
 - Info panel pulls aggregate metrics from API
 
 ---
 
-## Planets — Thematic Hubs
+## Domains — Thematic Hubs
 
 **What they are:**
-Seven thematic spaces that give structure to the meta-universe. Each Planet represents a creative or intellectual domain. Meta Stars can associate with one or two Planets when created.
+Seven thematic spaces that give structure to the RAi platform. Each Domain represents a category of AI capability and research. Observatories can associate with one or two Domains during creation.
 
 **What they do in MVP:**
-- Static objects on the map at fixed orbital positions around RA
-- Hover → highlights associated Meta Stars on the map
-- Click → slide-in info panel with Planet name, description, and associated Meta Stars
-- During Meta Star creation: user may select 1–2 Planet associations
-- Act as thematic filters and discovery clusters
+- Nodes on the intelligence topology at fixed positions around RA
+- 3 active at launch (Nexum, Keth, Solum), 4 marked Coming Soon
+- Hover → tooltip with Domain name, theme, Observatory count
+- Click → slide-in info panel with Domain description and associated Observatories
+- During Observatory creation: user may select 1–2 active Domain associations
+- Act as thematic filters in the Explore feed and discovery views
+- Only active Domains are selectable for association
 
 **What they are NOT in MVP:**
 - Not enterable spaces
@@ -64,77 +66,118 @@ Seven thematic spaces that give structure to the meta-universe. Each Planet repr
 - Not editable by users
 
 **Technical:**
-- `Planet` table: `id`, `name`, `slug`, `description`, `theme`, `position_x`, `position_y`
-- `Star.planetIds[]` — array field, 1–2 planets per star
+- `Domain` table: `id`, `name`, `slug` (unique), `description`, `theme`, `positionX`, `positionY`, `active`
+- `Observatory.domainIds[]` — array field, 1–2 Domains per Observatory
 - Populated via static seed data on first deploy
 - Positions are fixed and defined in seed
+- `active` boolean: `true` for Nexum, Keth, Solum; `false` for Vorda, Lyren, Auren, Draxis
 
 ---
 
-## Satellites — Planetary Companions
+## Observatories — User Research Spaces
 
 **What they are:**
-Objects bound to Planets. In the full universe vision, Satellites are independent functional spaces — potentially group or organizational entities with their own logic.
-
-**What they do in MVP:**
-- Exist as world logic — their presence is architecturally reserved
-- Rendered as small visual objects near their parent Planets on the map
-- No user interaction beyond visual presence
-- Nav item "Satellites" in Explore opens a "Coming soon" info panel
-
-**What they are NOT in MVP:**
-- Not interactive
-- Not user-created
-- Not editable
-
-**Technical:**
-- `Satellite` table: `id`, `planetId`, `name`, `description` — seed data or empty
-- Reserved in schema for Phase 2 activation
-
----
-
-## Meta Stars — Personal Worlds
-
-**What they are:**
-The core social and product layer of RAi. Each user gets one Meta Star: a unique spatial presence with an address, atmosphere, and identity in the shared meta-universe.
+The core product layer of RAi. Each user gets one Observatory: a permanent public research space with an address, visual identity, and track record in the shared platform.
 
 **What they do in MVP:**
 - One per user account — permanent, cannot be transferred
 - Unique permanent address: `rai.app/@name`
-- AI-generated atmosphere — defines color, particles, fog, and visual style on the map
-- Public mode: visible on the map and via direct link
-- Private mode: accessible only via direct link, invisible on map
-- Owner manages via Profile dashboard
-- Visitors see via Public Star Preview
+- AI-generated Visual Signature — defines colors, gradients, and ambient effects on the topology and Observatory page
+- Public mode: visible on the topology and via direct link
+- Private mode: accessible only via direct link, invisible on topology
+- Owner manages via Control Panel (Dashboard)
+- Visitors see via Observatory Public Page
+- Contains registered Systems and published Publications
+- Accumulates reputation score from activity and community evaluation
 
 **Visibility rules:**
-- `public` → appears on Explore map + accessible via direct URL
-- `private` → accessible via direct URL only, invisible on map
+- `public` → appears on intelligence topology + accessible via direct URL
+- `private` → accessible via direct URL only, invisible on topology
 
 **Technical:**
-- `Star` table: `id`, `userId`, `name` (unique), `displayName`, `type`, `publicMode`, `atmosphereParams` (JSONB), `planetIds[]`, `bio`, `createdAt`
-- Map position generated via `nameHash(name) → deterministic x/y coordinates`
-- `atmosphereParams` structure: `{ primaryColor, secondaryColor, fogDensity, particleType, particleCount, ambientMood, glowIntensity, mapMarkerStyle }`
+- `Observatory` table: `id`, `userId`, `name` (unique), `displayName`, `type`, `publicMode`, `visualSignature` (JSONB), `domainIds[]`, `bio`, `socialLinks` (JSONB), `reputationScore`, `publicationsCount`, `createdAt`
+- Topology position generated via `nameHash(name) → deterministic x/y coordinates`
+- `visualSignature` structure: parameters defining colors, gradients, and ambient visual effects
+- Observatory types: `individual`, `studio`, `product`
+
+---
+
+## Systems — Registered AI Agents
+
+**What they are:**
+AI agents, workflows, tools, and services registered by an Observatory owner. Systems represent the capabilities behind an Observatory. They are the "who did the work" behind publications.
+
+**What they do in MVP:**
+- Registered by Observatory owner via Control Panel
+- Metadata: name, type, description, capabilities, status, external URL
+- Displayed as structured proof cards on the Observatory public page
+- Optionally linked to Publications (attribution)
+- Types: `agent`, `workflow`, `tool`, `service`
+- Status: `active`, `demo`, `concept`
+
+**What they are NOT in MVP:**
+- Not executable (RAi does not run agents)
+- Not interactive (no demo proxy or sandbox)
+- Not media-rich (text-only in MVP)
+
+**Technical:**
+- `System` table: `id`, `observatoryId`, `name`, `type`, `description`, `capabilities[]`, `status`, `externalUrl`, `createdAt`
+- Max 3 systems on Free tier, unlimited on Pro
+
+---
+
+## Publications — Formatted Proof of Work
+
+**What they are:**
+The core content unit of RAi. Each publication is a structured presentation of work done by an AI system. Creator submits raw output, RAi AI formats it into a polished research presentation.
+
+**What they do in MVP:**
+- Created by Observatory owner via Control Panel or during onboarding
+- Raw content → AI formatting (GPT-4o structured output) → creator review → publish
+- Fields: title, summary, key findings, methodology, formatted body
+- Associated with a System (optional), Domain, and tags
+- Upvotable by authenticated users
+- Standalone page at `/publication/:id`
+- Appear in Explore feed and on Observatory public page
+- Draft and published states
+- 1 credit per publication formatting
+
+**What they are NOT in MVP:**
+- Not commentable (no comments in MVP)
+- Not citable (no citation system in MVP)
+- Not media-rich (no image/video/3D attachments in MVP)
+
+**Technical:**
+- `Publication` table: `id`, `observatoryId`, `systemId` (nullable), `title`, `summary`, `keyFindings` (JSONB), `methodology`, `body`, `rawContent`, `domainId`, `tags[]`, `capabilitiesDemonstrated[]`, `upvoteCount`, `status`, `publishedAt`, `createdAt`
+- `PublicationUpvote` table: `id`, `publicationId`, `userId`, `createdAt`; unique constraint on `[publicationId, userId]`
+- Rate limit: 20 publications/hour per user
+- Free tier limit: 5 publications/month
 
 ---
 
 ## Relationship Summary
 
-| Object | Created by | Editable by | Visible on map | Enterable in MVP |
+| Object | Created by | Editable by | Visible publicly | Core function |
 |---|---|---|---|---|
-| RA | System | Nobody | Always | No |
-| Planet | System (seed) | Nobody | Always | No |
-| Satellite | System (seed) | Nobody | Visually only | No |
-| Meta Star | User | Owner | If public | No |
+| RA | System | Nobody | Always | Platform identity |
+| Domain | System (seed) | Nobody | Always | Thematic structure |
+| Observatory | User | Owner | If public | Research space |
+| System | Owner | Owner | On Observatory page | Capability proof |
+| Publication | Owner | Owner | If published | Work proof |
+| PublicationUpvote | Any auth user | Creator | As count | Community evaluation |
 
 ---
 
 ## What Does Not Exist in MVP
 
-- Constellation mechanics (social graph between Meta Stars)
-- Group or organizational Meta Stars
-- Enterable star worlds (deep spatial navigation)
-- Enterable Planets
-- Satellite creation by users
+- Media attachments on publications (images, video, 3D)
+- Citation system between publications
+- Comments on publications
+- Verification badges for Observatories
+- Research commissions or bounties
+- Collaboration tools or multi-user Observatories
+- AI-assisted client-creator matching
+- Benchmarks or standardized testing
 - Real-time presence indicators
 - Web3 / wallet / NFT layer
+- Agent execution engine

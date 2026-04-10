@@ -4,122 +4,130 @@
 > Items here are NOT to be built in MVP under any circumstances.
 > Recording them here prevents scope creep while preserving the vision.
 >
-> Cursor Agent rule: No item from this document is implemented without
+> Agent rule: No item from this document is implemented without
 > a dedicated new issue and explicit founder decision.
 
 ---
 
-## Spatial Traversal Reference
+## Media Attachments
 
 **What it is:**
-Deep spatial navigation inside Meta Stars or Planets — the ability to "fly into" a world and move through it spatially, not just view it as a profile page.
-
-**Reference example:**
-The spatial traversal mechanic demonstrated at `https://virtual.plus-ex.com/showroom?ref=godly` — smooth camera movement through a 3D environment, objects that reveal themselves on approach, depth and parallax that creates genuine presence.
+Rich media support in publications — images, video embeds, interactive demos, 3D previews. Allows creators to attach visual and interactive evidence to their publications.
 
 **Why it's not in MVP:**
-Building quality enterable worlds requires:
-- A full 3D scene per Meta Star (unique per user)
-- Portal objects and room system
-- Camera navigation controls
-- Performance optimization for arbitrary user-generated environments
-- Content creation tools for the star owner
-
-This is a complete Phase 2 product expansion — not a feature addition.
+Media handling requires storage infrastructure (Cloudflare R2 integration), content moderation, responsive rendering, and bandwidth management. Publications in MVP are text-only to keep the formatting pipeline focused and reliable.
 
 **Status:** `[PHASE 2 — NOT MVP]`
 
-**When to revisit:** After soft launch, after D30 retention is measured, after the map and Meta Star creation flow are validated with real users.
+**When to revisit:** After publication formatting is validated with real users and the text-based format proves the core value loop.
 
 ---
 
-## Enterable Planets
+## Citation System
 
 **What it is:**
-Planets that can be "entered" — navigated into as spatial environments with their own atmosphere, content, and other Meta Stars visible within them.
+Publications can reference other publications within RAi, creating a graph of connected research. Citations are tracked and contribute to the cited publication's and Observatory's reputation.
 
 **Why it's not in MVP:**
-Each Planet as an enterable space requires its own environmental design, rendering logic, and content strategy. This is Phase 3 territory after the basic map is validated.
+Citation mechanics require a stable base of publications to reference, UI for citation insertion and display, and backend for graph tracking. Building this before there is content to cite is premature.
+
+**Status:** `[PHASE 2 — NOT MVP]`
+
+---
+
+## Verification Badges
+
+**What it is:**
+Verified status for Observatories — indicating that the Observatory owner's identity or organizational affiliation has been confirmed by the RAi team.
+
+**Why it's not in MVP:**
+Verification requires a manual review process, trust framework, and sufficient user base to make verification meaningful. Too early for launch.
+
+**Status:** `[PHASE 2 — NOT MVP]`
+
+---
+
+## Comments on Publications
+
+**What it is:**
+Threaded discussion on publications. Community members can leave feedback, ask questions, or engage with the research presented.
+
+**Why it's not in MVP:**
+Comments require moderation tools, notification infrastructure, and enough active users to generate meaningful discussion. Upvotes provide sufficient community evaluation signal for launch.
+
+**Status:** `[PHASE 2 — NOT MVP]`
+
+---
+
+## Research Commissions
+
+**What it is:**
+A marketplace feature where clients can post research requests or challenges, and Observatory owners can submit publications in response. Enables demand-side discovery — clients describe what they need, and AI creators compete on quality.
+
+**Why it's not in MVP:**
+Commissions require a two-sided marketplace with escrow, deliverable validation, and dispute resolution. This is a significant product expansion that requires a proven supply side first.
 
 **Status:** `[PHASE 3 — NOT MVP]`
 
 ---
 
-## Satellite Layer (Full)
+## Collaboration Tools
 
 **What it is:**
-Satellites as user-facing functional objects — potentially organizational entities, group spaces, or thematic sub-hubs attached to Planets.
+Multi-user Observatories, shared publication authorship, team management. Allows organizations and teams to operate a single Observatory collaboratively.
 
 **Why it's not in MVP:**
-Satellites require their own creation flow, ownership logic, and rendering. The visual layer is reserved in MVP but the functional layer is out of scope.
-
-**Status:** `[PHASE 2 — NOT MVP]`
-
----
-
-## NPC Agents
-
-**What it is:**
-AI agents that live inside a Meta Star and can respond to visitors on behalf of the star owner. Could be Q&A agents, narrative characters, or autonomous representatives.
-
-**Why it's not in MVP:**
-NPC agents require:
-- Persistent system prompts per star
-- Conversation history per visitor session
-- Token budget management at scale
-- UX for the owner to configure the agent
-
-This is a significant product expansion. Not a feature addition.
-
-**Status:** `[PHASE 2 — NOT MVP]`
-
----
-
-## Constellation Mechanics
-
-**What it is:**
-Groups of Meta Stars that form constellations — social structures where multiple stars share a visual grouping on the map and potentially shared spaces or communication channels.
-
-**Why it's not in MVP:**
-Constellations require a live user base with enough Meta Stars to form natural groups. Building constellation mechanics before there are users to fill them is premature.
-
-**Status:** `[PHASE 2 — NOT MVP]`
-
----
-
-## Web3 / On-Chain Identity
-
-**What it is:**
-Star ownership on-chain (NFT), wallet-based authentication, token-gated rooms, and on-chain reputation.
-
-**Why it's not in MVP:**
-See `docs/decision-log.md` DL-03. No blockchain dependency in MVP under any circumstances.
+Collaboration requires role-based access control, invitation flows, conflict resolution for concurrent edits, and team billing. Solo Observatory ownership is sufficient for launch.
 
 **Status:** `[PHASE 3 — NOT MVP]`
 
 ---
 
-## Creator Economy
+## Benchmarks
 
 **What it is:**
-A marketplace layer where Meta Star owners can offer products, services, or experiences to visitors. Revenue flows between creators and the platform.
+Standardized capability testing — structured challenges that AI systems can be evaluated against, producing comparable results across Observatories. Creates objective performance baselines.
 
 **Why it's not in MVP:**
-Creator economy requires a critical mass of users and a proven retention loop first. Building monetization between users before there are users to monetize is premature.
+Benchmarks require challenge design, automated evaluation infrastructure, and a community consensus on what constitutes fair testing. This is a complex product layer on top of the publication system.
 
 **Status:** `[PHASE 3 — NOT MVP]`
 
 ---
 
-## Real-Time Presence
+## AI-Assisted Matching
 
 **What it is:**
-Indicators showing who is currently "inside" a Meta Star or somewhere on the map. Live visitor counts, live cursors, live interactions.
+Intelligent matching between clients looking for AI solutions and Observatories that demonstrate relevant capabilities. Uses publication content, system descriptions, and Domain associations to suggest matches.
 
 **Why it's not in MVP:**
-Real-time presence requires WebSocket infrastructure, significant backend complexity, and enough concurrent users to make the feature meaningful. None of these conditions exist at MVP.
+Matching requires sufficient data (publications, client queries, interaction patterns) to train useful recommendations. Building a matching engine before there is data to match on is premature.
 
-**Status:** `[PHASE 2 — NOT MVP]`
+**Status:** `[PHASE 3 — NOT MVP]`
+
+---
+
+## Studio Tier
+
+**What it is:**
+A premium team tier beyond Pro — designed for AI studios, agencies, and organizations. Includes team member management, shared Observatory with role-based permissions, advanced analytics, priority support, and custom branding.
+
+**Why it's not in MVP:**
+Studio tier requires collaboration tools (Phase 3), advanced analytics, and a proven individual/Pro subscription base to justify the investment.
+
+**Status:** `[PHASE 4 — NOT MVP]`
+
+---
+
+## Enterprise
+
+**What it is:**
+Self-hosted or white-label RAi deployments for large organizations. Private instances with custom Domain structure, internal publication workflows, and enterprise SSO.
+
+**Why it's not in MVP:**
+Enterprise deployment requires a mature, battle-tested product, multi-tenancy architecture, and dedicated support infrastructure. This is a long-term revenue expansion.
+
+**Status:** `[PHASE 4 — NOT MVP]`
 
 ---
 
@@ -135,6 +143,42 @@ See `docs/decision-log.md` DL-01. Web-first with graceful degradation for mobile
 
 ---
 
+## Real-Time Presence
+
+**What it is:**
+Indicators showing who is currently viewing an Observatory, reading a publication, or active on the platform. Live visitor counts and activity indicators.
+
+**Why it's not in MVP:**
+Real-time presence requires WebSocket infrastructure, significant backend complexity, and enough concurrent users to make the feature meaningful.
+
+**Status:** `[PHASE 3 — NOT MVP]`
+
+---
+
+## Advanced Analytics
+
+**What it is:**
+Detailed analytics for Observatory owners — publication performance over time, reader demographics, traffic sources, Domain-level trends, conversion tracking (views → upvotes → profile visits).
+
+**Why it's not in MVP:**
+Basic metrics (visitors, views, upvotes) are sufficient for launch. Advanced analytics require data accumulation over time and a more sophisticated analytics pipeline.
+
+**Status:** `[PHASE 2 — NOT MVP]`
+
+---
+
+## Web3 / On-Chain Identity
+
+**What it is:**
+Observatory ownership on-chain, wallet-based authentication, token-gated features, and on-chain reputation.
+
+**Why it's not in MVP:**
+See `docs/decision-log.md` DL-03. No blockchain dependency in MVP under any circumstances.
+
+**Status:** `[PHASE 4 — NOT MVP]`
+
+---
+
 ## Rules for This Document
 
 1. Adding to this document = valid and encouraged. Any new idea that doesn't belong in MVP goes here.
@@ -143,4 +187,4 @@ See `docs/decision-log.md` DL-01. Web-first with graceful degradation for mobile
    - A new GitHub issue
    - An update to `docs/mvp-contract.md`
    - Explicit founder decision
-3. Referencing an item from this document in a Cursor prompt = immediate architectural risk flag.
+3. Referencing an item from this document in a prompt = immediate architectural risk flag.

@@ -1,7 +1,7 @@
 # RAi — Architecture Contract
 
-> Technical architectural contract for Cursor Agent and founder.
-> Cursor Agent reads this document before every prompt.
+> Technical architectural contract for agent and founder.
+> Agent reads this document before every prompt.
 > Architecture changes are recorded here — not invented during issue execution.
 
 **Last updated:** [date after each significant merge]
@@ -21,7 +21,7 @@
 | Auth | Better Auth | 1.x | Session cookies — no JWT |
 | AI | OpenAI GPT-4o | latest | Structured output |
 | Payments | Stripe | latest | Test mode until launch |
-| Map | Three.js | r128+ | Orthographic 2D/2.5D canvas |
+| Visualization | Three.js | r128+ | Orthographic 2D/2.5D canvas for intelligence topology |
 | Email | Resend | latest | Transactional only |
 | File Storage | Cloudflare R2 | — | No local file storage |
 | Analytics | PostHog | latest | Event-based |
@@ -43,7 +43,8 @@ rai/
 ├── packages/
 │   └── shared/                 # Shared TypeScript types and utils
 ├── docs/                       # Documentation layer
-├── prompts/                    # Cursor + Claude prompt library
+│   └── archive/                # Archived docs from previous versions
+├── prompts/                    # Agent prompt library
 ├── tests/
 │   └── load/                   # k6 load test scripts
 ├── .github/
@@ -67,39 +68,46 @@ apps/web/
 │   ├── app/
 │   │   ├── (auth)/             # login, signup
 │   │   ├── about/
-│   │   ├── create/             # Create Your Meta flow
-│   │   ├── explore/            # Explore map screen
-│   │   ├── profile/
-│   │   ├── settings/
-│   │   ├── star/
-│   │   │   └── [name]/         # Public Star Preview
+│   │   ├── create/             # Create Observatory flow
+│   │   ├── explore/            # Explore: feed, observatories, map
+│   │   ├── dashboard/          # Control Panel
+│   │   │   ├── systems/        # Systems management
+│   │   │   ├── publications/   # Publications management
+│   │   │   ├── publish/        # Create new publication
+│   │   │   ├── visual/         # Visual Signature generator
+│   │   │   └── settings/       # Account settings
+│   │   ├── observatory/
+│   │   │   └── [name]/         # Observatory Public Page
+│   │   ├── publication/
+│   │   │   └── [id]/           # Publication standalone page
 │   │   ├── privacy/
 │   │   ├── terms/
 │   │   ├── api/
 │   │   │   └── og/             # OG image generation
 │   │   └── layout.tsx
 │   ├── components/
-│   │   ├── map/                # WebGL map components
-│   │   │   ├── ExploreMap.tsx  # Main map canvas
-│   │   │   ├── MapRA.tsx
-│   │   │   ├── MapPlanets.tsx
-│   │   │   ├── MapStars.tsx
+│   │   ├── topology/           # Intelligence topology components
+│   │   │   ├── TopologyCanvas.tsx   # Main visualization canvas
+│   │   │   ├── TopologyRA.tsx
+│   │   │   ├── TopologyDomains.tsx
+│   │   │   ├── TopologyObservatories.tsx
 │   │   │   └── MiniMap.tsx
 │   │   ├── panels/             # Slide-in info panels
 │   │   ├── creation/           # 3-step creation flow components
+│   │   ├── publications/       # Publication card, formatting preview
 │   │   ├── ui/                 # Reusable UI primitives
 │   │   └── layouts/
 │   ├── hooks/
 │   │   ├── useAuth.ts
-│   │   ├── useMap.ts
+│   │   ├── useTopology.ts
 │   │   └── useDeviceDetect.ts
 │   ├── lib/
 │   │   ├── posthog.ts
 │   │   ├── api-client.ts
-│   │   └── map-utils.ts        # nameHash, coordinate generation
+│   │   └── topology-utils.ts   # nameHash, coordinate generation
 │   └── styles/
 ├── public/
-├── next.config.ts
+├── next.config.mjs
 └── package.json
 ```
 
@@ -112,24 +120,30 @@ apps/api/
 │   ├── index.ts
 │   ├── routes/
 │   │   ├── auth.ts
-│   │   ├── stars.ts
-│   │   ├── planets.ts
-│   │   ├── generate.ts
+│   │   ├── observatories.ts
+│   │   ├── domains.ts
+│   │   ├── systems.ts
+│   │   ├── publications.ts
+│   │   ├── upvotes.ts
+│   │   ├── search.ts
+│   │   ├── generate.ts         # Visual Signature + publication formatting
 │   │   ├── visits.ts
 │   │   ├── payments.ts
-│   │   ├── notifications.ts
 │   │   └── health.ts
 │   ├── plugins/
 │   │   ├── auth-guard.ts
 │   │   ├── rate-limit.ts
 │   │   └── error-handler.ts
 │   ├── queues/
-│   │   └── atmosphereQueue.ts
+│   │   ├── visualSignatureQueue.ts
+│   │   └── publicationFormatQueue.ts
 │   ├── workers/
-│   │   └── atmosphereWorker.ts
+│   │   ├── visualSignatureWorker.ts
+│   │   └── publicationFormatWorker.ts
 │   ├── services/
 │   │   ├── openai.ts
 │   │   ├── credits.ts
+│   │   ├── reputation.ts
 │   │   ├── stripe.ts
 │   │   └── email.ts
 │   ├── lib/
@@ -152,14 +166,16 @@ apps/api/
 packages/shared/
 ├── src/
 │   ├── types/
-│   │   ├── atmosphere.ts       # AtmosphereParams
-│   │   ├── star.ts             # Star, StarType
-│   │   ├── planet.ts           # Planet
+│   │   ├── visual-signature.ts # VisualSignature
+│   │   ├── observatory.ts      # Observatory, ObservatoryType
+│   │   ├── domain.ts           # Domain
+│   │   ├── system.ts           # System, SystemType, SystemStatus
+│   │   ├── publication.ts      # Publication, PublicationStatus
 │   │   ├── user.ts             # User, PlanTier
 │   │   └── index.ts
 │   └── utils/
-│       ├── hash.ts             # nameHash() for map positions
-│       └── constants.ts        # PLANET_SLUGS, STAR_TYPES, etc.
+│       ├── hash.ts             # nameHash() for topology positions
+│       └── constants.ts        # DOMAIN_SLUGS, OBSERVATORY_TYPES, etc.
 └── package.json
 ```
 
@@ -171,14 +187,16 @@ packages/shared/
 
 | Table | Purpose |
 |---|---|
-| `User` | Accounts, plan tier, credits balance |
-| `Star` | Meta Stars: name, type, publicMode, atmosphereParams (JSONB), planetIds[] |
-| `Planet` | 7 thematic planets — seed data only |
-| `Satellite` | Satellites bound to planets — seed/empty, reserved for Phase 2 |
-| `AIGeneration` | Generation history, AtmosphereParams snapshots |
+| `User` | Accounts, plan tier, credits balance, Stripe customer ID |
+| `Observatory` | Research spaces: name, type, publicMode, visualSignature (JSONB), domainIds[], bio, socialLinks (JSONB), reputationScore, publicationsCount |
+| `Domain` | 7 thematic Domains — seed data only, includes `active` boolean |
+| `System` | AI agents/tools registered by Observatory owners |
+| `Publication` | Formatted proof of work: title, summary, keyFindings, body, upvoteCount |
+| `PublicationUpvote` | One upvote per user per publication (unique constraint) |
+| `AIGeneration` | Generation history, Visual Signature and publication formatting snapshots |
 | `CreditTransaction` | All credit balance changes |
 | `Subscription` | Stripe subscription sync |
-| `StarVisit` | Anonymous visit records |
+| `ObservatoryVisit` | Visit records for Observatories |
 
 **Critical rule:** Credit balance changes ONLY via `CreditTransaction` + `User.creditsBalance` in a single Prisma transaction. Never separately.
 
@@ -198,28 +216,38 @@ Fastify API
     ↓ ioredis
 Redis (Upstash / Railway)
 
-Fastify API → BullMQ Job → atmosphereWorker
+--- Visual Signature Generation ---
+Fastify API → BullMQ Job → visualSignatureWorker
     ↓ OpenAI API
-GPT-4o (structured output → AtmosphereParams JSON)
+GPT-4o (structured output → VisualSignature JSON)
     ↓
-PostgreSQL (AIGeneration saved + Star.atmosphereParams updated)
+PostgreSQL (AIGeneration saved + Observatory.visualSignature updated)
     ↓ SSE
-Browser (progress updates → map visual update)
+Browser (progress updates → topology visual update)
+
+--- Publication Formatting ---
+Fastify API → BullMQ Job → publicationFormatWorker
+    ↓ OpenAI API
+GPT-4o (structured output → formatted publication JSON)
+    ↓
+PostgreSQL (AIGeneration saved + Publication created/updated)
+    ↓ SSE
+Browser (progress updates → formatted preview)
 ```
 
 ---
 
-## AtmosphereParams Type
+## VisualSignature Type
 ```typescript
-type AtmosphereParams = {
+type VisualSignature = {
   primaryColor: string;       // hex color
   secondaryColor: string;     // hex color
-  fogDensity: number;         // 0–1
-  particleType: string;       // "stars" | "dust" | "fireflies" | "void"
-  particleCount: number;      // 0–1000
-  ambientMood: string;        // "calm" | "neutral" | "intense"
-  glowIntensity: number;      // 0–1
-  mapMarkerStyle: string;     // "point" | "ring" | "pulse" | "cross"
+  gradientAngle: number;      // 0–360
+  ambientEffect: string;      // "glow" | "pulse" | "static" | "drift"
+  effectIntensity: number;    // 0–1
+  surfaceStyle: string;       // "smooth" | "grain" | "mesh" | "void"
+  accentColor: string;        // hex color
+  nodeStyle: string;          // "point" | "ring" | "pulse" | "cross"
 }
 ```
 
@@ -237,6 +265,7 @@ type AtmosphereParams = {
 - In-memory rate limiting in production
 - Local file storage
 - `pages/` directory in Next.js
+- Old terminology in code (Star, Planet, Satellite, atmosphereParams)
 
 ### Required
 - All schema changes via new migration — never `prisma db push`
