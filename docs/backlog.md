@@ -17,4 +17,10 @@
 
 ## Items
 
-_No backlog items yet. This file will be populated as development begins._
+### From ISSUE-00 (Documentation Rewrite)
+
+- **VisualSignature parameter finalization** — The `VisualSignature` type in `docs/architecture.md` defines 8 parameters (primaryColor, secondaryColor, gradientAngle, ambientEffect, effectIntensity, surfaceStyle, accentColor, nodeStyle). These are provisional and should be validated during ISSUE-18 implementation. The exact parameter set may need adjustment based on what GPT-4o can reliably generate and what produces visually meaningful differences.
+
+- **Reputation formula tuning** — The reputation scoring formula in DL-22 is a first approximation. After soft launch, analyze actual score distribution and adjust weights to ensure meaningful differentiation between Observatories.
+
+- **Coming Soon Domain activation criteria** — `docs/domain-definitions.md` states Domains activate when "sufficient creator density justifies activation." The exact threshold (proposed: 20 Observatories per active Domain) should be confirmed before the first Domain activation.
