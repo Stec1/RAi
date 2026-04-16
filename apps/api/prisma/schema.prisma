@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum PlanTier {
+  free
+  pro
+}
+
+enum ObservatoryType {
+  individual
+  studio
+  product
+}
+
+enum SystemType {
+  agent
+  workflow
+  tool
+  service
+}
+
+enum SystemStatus {
+  active
+  demo
+  concept
+}
+
+enum PublicationStatus {
+  draft
+  published
+  archived
+}
+
+enum GenerationType {
+  visual_signature
+  publication_format
+}
+
+enum GenerationStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+enum TransactionType {
+  purchase
+  usage
+  refund
+  bonus
+}
+
+enum SubscriptionStatus {
+  active
+  canceled
+  past_due
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  name             String?
+  planTier         PlanTier  @default(free)
+  creditsBalance   Int       @default(10)
+  stripeCustomerId String?   @unique
+  createdAt        DateTime  @default(now())
+
+  observatory        Observatory?
+  publicationUpvotes PublicationUpvote[]
+  aiGenerations      AIGeneration[]
+  creditTransactions CreditTransaction[]
+  subscription       Subscription?
+  observatoryVisits  ObservatoryVisit[]  @relation("VisitorUser")
+}
+
+model Observatory {
+  id                String          @id @default(uuid())
+  userId            String          @unique
+  name              String          @unique
+  displayName       String
+  type              ObservatoryType @default(individual)
+  publicMode        Boolean         @default(true)
+  visualSignature   Json?
+  domainIds         String[]
+  bio               String?
+  socialLinks       Json?
+  reputationScore   Int             @default(0)
+  publicationsCount Int             @default(0)
+  createdAt         DateTime        @default(now())
+
+  user         User               @relation(fields: [userId], references: [id])
+  systems      System[]
+  publications Publication[]
+  aiGenerations AIGeneration[]
+  visits       ObservatoryVisit[]
+}
+
+model Domain {
+  id          String   @id
+  name        String
+  slug        String   @unique
+  description String
+  theme       String
+  positionX   Float
+  positionY   Float
+  active      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model System {
+  id            String       @id @default(uuid())
+  observatoryId String
+  name          String
+  type          SystemType
+  description   String?
+  capabilities  String[]
+  status        SystemStatus @default(active)
+  externalUrl   String?
+  createdAt     DateTime     @default(now())
+
+  observatory  Observatory   @relation(fields: [observatoryId], references: [id])
+  publications Publication[]
+}
+
+model Publication {
+  id                       String            @id @default(uuid())
+  observatoryId            String
+  systemId                 String?
+  title                    String
+  summary                  String?
+  keyFindings              Json?
+  methodology              String?
+  body                     String
+  rawContent               String
+  domainId                 String?
+  tags                     String[]
+  capabilitiesDemonstrated String[]
+  upvoteCount              Int               @default(0)
+  status                   PublicationStatus  @default(draft)
+  publishedAt              DateTime?
+  createdAt                DateTime          @default(now())
+
+  observatory Observatory        @relation(fields: [observatoryId], references: [id])
+  system      System?            @relation(fields: [systemId], references: [id])
+  upvotes     PublicationUpvote[]
+}
+
+model PublicationUpvote {
+  id            String   @id @default(uuid())
+  publicationId String
+  userId        String
+  createdAt     DateTime @default(now())
+
+  publication Publication @relation(fields: [publicationId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@unique([publicationId, userId])
+}
+
+model AIGeneration {
+  id             String           @id @default(uuid())
+  userId         String
+  observatoryId  String
+  prompt         String
+  resultParams   Json?
+  creditsUsed    Int              @default(0)
+  generationType GenerationType
+  status         GenerationStatus @default(pending)
+  createdAt      DateTime         @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+  observatory Observatory @relation(fields: [observatoryId], references: [id])
+}
+
+model CreditTransaction {
+  id          String          @id @default(uuid())
+  userId      String
+  amount      Int
+  type        TransactionType
+  referenceId String?
+  createdAt   DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Subscription {
+  id        String             @id @default(uuid())
+  userId    String             @unique
+  stripeId  String             @unique
+  plan      String
+  status    SubscriptionStatus
+  periodEnd DateTime
+  createdAt DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ObservatoryVisit {
+  id            String   @id @default(uuid())
+  observatoryId String
+  visitorUserId String?
+  sessionId     String
+  visitedAt     DateTime @default(now())
+
+  observatory Observatory @relation(fields: [observatoryId], references: [id])
+  visitor     User?       @relation("VisitorUser", fields: [visitorUserId], references: [id])
+}

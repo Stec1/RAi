@@ -147,5 +147,8 @@ pnpm-debug.log*
 # Vercel
 .vercel
 
+# Prisma generated client
+apps/api/prisma/generated/
+
 .DS_Store
 .claude/
