@@ -1,8 +1,6 @@
-// @rai/shared/types — type barrel
-// Types will be added in subsequent issues:
-// - atmosphere.ts (AtmosphereParams) — ISSUE-03
-// - star.ts (Star, StarType) — ISSUE-03
-// - planet.ts (Planet) — ISSUE-03
-// - user.ts (User, PlanTier) — ISSUE-03
-
-export {};
+export type { VisualSignature, AmbientEffect, SurfaceStyle, NodeStyle } from './visual-signature.js';
+export type { User, PlanTier } from './user.js';
+export type { Observatory, ObservatoryType } from './observatory.js';
+export type { Domain } from './domain.js';
+export type { System, SystemType, SystemStatus } from './system.js';
+export type { Publication, PublicationStatus } from './publication.js';
