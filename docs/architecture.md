@@ -14,7 +14,7 @@
 |---|---|---|---|
 | Frontend | Next.js | 14.x | App Router only — no Pages Router |
 | Backend | Fastify | 4.x | Monolith — no microservices |
-| ORM | Prisma | 5.x | Migrations only — no `db push` |
+| ORM | Prisma | 7.x | Prisma config + migrations only — no `db push` |
 | Database | PostgreSQL | 15+ | Railway or Neon |
 | Cache / Queue | Redis | 7.x | Upstash or Railway |
 | Queue Worker | BullMQ | 4.x | On top of Redis |
@@ -116,6 +116,7 @@ apps/web/
 ## apps/api Structure
 ```
 apps/api/
+├── prisma.config.ts           # Prisma 7 configuration entrypoint
 ├── src/
 │   ├── index.ts
 │   ├── routes/
@@ -199,6 +200,21 @@ packages/shared/
 | `ObservatoryVisit` | Visit records for Observatories |
 
 **Critical rule:** Credit balance changes ONLY via `CreditTransaction` + `User.creditsBalance` in a single Prisma transaction. Never separately.
+
+---
+
+## Prisma & Database Workflow
+
+- Prisma schema source of truth: `apps/api/prisma/schema.prisma`
+- Prisma configuration: `apps/api/prisma.config.ts`
+- Migration history: `apps/api/prisma/migrations/`
+- Seed data script: `apps/api/prisma/seed.ts`
+- Local environment setup: copy `.env.example` to `.env.local` and provide at minimum `DATABASE_URL` and `REDIS_URL`.
+
+**Rules:**
+- All schema changes go through `schema.prisma` + a new migration in `prisma/migrations/`.
+- Do not edit previously applied migrations.
+- Use seed script updates for deterministic baseline data (for example, Domains).
 
 ---
 
@@ -302,6 +318,8 @@ All env vars documented in `.env.example` with description. No hard-coding. No s
 - `*_SECRET` — webhook secrets, signing keys
 
 **Priority:** Railway env > Vercel env > `.env.local`
+
+**Local expectation:** `.env.local` is developer-local only and should be derived from `.env.example`, including required `DATABASE_URL` and `REDIS_URL`.
 
 ---
 
