@@ -395,3 +395,23 @@
 **Trade-off:** More issues = longer path to soft launch. Mitigated by the fact that each issue is smaller and more focused.
 
 **Revisit:** No
+
+---
+
+## DL-24 — Session Cookie sameSite = Lax (Cross-Origin Setup)
+
+**Decision:** Session cookies use `sameSite: "lax"`, not `sameSite: "strict"`. This overrides the original stance in DL-09.
+
+**Why:**
+- The API (Railway, e.g. `api.rai.app`) and the web app (Vercel, e.g. `rai.app`) are on different origins
+- `sameSite: "strict"` blocks cookies on cross-site XHR — the browser would not send the session cookie to the API from the web app
+- `sameSite: "lax"` allows the cookie on top-level navigations and eligible cross-site requests, which is required for this cross-origin auth flow to work
+- CSRF risk is mitigated by:
+  - `httpOnly: true` (no JS access to the cookie)
+  - `secure: true` in production (HTTPS only)
+  - Better Auth's built-in CSRF protection on state-changing routes
+  - Explicit CORS `origin` allow-list (only `WEB_URL`)
+
+**Trade-off:** Slightly weaker CSRF posture than `strict`. Acceptable given the mitigations above and the fact that a single-origin deployment is not realistic for Railway + Vercel.
+
+**Revisit:** Yes — if the API and web are ever consolidated onto the same origin (e.g. both behind a single reverse proxy), reconsider `strict`.
