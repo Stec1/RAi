@@ -73,11 +73,14 @@ enum SubscriptionStatus {
 model User {
   id               String    @id @default(uuid())
   email            String    @unique
-  name             String?
+  name             String
+  emailVerified    Boolean   @default(false)
+  image            String?
   planTier         PlanTier  @default(free)
   creditsBalance   Int       @default(10)
   stripeCustomerId String?   @unique
   createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   observatory        Observatory?
   publicationUpvotes PublicationUpvote[]
@@ -85,6 +88,54 @@ model User {
   creditTransactions CreditTransaction[]
   subscription       Subscription?
   observatoryVisits  ObservatoryVisit[]  @relation("VisitorUser")
+  sessions           Session[]
+  accounts           Account[]
+}
+
+// ---------------------------------------------------------------------------
+// Better Auth tables
+// Schema shape follows Better Auth's Prisma adapter requirements.
+// Do not rename fields without updating auth config.
+// ---------------------------------------------------------------------------
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Observatory {
