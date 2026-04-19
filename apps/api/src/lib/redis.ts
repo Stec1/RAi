@@ -1,7 +1,7 @@
 // Redis singleton — the only place ioredis client is instantiated.
 // Used by rate limiting and (future) BullMQ queues.
 
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 
 const url = process.env.REDIS_URL;
 
