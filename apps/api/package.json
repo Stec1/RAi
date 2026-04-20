@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "prebuild": "DATABASE_URL=${DATABASE_URL:-postgres://placeholder} prisma generate",
+    "prebuild": "pnpm --filter @rai/shared build && DATABASE_URL=${DATABASE_URL:-postgres://placeholder} prisma generate",
     "build": "tsc",
     "start": "node dist/src/index.js",
-    "pretypecheck": "DATABASE_URL=${DATABASE_URL:-postgres://placeholder} prisma generate",
+    "pretypecheck": "pnpm --filter @rai/shared build && DATABASE_URL=${DATABASE_URL:-postgres://placeholder} prisma generate",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ --ext .ts"
   },
