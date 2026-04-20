@@ -23,7 +23,10 @@ export default async function observatoriesRoutes(server: FastifyInstance) {
       const normalized = normalizeObservatoryName(request.params.name);
 
       const formatCheck = validateObservatoryNameFormat(normalized);
-      if (!formatCheck.valid) {
+      // Narrow via `in`: the `reason` property only exists on the invalid
+      // variant of the discriminated union, so this is semantically equal
+      // to `!formatCheck.valid` but narrows reliably across TS configs.
+      if ('reason' in formatCheck) {
         reply.status(400).send({ available: false, reason: formatCheck.reason });
         return;
       }
