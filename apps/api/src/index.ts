@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import healthRoutes from './routes/health.js';
 import authRoutes from './routes/auth.js';
 import meRoutes from './routes/me.js';
+import observatoriesRoutes from './routes/observatories.js';
 import authGuard from './plugins/auth-guard.js';
 import rateLimit from './plugins/rate-limit.js';
 
@@ -24,6 +25,7 @@ await server.register(rateLimit);
 await server.register(healthRoutes);
 await server.register(authRoutes);
 await server.register(meRoutes);
+await server.register(observatoriesRoutes, { prefix: '/api/v1/observatories' });
 
 const start = async () => {
   try {
