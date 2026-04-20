@@ -21,6 +21,9 @@ export default async function meRoutes(server: FastifyInstance) {
         planTier: true,
         creditsBalance: true,
         createdAt: true,
+        observatory: {
+          select: { id: true, name: true },
+        },
       },
     });
 
@@ -29,6 +32,9 @@ export default async function meRoutes(server: FastifyInstance) {
       return;
     }
 
-    return user;
+    return {
+      ...user,
+      observatory: user.observatory ?? null,
+    };
   });
 }
