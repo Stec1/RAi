@@ -1,6 +1,8 @@
-// Redis-backed sliding window rate limiter for auth endpoints.
-// Key format:  rl:auth:{ip}
-// Limit:       5 requests per 60 seconds per IP
+// Redis-backed sliding-window rate limiter.
+// Key format:  rl:{scope}:{ip}
+// Scopes:
+//   auth         — 5 req / 60s per IP (applied to /api/auth/*)
+//   observatory  — 30 req / 60s per IP (applied per-route via preHandler)
 // On exceed:   429 { error, retryAfter }
 
 import fp from 'fastify-plugin';
@@ -8,11 +10,16 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { redis } from '../lib/redis.js';
 
 const WINDOW_SECONDS = 60;
-const MAX_REQUESTS = 5;
+const AUTH_MAX = 5;
+const OBSERVATORY_MAX = 30;
 
-async function checkRateLimit(ip: string): Promise<{ allowed: boolean; retryAfter: number }> {
+async function checkRateLimit(
+  scope: string,
+  ip: string,
+  max: number,
+): Promise<{ allowed: boolean; retryAfter: number }> {
   const now = Date.now();
-  const key = `rl:auth:${ip}`;
+  const key = `rl:${scope}:${ip}`;
   const windowStart = now - WINDOW_SECONDS * 1000;
 
   // Sliding-window via sorted set: score = timestamp, member = unique token
@@ -28,7 +35,7 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean; retryAfte
   }
 
   const count = results[2]?.[1] as number;
-  if (typeof count === 'number' && count > MAX_REQUESTS) {
+  if (typeof count === 'number' && count > max) {
     // Look up the oldest entry in the window to calculate retryAfter.
     const oldest = await redis.zrange(key, 0, 0, 'WITHSCORES');
     const oldestScore = oldest.length >= 2 ? Number(oldest[1]) : now;
@@ -40,16 +47,27 @@ async function checkRateLimit(ip: string): Promise<{ allowed: boolean; retryAfte
 }
 
 async function rateLimitPlugin(server: FastifyInstance) {
-  server.decorate('authRateLimit', async function authRateLimit(request: FastifyRequest, reply: FastifyReply) {
-    const ip = request.ip;
-    const { allowed, retryAfter } = await checkRateLimit(ip);
+  server.decorate(
+    'authRateLimit',
+    async function authRateLimit(request: FastifyRequest, reply: FastifyReply) {
+      const { allowed, retryAfter } = await checkRateLimit('auth', request.ip, AUTH_MAX);
+      if (!allowed) {
+        reply.header('Retry-After', String(retryAfter));
+        reply.status(429).send({ error: 'Too many requests', retryAfter });
+      }
+    },
+  );
 
-    if (!allowed) {
-      reply.header('Retry-After', String(retryAfter));
-      reply.status(429).send({ error: 'Too many requests', retryAfter });
-      return;
-    }
-  });
+  server.decorate(
+    'observatoryRateLimit',
+    async function observatoryRateLimit(request: FastifyRequest, reply: FastifyReply) {
+      const { allowed, retryAfter } = await checkRateLimit('obs', request.ip, OBSERVATORY_MAX);
+      if (!allowed) {
+        reply.header('Retry-After', String(retryAfter));
+        reply.status(429).send({ error: 'Too many requests', retryAfter });
+      }
+    },
+  );
 
   // Apply as onRequest hook only for auth routes (path starts with /api/auth/)
   server.addHook('onRequest', async (request, reply) => {
@@ -62,6 +80,7 @@ async function rateLimitPlugin(server: FastifyInstance) {
 declare module 'fastify' {
   interface FastifyInstance {
     authRateLimit: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    observatoryRateLimit: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 

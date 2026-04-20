@@ -9,6 +9,7 @@
 
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { deriveDisplayNameFromEmail } from '@rai/shared';
 import { prisma } from './prisma.js';
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -23,6 +24,26 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
+  },
+  // Populate User.name from email on signup when the client did not supply
+  // an explicit name. Does not overwrite a provided name.
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          const current = typeof user.name === 'string' ? user.name.trim() : '';
+          if (current.length > 0) {
+            return;
+          }
+          return {
+            data: {
+              ...user,
+              name: deriveDisplayNameFromEmail(user.email),
+            },
+          };
+        },
+      },
+    },
   },
   advanced: {
     cookiePrefix: 'rai',
