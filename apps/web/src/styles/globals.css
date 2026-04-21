@@ -1,0 +1,158 @@
+/*
+ * RAi design tokens — first implementation of the UI system.
+ *
+ * Authority:
+ *   - Semantic roles and rules: 20_Product/2A_UI_System.md
+ *   - Concrete values:          docs/visual-reference.md
+ *
+ * All UI chrome consumes only the semantic tokens below. Hex literals are
+ * confined to this file.
+ */
+
+:root {
+  /* Surfaces */
+  --surface-base: #030307;
+  --surface-canvas: #050509;
+  --surface-panel: #0a0a12;
+  --surface-elevated: #16161f;
+
+  /* Text */
+  --text-primary: #e8edf5;
+  --text-secondary: #8890a8;
+
+  /* Accents — one UI accent active at a time; warm is reserved for RA */
+  --accent-cold: #4a7dbf;
+  --accent-warm: #fff4d6;
+
+  /* Border */
+  --border-hairline: rgba(255, 255, 255, 0.07);
+
+  /* Signals */
+  --signal-success: #4abf6a;
+  --signal-danger: #bf5a4a;
+
+  /*
+   * Domain identification tokens.
+   * Values derived directly from the prose "color hints" in
+   * docs/domain-definitions.md. These are ONLY used to tag Domain /
+   * Observatory identity — never as UI chrome.
+   */
+  --domain-nexum: #4aa3bf;   /* cold blue, electric teal */
+  --domain-keth: #b89450;    /* dark gold, slate */
+  --domain-solum: #b8c5d9;   /* white-blue, silver */
+  --domain-vorda: #c47a4a;   /* warm amber, terracotta */
+  --domain-lyren: #7a4d9e;   /* deep purple, violet */
+  --domain-auren: #3d8a6d;   /* deep green, teal */
+  --domain-draxis: #8a3a3a;  /* dark red, near-black */
+
+  /* Typography scale — only these sizes are allowed on screen. */
+  --font-size-11: 0.6875rem; /* 11px */
+  --font-size-13: 0.8125rem; /* 13px */
+  --font-size-15: 0.9375rem; /* 15px */
+  --font-size-18: 1.125rem;  /* 18px */
+  --font-size-24: 1.5rem;    /* 24px */
+  --font-size-36: 2.25rem;   /* 36px */
+  --font-size-56: 3.5rem;    /* 56px */
+
+  /* Letter spacing */
+  --tracking-display: 0.02em;
+  --tracking-label: 0.08em;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* Editorial measure */
+  --measure-prose: 62ch;
+  --measure-hero: 20ch;
+  --container-max: 1200px;
+
+  /* Radius */
+  --radius-panel: 16px;
+  --radius-inline: 8px;
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-reveal: 400ms;
+  --ease-standard: cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  color-scheme: dark;
+  font-family: var(--font-inter), system-ui, -apple-system, Segoe UI, sans-serif;
+  font-size: var(--font-size-15);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-family: var(--font-space-grotesk), var(--font-inter), sans-serif;
+  font-weight: 300;
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* Focus ring — the only allowed shadow use on the Start Page. */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--surface-base), 0 0 0 4px var(--accent-cold);
+  border-radius: var(--radius-inline);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
