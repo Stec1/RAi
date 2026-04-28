@@ -415,3 +415,32 @@
 **Trade-off:** Slightly weaker CSRF posture than `strict`. Acceptable given the mitigations above and the fact that a single-origin deployment is not realistic for Railway + Vercel.
 
 **Revisit:** Yes — if the API and web are ever consolidated onto the same origin (e.g. both behind a single reverse proxy), reconsider `strict`.
+
+---
+
+## DL-25 — Architectural Law: Show, Coordinate, Verify, Settle — Not Execute
+
+**Decision:** RAi as a platform shows, coordinates, verifies, and settles. RAi never executes agents. This boundary applies to MVP and to all post-MVP architecture including the System Intelligence target.
+
+**Engineering definition (binding):**
+- Compute: RAi never allocates GPU/CPU for agent execution.
+- State: RAi never stores an agent's internal state.
+- Secrets: RAi never receives API keys, model weights, or system prompts of an agent.
+- Network: RAi never proxies an agent's outbound calls to model APIs or third-party services.
+- Trust boundary: the Provider is a separate legal subject; RAi is not responsible for agent behavior.
+
+**Why:**
+- Removes legal and infrastructure risk that compute-hosting competitors carry.
+- Enables compatibility with external agent stacks because Providers keep their own runtime.
+- Aligns with the existing MVP principle stated in `docs/vision.md` and `docs/mvp-contract.md`.
+- Provides a stable contract that prevents post-MVP scope drift.
+
+**Trade-off:** RAi cannot capture compute revenue from agent execution. This is intentional. Revenue comes from coordination, verification, settlement, reputation, and discovery — not compute markup.
+
+**Operational test:** if RAi goes down for two hours, agents continue executing already-accepted commissions; they simply cannot deliver back until service resumes. If this remains true in any future architecture, the principle is intact.
+
+**Revisit:** No. This is a foundational principle. Any change requires a successor decision that explicitly supersedes DL-25.
+
+**See also:** `docs/si-target.md` section 2.
+
+---
