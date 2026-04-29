@@ -37,33 +37,43 @@
   line-height: 1.6;
 }
 
-.activeGrid {
+/* ───────── Active domains ───────── */
+
+.activeRow {
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-6);
-  margin-bottom: var(--space-12);
+  gap: var(--space-12);
+  margin-bottom: var(--space-16);
+  align-items: start;
 }
 
-.card {
-  background: var(--surface-elevated);
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-panel);
-  padding: var(--space-8);
+.activeItem {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: var(--space-4);
-  min-height: 200px;
 }
 
-.marker {
-  width: 24px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--marker-color, var(--text-secondary));
+.activeObjectWrap {
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-2);
 }
 
-.cardName {
+.activeObject {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.activeName {
   font-family: var(--font-space-grotesk), sans-serif;
   font-weight: 300;
   font-size: var(--font-size-18);
@@ -71,12 +81,14 @@
   color: var(--text-primary);
 }
 
-.cardBody {
+.activeBody {
   font-size: var(--font-size-13);
   line-height: 1.6;
   color: var(--text-secondary);
-  margin-top: auto;
+  max-width: 32ch;
 }
+
+/* ───────── Coming Soon ───────── */
 
 .soonLabel {
   grid-column: 1 / -1;
@@ -85,38 +97,73 @@
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text-secondary);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
 .soonRow {
   grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-8);
+  align-items: start;
+}
+
+.soonItem {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: var(--space-3);
 }
 
-.soonChip {
-  display: inline-flex;
+.soonObjectWrap {
+  width: 100%;
+  max-width: 150px;
+  aspect-ratio: 1 / 1;
+  display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--border-hairline);
-  border-radius: 999px;
-  font-size: var(--font-size-13);
-  color: var(--text-secondary);
+  justify-content: center;
 }
 
-.soonDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--marker-color, var(--text-secondary));
-  opacity: 0.5;
+.soonObject {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
+
+.soonName {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-18);
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+}
+
+/* Per-domain scale correction.
+   Lyren's source PNG fills only ~35.7% of its 1254px canvas vs.
+   ~42% for auren/draxis/vorda. A 1.18× scale brings it visually
+   in line without re-exporting the asset. */
+.scaleLyren {
+  transform: scale(1.18);
+  transform-origin: center;
+}
+
+/* ───────── Responsive ───────── */
 
 @media (max-width: 900px) {
-  .activeGrid {
+  .activeRow {
     grid-template-columns: 1fr;
+    gap: var(--space-12);
+  }
+
+  .activeObjectWrap {
+    max-width: 240px;
+  }
+
+  .soonRow {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-8) var(--space-6);
   }
 }
 
@@ -130,8 +177,7 @@
     gap: var(--space-6);
   }
 
-  .card {
-    padding: var(--space-6);
-    min-height: 0;
+  .soonObjectWrap {
+    max-width: 130px;
   }
 }
