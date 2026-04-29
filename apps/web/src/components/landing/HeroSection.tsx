@@ -3,7 +3,7 @@ import styles from './HeroSection.module.css';
 import { Reveal } from './Reveal';
 
 // First viewport. One display heading, one supporting body block, one CTA.
-// No decorative imagery, no badges, no feature icon row.
+// A decorative RA hero object sits to the right on desktop/laptop only.
 
 export function HeroSection() {
   return (
@@ -23,6 +23,19 @@ export function HeroSection() {
             Get Started
           </Link>
         </div>
+        {/* Decorative RA presence. Hidden on mobile/tablet via CSS.
+            No card, no glow, no label — image-only. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/domain-objects/ra/RA-domain-object.png"
+          alt=""
+          aria-hidden="true"
+          className={styles.heroObject}
+          width={1254}
+          height={1254}
+          loading="eager"
+          decoding="async"
+        />
       </Reveal>
     </section>
   );
