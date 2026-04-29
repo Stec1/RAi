@@ -1,10 +1,9 @@
-import type { CSSProperties } from 'react';
 import styles from './DomainShowcaseSection.module.css';
 import { Reveal } from './Reveal';
 
 // Data is hard-coded from docs/domain-definitions.md — no API calls.
-// Domain colors appear only as identification accents (thin marker / dot),
-// never as UI chrome.
+// Domain objects are rendered as transparent PNGs sitting directly on the
+// page background. No card chrome, no glow, no badges.
 
 type Active = {
   name: string;
@@ -42,6 +41,16 @@ const coming: ComingSoon[] = [
   { name: 'Draxis', slug: 'draxis' },
 ];
 
+// Per-domain scale corrections compensate for differences in the
+// internal alpha-bbox of each source PNG so objects feel visually
+// equal in size on screen. Source crop fills:
+//   active:      keth 80.9%, nexum 80.9%, solum 82.8%  → no correction
+//   coming-soon: auren 42.9%, draxis 41.9%, vorda 41.9%, lyren 35.7%
+//                lyren is ~17% smaller → bump 1.18×.
+const objectScale: Partial<Record<Active['slug'] | ComingSoon['slug'], string>> = {
+  lyren: styles.scaleLyren,
+};
+
 export function DomainShowcaseSection() {
   return (
     <section className={styles.section} aria-labelledby="domains-heading">
@@ -55,16 +64,25 @@ export function DomainShowcaseSection() {
           </p>
         </div>
 
-        <div className={styles.activeGrid}>
+        <div className={styles.activeRow}>
           {active.map((d) => (
-            <article
-              key={d.slug}
-              className={styles.card}
-              style={{ '--marker-color': `var(--domain-${d.slug})` } as CSSProperties}
-            >
-              <span className={styles.marker} aria-hidden="true" />
-              <h3 className={styles.cardName}>{d.name}</h3>
-              <p className={styles.cardBody}>{d.body}</p>
+            <article key={d.slug} className={styles.activeItem}>
+              <div className={styles.activeObjectWrap}>
+                {/* Founder spec: render source PNG directly, no compression
+                    or recolor pipeline. Plain <img> is intentional. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/domain-objects/active/${d.slug}-domain-object.png`}
+                  alt=""
+                  className={`${styles.activeObject} ${objectScale[d.slug] ?? ''}`}
+                  width={1254}
+                  height={1254}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <h3 className={styles.activeName}>{d.name}</h3>
+              <p className={styles.activeBody}>{d.body}</p>
             </article>
           ))}
         </div>
@@ -72,13 +90,20 @@ export function DomainShowcaseSection() {
         <p className={styles.soonLabel}>Coming Soon</p>
         <ul className={styles.soonRow}>
           {coming.map((d) => (
-            <li
-              key={d.slug}
-              className={styles.soonChip}
-              style={{ '--marker-color': `var(--domain-${d.slug})` } as CSSProperties}
-            >
-              <span className={styles.soonDot} aria-hidden="true" />
-              {d.name}
+            <li key={d.slug} className={styles.soonItem}>
+              <div className={styles.soonObjectWrap}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/domain-objects/coming-soon/${d.slug}-domain-object.png`}
+                  alt=""
+                  className={`${styles.soonObject} ${objectScale[d.slug] ?? ''}`}
+                  width={1254}
+                  height={1254}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+              <span className={styles.soonName}>{d.name}</span>
             </li>
           ))}
         </ul>
