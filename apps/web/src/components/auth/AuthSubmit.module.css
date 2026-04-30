@@ -1,0 +1,41 @@
+/* Primary submit button for the auth forms. Mirrors the Hero CTA pattern
+   but stretches full width inside the auth card. */
+
+.button {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-6);
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--surface-base);
+  background: var(--text-primary);
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-inline);
+  transition: background-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    opacity var(--duration-fast) var(--ease-standard);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--accent-cold);
+  border-color: var(--accent-cold);
+  color: var(--text-primary);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.formError {
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  color: var(--signal-danger);
+  margin: 0;
+}

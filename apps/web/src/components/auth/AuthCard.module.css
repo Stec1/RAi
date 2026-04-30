@@ -1,0 +1,66 @@
+/* Editorial single-card chrome shared by /login and /signup.
+   No glass, no glow, no neon. Solid elevated surface with a hairline
+   border, soft inline radius, and disciplined internal padding. */
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-panel);
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-36);
+  line-height: 1.2;
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+}
+
+.tagline {
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-13);
+  color: var(--text-secondary);
+}
+
+.footerLink {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.footerLink:hover {
+  color: var(--accent-cold);
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: var(--space-8) var(--space-6);
+    border-radius: var(--radius-inline);
+  }
+
+  .title {
+    font-size: var(--font-size-24);
+  }
+}

@@ -1,0 +1,58 @@
+/* Full-bleed shell for /login and /signup. The card sits centered on the
+   premium dark background. A minimal top row carries the RAi mark linking
+   back to the Start Page so users are never trapped on auth screens. */
+
+.shell {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-base);
+}
+
+.topRow {
+  width: 100%;
+  padding: var(--space-6);
+  display: flex;
+  justify-content: center;
+}
+
+.topRowInner {
+  max-width: var(--container-max);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.mark {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-18);
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.mark:hover {
+  color: var(--accent-cold);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4) var(--space-12);
+}
+
+@media (max-width: 480px) {
+  .topRow {
+    padding: var(--space-4);
+  }
+
+  .main {
+    padding: var(--space-4) var(--space-3) var(--space-8);
+    align-items: flex-start;
+  }
+}
