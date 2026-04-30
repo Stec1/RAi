@@ -1,0 +1,15 @@
+/* Stacked form layout shared by LoginForm. Spacing only — fields, error
+   message, and submit button consume their own component styles. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
