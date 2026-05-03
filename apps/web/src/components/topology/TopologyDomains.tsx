@@ -9,7 +9,8 @@
 import { useTexture } from '@react-three/drei';
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import type { Domain } from '@rai/shared';
+
+import type { DomainDTO } from '../../lib/topology-types';
 
 const ACTIVE_PATHS: Record<string, string> = {
   nexum: '/domain-objects/active/nexum-domain-object.png',
@@ -36,7 +37,7 @@ const DOMAIN_PLANE_ACTIVE = 180;
 const DOMAIN_PLANE_COMING_SOON = 135; // 0.75x of active
 const COMING_SOON_OPACITY = 0.45;
 
-export function TopologyDomains({ domains }: { domains: Domain[] }) {
+export function TopologyDomains({ domains }: { domains: DomainDTO[] }) {
   const textures = useTexture(ALL_PATHS);
 
   // Map path → Texture once, keyed by stable path identity.

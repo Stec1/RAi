@@ -1,6 +1,4 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
-  transpilePackages: ['@rai/shared'],
-};
+const nextConfig = {};
 
 export default nextConfig;

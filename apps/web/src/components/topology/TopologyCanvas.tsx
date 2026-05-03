@@ -19,11 +19,11 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import type { Domain } from '@rai/shared';
 
 import { TopologyRA } from './TopologyRA';
 import { TopologyDomains } from './TopologyDomains';
 import { setTopologyViewport } from '../../hooks/useTopology';
+import type { DomainDTO } from '../../lib/topology-types';
 import {
   WORLD_HALF_EXTENT,
   DEFAULT_ZOOM_DESKTOP,
@@ -285,7 +285,7 @@ function CameraController({
   return null;
 }
 
-export function TopologyCanvas({ domains }: { domains: Domain[] }) {
+export function TopologyCanvas({ domains }: { domains: DomainDTO[] }) {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [isSmallViewport, setIsSmallViewport] = useState(false);
 
