@@ -7,8 +7,8 @@
 // World space [-WORLD_HALF_EXTENT, +WORLD_HALF_EXTENT] is mapped onto the
 // SVG viewBox; SVG y is flipped vs world y.
 
-import type { Domain } from '@rai/shared';
 import { useTopologyViewport } from '../../hooks/useTopology';
+import type { DomainDTO } from '../../lib/topology-types';
 import { WORLD_HALF_EXTENT } from '../../lib/topology-utils';
 import styles from './MiniMap.module.css';
 
@@ -18,7 +18,7 @@ const worldToSvgX = (wx: number): number => wx + WORLD_HALF_EXTENT;
 const worldToSvgY = (wy: number): number => -wy + WORLD_HALF_EXTENT;
 
 interface Props {
-  domains: Domain[];
+  domains: DomainDTO[];
 }
 
 export function MiniMap({ domains }: Props) {

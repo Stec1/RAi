@@ -9,9 +9,9 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
-import type { Domain } from '@rai/shared';
 
 import { MiniMap } from '../../components/topology/MiniMap';
+import type { DomainDTO } from '../../lib/topology-types';
 import styles from './page.module.css';
 
 // three.js touches `window` at module evaluation, so the canvas must be
@@ -25,11 +25,11 @@ const TopologyCanvas = dynamic(
 );
 
 interface DomainsResponse {
-  domains: Domain[];
+  domains: DomainDTO[];
 }
 
 export function ExploreClient() {
-  const [domains, setDomains] = useState<Domain[] | null>(null);
+  const [domains, setDomains] = useState<DomainDTO[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
