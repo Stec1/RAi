@@ -4,6 +4,13 @@
 //   auth         — 5 req / 60s per IP (applied to /api/auth/*)
 //   observatory  — 30 req / 60s per IP (applied per-route via preHandler)
 // On exceed:   429 { error, retryAfter }
+//
+// Fail-open: if Redis is unreachable (no REDIS_URL on the deploy environment,
+// connection lost, ioredis exhausted retries), the rate limiter logs the error
+// server-side and allows the request to proceed. This prevents raw ioredis
+// "Reached the max retries per request limit" messages from leaking to end
+// users on /api/auth/* (signup/login). Better Auth retains its own
+// per-account brute-force protections, so failing open here is safe for MVP.
 
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -13,11 +20,16 @@ const WINDOW_SECONDS = 60;
 const AUTH_MAX = 5;
 const OBSERVATORY_MAX = 30;
 
+interface RateLimitDecision {
+  allowed: boolean;
+  retryAfter: number;
+}
+
 async function checkRateLimit(
   scope: string,
   ip: string,
   max: number,
-): Promise<{ allowed: boolean; retryAfter: number }> {
+): Promise<RateLimitDecision> {
   const now = Date.now();
   const key = `rl:${scope}:${ip}`;
   const windowStart = now - WINDOW_SECONDS * 1000;
@@ -46,11 +58,34 @@ async function checkRateLimit(
   return { allowed: true, retryAfter: 0 };
 }
 
+async function safeCheckRateLimit(
+  server: FastifyInstance,
+  scope: string,
+  ip: string,
+  max: number,
+): Promise<RateLimitDecision> {
+  try {
+    return await checkRateLimit(scope, ip, max);
+  } catch (err) {
+    // Redis unreachable / ioredis retry exhaustion — log and fail open.
+    server.log.error(
+      { err, scope },
+      'rate-limit Redis check failed; allowing request',
+    );
+    return { allowed: true, retryAfter: 0 };
+  }
+}
+
 async function rateLimitPlugin(server: FastifyInstance) {
   server.decorate(
     'authRateLimit',
     async function authRateLimit(request: FastifyRequest, reply: FastifyReply) {
-      const { allowed, retryAfter } = await checkRateLimit('auth', request.ip, AUTH_MAX);
+      const { allowed, retryAfter } = await safeCheckRateLimit(
+        server,
+        'auth',
+        request.ip,
+        AUTH_MAX,
+      );
       if (!allowed) {
         reply.header('Retry-After', String(retryAfter));
         reply.status(429).send({ error: 'Too many requests', retryAfter });
@@ -61,7 +96,12 @@ async function rateLimitPlugin(server: FastifyInstance) {
   server.decorate(
     'observatoryRateLimit',
     async function observatoryRateLimit(request: FastifyRequest, reply: FastifyReply) {
-      const { allowed, retryAfter } = await checkRateLimit('obs', request.ip, OBSERVATORY_MAX);
+      const { allowed, retryAfter } = await safeCheckRateLimit(
+        server,
+        'obs',
+        request.ip,
+        OBSERVATORY_MAX,
+      );
       if (!allowed) {
         reply.header('Retry-After', String(retryAfter));
         reply.status(429).send({ error: 'Too many requests', retryAfter });

@@ -28,6 +28,18 @@ interface DomainsResponse {
   domains: DomainDTO[];
 }
 
+// Trim trailing slash(es) from a base URL so `${base}/api/...` never produces
+// `host.tld//api/...` — proxies and CDNs sometimes 404 on doubled slashes.
+function joinApiUrl(base: string, path: string): string {
+  return `${base.replace(/\/+$/, '')}${path}`;
+}
+
+function isDomainsResponse(value: unknown): value is DomainsResponse {
+  if (!value || typeof value !== 'object') return false;
+  const maybe = value as { domains?: unknown };
+  return Array.isArray(maybe.domains);
+}
+
 export function ExploreClient() {
   const [domains, setDomains] = useState<DomainDTO[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,19 +50,35 @@ export function ExploreClient() {
       setError('API URL is not configured.');
       return;
     }
+    const target = joinApiUrl(apiUrl, '/api/v1/domains');
     const controller = new AbortController();
-    fetch(`${apiUrl}/api/v1/domains`, {
+
+    fetch(target, {
       credentials: 'include',
       signal: controller.signal,
     })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<DomainsResponse>;
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status} from ${target}`);
+        }
+        const json: unknown = await res.json();
+        if (!isDomainsResponse(json)) {
+          throw new Error('Unexpected response shape from /api/v1/domains');
+        }
+        return json.domains;
       })
-      .then((data) => setDomains(data.domains))
+      .then((list) => setDomains(list))
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError('Could not load the topology.');
+        // Dev-only diagnostics — production users see the friendly message,
+        // developers get enough detail in the console to triage.
+        if (process.env.NODE_ENV !== 'production') {
+          // eslint-disable-next-line no-console
+          console.error('[explore] failed to load topology:', err, {
+            target,
+          });
+        }
+        setError('Could not load the topology. Check API connection.');
       });
     return () => controller.abort();
   }, []);
