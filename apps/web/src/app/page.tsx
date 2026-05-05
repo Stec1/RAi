@@ -33,7 +33,9 @@ export default function Home() {
 
     setRedirecting(true);
     const controller = new AbortController();
-    fetch(`${apiUrl}/api/me`, {
+    // Strip trailing slash(es) — same reasoning as resolvePostAuthDestination.
+    const base = apiUrl.replace(/\/+$/, '');
+    fetch(`${base}/api/me`, {
       credentials: 'include',
       signal: controller.signal,
     })
