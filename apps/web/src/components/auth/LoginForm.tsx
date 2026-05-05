@@ -50,12 +50,6 @@ export function LoginForm() {
     setFieldErrors({});
     setFormError(null);
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) {
-      setFormError('Authentication is not configured.');
-      return;
-    }
-
     setPending(true);
     const { error } = await signIn({
       email: email.trim(),
@@ -70,7 +64,9 @@ export function LoginForm() {
       return;
     }
 
-    const destination = await resolvePostAuthDestination(apiUrl);
+    // Same-origin call — the Next.js rewrite proxies `/api/me` upstream.
+    // Falls back to `/create` on any error, which always exists.
+    const destination = await resolvePostAuthDestination();
     router.replace(destination);
   };
 

@@ -20,12 +20,10 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isLoading || !user) return;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) return;
 
     setRedirecting(true);
     const controller = new AbortController();
-    resolvePostAuthDestination(apiUrl, controller.signal).then((destination) => {
+    resolvePostAuthDestination(controller.signal).then((destination) => {
       router.replace(destination);
     });
     return () => controller.abort();
