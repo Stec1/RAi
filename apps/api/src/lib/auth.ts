@@ -1,10 +1,18 @@
 // Better Auth configuration.
 //
 // Cross-origin setup:
-//   API  = Railway (e.g. api.rai.app)
-//   Web  = Vercel  (e.g. rai.app)
-// These are different origins, so `sameSite: "strict"` would block the
-// session cookie on cross-site XHR. Phase 1 uses `sameSite: "lax"`.
+//   API  = Railway  (e.g. raiapi-production.up.railway.app)
+//   Web  = Vercel   (e.g. rai-web-one.vercel.app)
+// These hosts have different registrable domains, so the session cookie is
+// truly cross-site. Browsers only send `SameSite=Lax` cookies on top-level
+// navigations — not on `fetch()` from the web app to the API. That caused
+// `/api/me` to return 401 immediately after a successful sign-in.
+//
+// Production therefore needs `SameSite=None; Secure` for the session cookie
+// to be sent on cross-site XHR. Local dev keeps `SameSite=Lax` because
+// `localhost:3000` ↔ `localhost:3001` are considered same-site by browsers,
+// and Lax avoids requiring HTTPS in dev (`Secure` cookies are dropped on
+// plain http://).
 // See docs/decision-log.md (DL-24).
 
 import { betterAuth } from 'better-auth';
@@ -49,8 +57,12 @@ export const auth = betterAuth({
     cookiePrefix: 'rai',
     defaultCookieAttributes: {
       httpOnly: true,
+      // `Secure` is required whenever `SameSite=None`. In dev we leave it
+      // off so the cookie works over plain http://localhost.
       secure: isProd,
-      sameSite: 'lax',
+      // `None` is required for cross-site fetch credentials in production.
+      // `Lax` is correct in dev where the web/api are same-site (localhost).
+      sameSite: isProd ? 'none' : 'lax',
     },
   },
 });
