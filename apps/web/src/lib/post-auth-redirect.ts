@@ -28,7 +28,10 @@ export async function resolvePostAuthDestination(
   signal?: AbortSignal,
 ): Promise<PostAuthDestination> {
   try {
-    const res = await fetch(`${apiUrl}/api/me`, {
+    // Strip trailing slash(es) so a NEXT_PUBLIC_API_URL ending in `/` does
+    // not produce `host//api/me` — some proxies 404 doubled slashes.
+    const base = apiUrl.replace(/\/+$/, '');
+    const res = await fetch(`${base}/api/me`, {
       credentials: 'include',
       signal,
     });
