@@ -398,23 +398,25 @@
 
 ---
 
-## DL-24 — Session Cookie sameSite = Lax (Cross-Origin Setup)
+## DL-24 — Session Cookie sameSite per environment (Cross-Origin Setup)
 
-**Decision:** Session cookies use `sameSite: "lax"`, not `sameSite: "strict"`. This overrides the original stance in DL-09.
+**Decision:** Session cookies use `sameSite: "none"` + `secure: true` in production and `sameSite: "lax"` + `secure: false` in local dev. Overrides the original stance in DL-09.
 
 **Why:**
-- The API (Railway, e.g. `api.rai.app`) and the web app (Vercel, e.g. `rai.app`) are on different origins
-- `sameSite: "strict"` blocks cookies on cross-site XHR — the browser would not send the session cookie to the API from the web app
-- `sameSite: "lax"` allows the cookie on top-level navigations and eligible cross-site requests, which is required for this cross-origin auth flow to work
+- The API (Railway, e.g. `raiapi-production.up.railway.app`) and the web app (Vercel, e.g. `rai-web-one.vercel.app`) sit on different registrable domains, so every browser fetch from web → API is genuinely cross-site.
+- `sameSite: "lax"` only attaches cookies on top-level navigations, NOT on `fetch()` from JS. That caused `POST /api/auth/sign-in/email → 200` to be followed by `GET /api/me → 401` in production: the browser dropped the session cookie on the cross-site fetch.
+- `sameSite: "none"` lets the cookie ride cross-site fetches, which is mandatory for this Vercel + Railway split. Browsers require `secure: true` whenever `sameSite: "none"`, so HTTPS-only is enforced automatically.
+- Local dev keeps `sameSite: "lax"` because `localhost:3000` ↔ `localhost:3001` are same-site, and `secure: true` would drop the cookie over plain http://localhost.
 - CSRF risk is mitigated by:
   - `httpOnly: true` (no JS access to the cookie)
   - `secure: true` in production (HTTPS only)
   - Better Auth's built-in CSRF protection on state-changing routes
-  - Explicit CORS `origin` allow-list (only `WEB_URL`)
+  - Explicit CORS `origin` allow-list (only `WEB_URL`) with `credentials: true`
+  - `trustedOrigins: [WEB_URL]` in Better Auth config
 
-**Trade-off:** Slightly weaker CSRF posture than `strict`. Acceptable given the mitigations above and the fact that a single-origin deployment is not realistic for Railway + Vercel.
+**Trade-off:** `sameSite: "none"` gives a weaker CSRF posture than `lax`/`strict`, but is the only setting that makes the Vercel + Railway split work without a custom proxy or shared parent domain. Mitigations above are sufficient at MVP scale.
 
-**Revisit:** Yes — if the API and web are ever consolidated onto the same origin (e.g. both behind a single reverse proxy), reconsider `strict`.
+**Revisit:** Yes — once the API and web sit under a single registrable domain (e.g. `rai.app` + `api.rai.app`) we can move to `sameSite: "lax"` with a `domain=.rai.app` cookie scope. Reconsider then.
 
 ---
 
