@@ -28,38 +28,31 @@ interface DomainsResponse {
   domains: DomainDTO[];
 }
 
-// Trim trailing slash(es) from a base URL so `${base}/api/...` never produces
-// `host.tld//api/...` — proxies and CDNs sometimes 404 on doubled slashes.
-function joinApiUrl(base: string, path: string): string {
-  return `${base.replace(/\/+$/, '')}${path}`;
-}
-
 function isDomainsResponse(value: unknown): value is DomainsResponse {
   if (!value || typeof value !== 'object') return false;
   const maybe = value as { domains?: unknown };
   return Array.isArray(maybe.domains);
 }
 
+// Same-origin path — the Next.js rewrite (apps/web/next.config.mjs) proxies
+// `/api/*` to the upstream API, so the browser does not perform a cross-site
+// fetch and CORS/cookies are no longer in play here.
+const DOMAINS_PATH = '/api/v1/domains';
+
 export function ExploreClient() {
   const [domains, setDomains] = useState<DomainDTO[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) {
-      setError('API URL is not configured.');
-      return;
-    }
-    const target = joinApiUrl(apiUrl, '/api/v1/domains');
     const controller = new AbortController();
 
-    fetch(target, {
+    fetch(DOMAINS_PATH, {
       credentials: 'include',
       signal: controller.signal,
     })
       .then(async (res) => {
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status} from ${target}`);
+          throw new Error(`HTTP ${res.status} from ${DOMAINS_PATH}`);
         }
         const json: unknown = await res.json();
         if (!isDomainsResponse(json)) {
@@ -75,7 +68,7 @@ export function ExploreClient() {
         if (process.env.NODE_ENV !== 'production') {
           // eslint-disable-next-line no-console
           console.error('[explore] failed to load topology:', err, {
-            target,
+            target: DOMAINS_PATH,
           });
         }
         setError('Could not load the topology. Check API connection.');

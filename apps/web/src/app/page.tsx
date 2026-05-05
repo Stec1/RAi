@@ -15,8 +15,8 @@ import { Footer } from '../components/landing/Footer';
 //   - authenticated, no Obs    → `/create`
 //   - authenticated, has Obs   → `/dashboard`
 //
-// Observatory info lives on `/api/me` (see apps/api/src/routes/me.ts), not
-// in the Better Auth session, so resolve it once after the session loads.
+// Observatory info lives on `/api/me` (see apps/api/src/routes/me.ts).
+// Browser fetch is same-origin; the Next.js rewrite proxies to the API.
 
 export default function Home() {
   const router = useRouter();
@@ -28,14 +28,9 @@ export default function Home() {
   useEffect(() => {
     if (isLoading || !user) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) return;
-
     setRedirecting(true);
     const controller = new AbortController();
-    // Strip trailing slash(es) — same reasoning as resolvePostAuthDestination.
-    const base = apiUrl.replace(/\/+$/, '');
-    fetch(`${base}/api/me`, {
+    fetch('/api/me', {
       credentials: 'include',
       signal: controller.signal,
     })

@@ -8,9 +8,10 @@
 //   - authenticated, no Observatory → `/create`
 //   - authenticated, has Observatory → `/dashboard`
 //
-// Observatory state lives on `/api/me` (apps/api/src/routes/me.ts). The
-// session cookie is `sameSite: "lax"` (decision-log DL-24), so we must
-// pass `credentials: "include"` for the cross-origin call.
+// Browser fetches are same-origin (`/api/me`); the Next.js rewrite
+// (apps/web/next.config.mjs) forwards to the upstream API. This keeps the
+// session cookie first-party on the web origin, which the previous direct
+// cross-site setup could not reliably guarantee in modern browsers.
 
 export type PostAuthDestination = '/create' | '/dashboard';
 
@@ -21,17 +22,15 @@ type MeResponse = {
 /**
  * Resolve where the user should land after authenticating.
  * Falls back to `/create` on any network or shape error so the user is
- * never stranded on the auth screen with a successful session.
+ * never stranded on the auth screen with a successful session. `/create`
+ * always exists (see apps/web/src/app/create/page.tsx) so the fallback
+ * never produces a 404.
  */
 export async function resolvePostAuthDestination(
-  apiUrl: string,
   signal?: AbortSignal,
 ): Promise<PostAuthDestination> {
   try {
-    // Strip trailing slash(es) so a NEXT_PUBLIC_API_URL ending in `/` does
-    // not produce `host//api/me` — some proxies 404 doubled slashes.
-    const base = apiUrl.replace(/\/+$/, '');
-    const res = await fetch(`${base}/api/me`, {
+    const res = await fetch('/api/me', {
       credentials: 'include',
       signal,
     });
