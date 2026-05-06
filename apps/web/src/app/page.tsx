@@ -1,8 +1,14 @@
-'use client';
+// Start Page (`/`) — public, always rendered.
+//
+// Per docs/screens-spec.md (Screen 1) the root route is the public
+// Start Page for every visitor. DL-26 governs only the post-auth
+// destination chosen by login/signup; it does NOT require redirecting
+// authenticated users away from `/`.
+//
+// Authenticated visitors who want their post-auth surface use the
+// TopBar actions (Explore / Dashboard / Create Observatory), which
+// are auth-aware (see TopBar.tsx).
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../hooks/useAuth';
 import { TopBar } from '../components/landing/TopBar';
 import { HeroSection } from '../components/landing/HeroSection';
 import { HowItWorksSection } from '../components/landing/HowItWorksSection';
@@ -10,52 +16,7 @@ import { DomainShowcaseSection } from '../components/landing/DomainShowcaseSecti
 import { CtaSection } from '../components/landing/CtaSection';
 import { Footer } from '../components/landing/Footer';
 
-// Post-login redirect rules.
-// Updated by ISSUE-08R per DL-26 (Explore as the Primary Post-Auth
-// Topology Surface):
-//   - not authenticated        → render the public Start Page
-//   - authenticated, no Obs    → `/explore`   (was `/create` pre-DL-26)
-//   - authenticated, has Obs   → `/dashboard`
-//
-// Observatory info lives on `/api/me` (see apps/api/src/routes/me.ts).
-// Browser fetch is same-origin; the Next.js rewrite proxies to the API.
-
 export default function Home() {
-  const router = useRouter();
-  const { user, isLoading } = useAuth();
-  // `redirecting` suppresses the Start Page flash while we resolve the
-  // authenticated user's observatory and navigate away.
-  const [redirecting, setRedirecting] = useState(false);
-
-  useEffect(() => {
-    if (isLoading || !user) return;
-
-    setRedirecting(true);
-    const controller = new AbortController();
-    fetch('/api/me', {
-      credentials: 'include',
-      signal: controller.signal,
-    })
-      .then(async (res) => (res.ok ? res.json() : null))
-      .then((data: { observatory: { id: string; name: string } | null } | null) => {
-        if (!data) {
-          setRedirecting(false);
-          return;
-        }
-        router.replace(data.observatory === null ? '/explore' : '/dashboard');
-      })
-      .catch(() => {
-        // Swallow aborts / network errors — user can retry by reloading.
-        setRedirecting(false);
-      });
-
-    return () => controller.abort();
-  }, [isLoading, user, router]);
-
-  if (isLoading || redirecting) {
-    return <main aria-busy="true" />;
-  }
-
   return (
     <>
       <TopBar />
