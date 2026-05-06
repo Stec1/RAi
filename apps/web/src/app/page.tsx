@@ -10,9 +10,11 @@ import { DomainShowcaseSection } from '../components/landing/DomainShowcaseSecti
 import { CtaSection } from '../components/landing/CtaSection';
 import { Footer } from '../components/landing/Footer';
 
-// Post-login redirect rules (ISSUE-05, preserved):
+// Post-login redirect rules.
+// Updated by ISSUE-08R per DL-26 (Explore as the Primary Post-Auth
+// Topology Surface):
 //   - not authenticated        → render the public Start Page
-//   - authenticated, no Obs    → `/create`
+//   - authenticated, no Obs    → `/explore`   (was `/create` pre-DL-26)
 //   - authenticated, has Obs   → `/dashboard`
 //
 // Observatory info lives on `/api/me` (see apps/api/src/routes/me.ts).
@@ -40,7 +42,7 @@ export default function Home() {
           setRedirecting(false);
           return;
         }
-        router.replace(data.observatory === null ? '/create' : '/dashboard');
+        router.replace(data.observatory === null ? '/explore' : '/dashboard');
       })
       .catch(() => {
         // Swallow aborts / network errors — user can retry by reloading.

@@ -1,23 +1,84 @@
-/* Full-viewport stage for the intelligence topology. The canvas owns the
-   entire screen; the SVG mini-map floats on top in a fixed position. No
-   TopBar, Footer, or landing chrome — Explore is its own surface. */
+/* /explore — full-bleed canvas page with editorial overlays.
+   Per DL-26 + docs/visual-reference.md: dark canvas (--surface-canvas),
+   typographic top-left overlay, right-side info panel, bottom hint.
+   Mobile (≤768px) reflows into a column: overlay → canvas → panel. */
 
-.stage {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
+.page {
+  position: relative;
+  min-height: 100vh;
   background: var(--surface-canvas);
+  color: var(--text-primary);
   overflow: hidden;
 }
 
-.canvasWrap {
+/* Top-left overlay. Wrapper itself is non-interactive so it never
+   eats canvas drag events; the heading <h1> and copy below are
+   non-interactive anyway. */
+.topOverlay {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: var(--space-8);
+  left: var(--space-8);
+  z-index: 2;
+  max-width: 30ch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  pointer-events: none;
 }
 
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: var(--font-size-36);
+  font-weight: 300;
+  letter-spacing: var(--tracking-display);
+  line-height: 1.1;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-15);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 36ch;
+}
+
+.stats {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.canvasArea {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.sidePanel {
+  position: absolute;
+  top: var(--space-8);
+  right: var(--space-8);
+  width: 360px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Loading / error message centered in the canvas area. */
 .status {
   position: absolute;
   inset: 0;
@@ -25,7 +86,69 @@
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
+  font-family: var(--font-inter), sans-serif;
   font-size: var(--font-size-15);
   letter-spacing: 0.02em;
   pointer-events: none;
+}
+
+.bottomHint {
+  position: absolute;
+  bottom: var(--space-6);
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bottomHintMobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .page {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .topOverlay {
+    position: static;
+    padding: var(--space-6);
+    max-width: 100%;
+  }
+
+  .canvasArea {
+    position: relative;
+    inset: auto;
+    height: 60vh;
+    width: 100%;
+  }
+
+  .sidePanel {
+    position: static;
+    width: 100%;
+    padding: var(--space-6);
+    pointer-events: auto;
+  }
+
+  .bottomHintDesktop {
+    display: none;
+  }
+
+  .bottomHintMobile {
+    display: block;
+    position: static;
+    bottom: auto;
+    margin-top: var(--space-3);
+  }
 }

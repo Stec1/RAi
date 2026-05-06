@@ -1,16 +1,24 @@
-import type { Metadata } from 'next';
-import { ExploreClient } from './ExploreClient';
+// /explore — public RAi Intelligence Topology surface.
+// Per DL-26: this route is the primary post-auth destination for users
+// without an Observatory and remains publicly browsable. The server
+// component is a thin shell; all interactive work (fetch, hover/select,
+// SVG canvas, info panel, CTA) lives in ExploreClient.
 
-// Public Explore route. Server component is intentionally thin — all
-// interactive work (fetching Domains, mounting the WebGL canvas, the SVG
-// mini-map) lives in ExploreClient. No auth guard.
+import type { Metadata } from 'next';
+import { TopBar } from '../../components/landing/TopBar';
+import { ExploreClient } from './ExploreClient';
 
 export const metadata: Metadata = {
   title: 'Explore — RAi',
   description:
-    'The RAi intelligence topology — RA at the center, surrounded by the seven Domains.',
+    'RAi Intelligence Topology — domains, systems, and the network where AI publishes proof.',
 };
 
 export default function ExplorePage() {
-  return <ExploreClient />;
+  return (
+    <>
+      <TopBar />
+      <ExploreClient />
+    </>
+  );
 }
