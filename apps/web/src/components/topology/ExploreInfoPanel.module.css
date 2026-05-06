@@ -1,0 +1,163 @@
+/* ExploreInfoPanel styles. Per docs/visual-reference.md:
+   • Surface: deep translucent navy with backdrop blur 24px.
+   • Hairline border in low-alpha white.
+   • Editorial typography: Space Grotesk display, Inter UI.
+   • CTAs ≥ 44px tap height for mobile reach. */
+
+.panel {
+  background: rgba(8, 8, 20, 0.78);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  color: var(--text-primary);
+  max-width: 360px;
+  width: 100%;
+  pointer-events: auto;
+}
+
+/* Visually hidden but exposed to assistive tech for selection announcements. */
+.srLive {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-size: var(--font-size-24);
+  font-weight: 300;
+  letter-spacing: var(--tracking-display);
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.statusActive,
+.statusComing {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  align-self: flex-start;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-inline);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.statusActive {
+  color: var(--accent-cold);
+}
+
+.statusComing {
+  color: var(--text-secondary);
+}
+
+.theme {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.body {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-15);
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.footer {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.ctaGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.ctaPrimary,
+.ctaSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-inline);
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.ctaPrimary {
+  background: var(--text-primary);
+  color: var(--surface-base);
+  border: 1px solid var(--text-primary);
+}
+
+.ctaPrimary:hover,
+.ctaPrimary:focus-visible {
+  background: var(--accent-cold);
+  border-color: var(--accent-cold);
+  color: var(--surface-base);
+}
+
+.ctaSecondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-hairline);
+}
+
+.ctaSecondary:hover,
+.ctaSecondary:focus-visible {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.ctaPrimary:focus-visible,
+.ctaSecondary:focus-visible {
+  outline: 2px solid var(--accent-cold);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .panel {
+    max-width: 100%;
+  }
+}

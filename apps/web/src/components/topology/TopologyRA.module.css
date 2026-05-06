@@ -1,0 +1,21 @@
+/* TopologyRA halo pulse. 8s loop, opacity 40% → 70% → 40%, ease-in-out.
+   Per docs/visual-reference.md motion rules: gentle ambient breathing,
+   never bouncy. Respects prefers-reduced-motion. */
+
+@keyframes raHaloPulse {
+  0%   { opacity: 0.4; }
+  50%  { opacity: 0.7; }
+  100% { opacity: 0.4; }
+}
+
+.haloPulse {
+  animation: raHaloPulse 8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .haloPulse {
+    animation: none;
+    opacity: 0.55;
+  }
+}
