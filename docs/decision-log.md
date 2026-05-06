@@ -446,3 +446,29 @@
 **See also:** `docs/si-target.md` section 2.
 
 ---
+
+
+---
+
+## DL-26 — Explore as the Primary Post-Auth Topology Surface
+
+**Decision:** `/explore` is the primary post-auth destination for authenticated users without an Observatory. `/create` remains the CTA destination from `/explore`, not the first post-auth surface. `/dashboard` remains the destination for authenticated users with an Observatory.
+
+**Also decided:**
+- `/explore` is the RAi Intelligence Topology surface
+- Domain PNG objects are not graph nodes for topology
+- PNG domain objects remain valid for landing/domain showcase/brand visuals/future detail pages
+- ISSUE-08R replaces PNG graph nodes with clean Obsidian-like SVG domain nodes
+- Mini-map is deferred until Observatories or higher graph density justify it
+- SVG topology is acceptable for MVP Explore because the graph is small and typographic clarity matters
+- Three.js/R3F can be revisited later for large-scale Observatory topology
+
+**Why:**
+- The first authenticated experience should explain RAi’s ecosystem before asking users to create an Observatory
+- `/explore` communicates RAi’s structure and value
+- `/create` without context feels like an empty placeholder
+- The topology should remain structured for future expansion: RA → Domains now, Domains → Observatories later
+
+**Trade-off:** This introduces temporary hybrid direction in docs while older map-oriented issues remain for historical context.
+
+**Revisit:** Yes — when Observatory-density and graph complexity materially increase.
