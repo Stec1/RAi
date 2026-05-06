@@ -34,6 +34,9 @@
 
 ---
 
+
+> **DL-26 / ISSUE-08R note:** For current MVP Explore topology, clean SVG-based rendering is acceptable and preferred for typographic precision with RA + 7 Domains. Three.js/R3F remains available for later high-density Observatory topology expansion.
+
 ## Repo Structure
 ```
 rai/

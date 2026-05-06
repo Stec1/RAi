@@ -279,7 +279,7 @@ Establish the clear separation between user account identity and Observatory ide
 - Observatory `name` = separate permanent identifier, chosen in creation flow
 - `GET /api/v1/observatories/check/:name` — availability check endpoint
 - Reserved words list: `admin, api, www, rai, app, help, support, login, signup, me, explore, settings, dashboard, create, about, static, assets, public, private, observatory, publication`
-- User without Observatory → redirected to `/create` after login
+- User without Observatory → redirected to `/explore` after login (superseded by DL-26 / ISSUE-08R)
 - User with Observatory → redirected to `/dashboard` after login
 - Auth flow checks `user.observatoryId` (nullable) to determine redirect
 
@@ -295,7 +295,7 @@ Establish the clear separation between user account identity and Observatory ide
 **Acceptance Criteria**
 
 - [ ] New user after signup has no Observatory (`observatoryId = null`)
-- [ ] After login without Observatory → redirect to `/create`
+- [ ] After login without Observatory → redirect to `/explore` (DL-26)
 - [ ] After login with Observatory → redirect to `/dashboard`
 - [ ] `GET /api/v1/observatories/check/testname` → `{ available: true/false }`
 - [ ] Reserved word check → `{ available: false, reason: "reserved" }`
@@ -398,7 +398,7 @@ Build the About screen and the auth screens (Login and Get Started).
 
 - [ ] About page renders at `/about`
 - [ ] Login works: valid credentials → session → redirect
-- [ ] Signup works: new user created → redirect to `/create`
+- [ ] Signup works: new user created without Observatory → redirect to `/explore` (DL-26)
 - [ ] Google OAuth works on both screens
 - [ ] Error states display correctly
 - [ ] Both auth screens work on mobile
@@ -427,7 +427,7 @@ Build the base intelligence topology visualization with RA at center and all 7 D
 - Active Domains (3) visually distinct from Coming Soon Domains (4)
 - Pan: click-drag with inertial momentum
 - Zoom: scroll wheel + pinch, min/max limits
-- Mini-map in bottom-right corner
+- Mini-map in bottom-right corner (superseded: deferred by ISSUE-08R for MVP Explore)
 - Responsive canvas
 - `GET /api/v1/domains` endpoint: returns all 7 Domains with positions and active status
 - Mobile: simplified rendering, touch support
@@ -448,7 +448,7 @@ Build the base intelligence topology visualization with RA at center and all 7 D
 - [ ] Domain positions match seed data from `docs/domain-definitions.md`
 - [ ] Active vs Coming Soon Domains visually distinguishable
 - [ ] Pan and zoom work on desktop and mobile
-- [ ] Mini-map shows current viewport position
+- [ ] Mini-map requirement deferred for MVP Explore (ISSUE-08R)
 - [ ] Map renders without errors on iPhone Safari
 
 **Merge Checklist**
@@ -457,6 +457,19 @@ Build the base intelligence topology visualization with RA at center and all 7 D
 - [ ] `pnpm lint` passes
 - [ ] Performance acceptable on mobile
 - [ ] Domain positions match seed data exactly
+
+---
+
+### ISSUE-08R — Explore Topology Redesign Alignment Note
+
+- ISSUE-08R supersedes the original visual direction of ISSUE-08 for Explore.
+- Original ISSUE-08 backend/domain data foundation remains valid (`/api/v1/domains` stays canonical).
+- Current production infrastructure, API proxy behavior, and auth fixes remain valid.
+- PNG graph nodes are deprecated for MVP Explore (retain PNG domain objects for showcase/brand/future detail use).
+- Mini-map is deferred until Observatories or larger graph density justify it.
+- `/explore` is now the primary post-auth topology surface for users without an Observatory.
+- Future issues must not redirect no-Observatory users directly to `/create` unless DL-26 is explicitly superseded.
+- Future Domain and Observatory issues should build on RA → Domain → Observatory graph logic.
 
 ---
 

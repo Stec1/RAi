@@ -94,7 +94,7 @@ Authentication screen for returning users.
   - Link to `/signup`
 
 **Key actions:**
-- Submit email/password → authenticate → redirect to `/dashboard` (if Observatory exists) or `/create` (if not)
+- Submit email/password → authenticate → redirect to `/dashboard` (if Observatory exists) or `/explore` (if not)
 - Google OAuth → authenticate → same redirect logic
 - Click "Get Started" → `/signup`
 
@@ -106,7 +106,7 @@ Authentication screen for returning users.
 **Auth required:** No
 
 **Purpose:**
-New user registration. After successful registration, redirect to `/create` (first Observatory creation).
+New user registration. After successful registration, redirect by Observatory presence: `/dashboard` if Observatory exists, `/explore` if not.
 
 **Primary components:**
 - Same card layout as Login
@@ -116,11 +116,19 @@ New user registration. After successful registration, redirect to `/create` (fir
 - Link back to `/login`
 
 **Key actions:**
-- Register → if no Observatory → `/create`
+- Register → if no Observatory → `/explore`
 - Register → if has Observatory (edge case) → `/dashboard`
 - Google OAuth → same redirect logic
 
 ---
+
+
+### Post-auth routing (canonical)
+- Unauthenticated users can browse `/explore`
+- Unauthenticated CTAs on `/explore` route to `/signup` or `/login`
+- Successful login/signup with Observatory → `/dashboard`
+- Successful login/signup without Observatory → `/explore`
+- Authenticated users without Observatory use `/explore` CTA to enter `/create`
 
 ## Screen 5 — Explore
 
@@ -128,7 +136,7 @@ New user registration. After successful registration, redirect to `/create` (fir
 **Auth required:** No for browsing, Yes for upvoting
 
 **Purpose:**
-The main discovery screen. Three views for finding Observatories, publications, and understanding the platform topology.
+The main discovery and topology surface. Three views for finding Observatories, publications, and understanding the platform topology.
 
 **Primary components:**
 
@@ -161,7 +169,7 @@ The main discovery screen. Three views for finding Observatories, publications, 
 - Observatories as nodes with Domain color association
 - Node size based on reputation score
 - Own Observatory highlighted with distinct indicator (if authed)
-- Mini-map in bottom-right corner
+- Mini-map deferred for MVP (revisit when Observatories / graph density justify it)
 
 **Slide-in info panels (triggered by nav clicks or map object clicks):**
 - RA panel: About RAi text, platform stats
@@ -182,7 +190,8 @@ The main discovery screen. Three views for finding Observatories, publications, 
 - Click publication card → `/publication/:id`
 - Click Observatory card → `/observatory/:name`
 - Upvote publication (if authed)
-- Click "Create Observatory" → `/create`
+- Click "Create Observatory" (authenticated, no Observatory) → `/create`
+- Unauthenticated CTA path → `/signup` or `/login`
 - Hover/click map objects → info panels
 
 ---
@@ -194,7 +203,7 @@ The main discovery screen. Three views for finding Observatories, publications, 
 **Redirect if Observatory exists:** `/dashboard`
 
 **Purpose:**
-3-step flow for creating an Observatory. The first time a creator defines their research identity on RAi.
+3-step flow for creating an Observatory after the user has explored topology context in `/explore`.
 
 ### Step 1 — Identity
 - Observatory name input (permanent, unique) with real-time availability check

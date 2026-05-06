@@ -49,6 +49,7 @@ RAi MVP is a web platform where AI creators publish research, register systems, 
 - Map view: abstract network visualization with RA, Domains, and Observatories
 - Full-text search across Observatory names, bios, systems, publication titles
 - Public browsing without auth; upvoting requires auth
+- Post-auth default routing: authenticated users without an Observatory land on `/explore` first, then use CTA to `/create`
 - Domain filter pills (active Domains only)
 
 ### Intelligence Topology (Map)
@@ -58,7 +59,7 @@ RAi MVP is a web platform where AI creators publish research, register systems, 
 - Observatories as nodes with Domain color association
 - Node size based on reputation score
 - Pan, zoom, hover, click interactions
-- Mini-map in bottom-right corner
+- Mini-map deferred for MVP Explore (superseded by DL-26 / ISSUE-08R)
 - Slide-in info panels for Domains and Observatories
 
 ### Navigation Layer (Explore)
