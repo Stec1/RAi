@@ -9,9 +9,9 @@ import { AuthSubmit, authSubmitStyles } from './AuthSubmit';
 import styles from './LoginForm.module.css';
 
 // Email/password sign-in. No Google OAuth, no password reset link
-// (founder decisions §2 of ISSUE-07). On success we resolve the
-// observatory state via /api/me and route the user to /dashboard or
-// /create — exactly the rule used by the public Start Page.
+// (founder decisions §2 of ISSUE-07). On success we resolve
+// Observatory state via /api/me and route the user to /dashboard or
+// /explore — DL-26.
 
 type FieldErrors = {
   email?: string;
@@ -65,7 +65,8 @@ export function LoginForm() {
     }
 
     // Same-origin call — the Next.js rewrite proxies `/api/me` upstream.
-    // Falls back to `/create` on any error, which always exists.
+    // Falls back to `/explore` on any error — `/explore` is public,
+    // always reachable, and surfaces the next-step CTA per DL-26.
     const destination = await resolvePostAuthDestination();
     router.replace(destination);
   };

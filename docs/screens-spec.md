@@ -38,7 +38,7 @@
 First public contact with RAi. Communicates what RAi is within seconds. Premium dark editorial landing page that drives users toward registration.
 
 **Primary components:**
-- Transparent top bar: RAi logo (clickable → About), Log in, Get Started
+- Transparent top bar (DL-28): RAi logo → `/`, About, Log in, Get Started
 - Full-screen premium dark editorial background
 - Scrollable narrative sections:
   - What is RAi
@@ -50,7 +50,7 @@ First public contact with RAi. Communicates what RAi is within seconds. Premium 
 **Key actions:**
 - Click "Get Started" → `/signup`
 - Click "Log in" → `/login`
-- Click "RAi" in nav → `/about`
+- Click "RAi" in nav → `/` (DL-28)
 - Scroll → reveals content sections progressively
 
 ---
@@ -64,6 +64,7 @@ First public contact with RAi. Communicates what RAi is within seconds. Premium 
 Full readable description of the RAi platform. Informational space for users who want to understand the product in depth before registering.
 
 **Primary components:**
+- Top bar follows DL-28 (logo → `/`).
 - Full description of RAi: Domains, Observatories, publications, reputation
 - Platform structure overview
 - Product vision and narrative
@@ -140,11 +141,8 @@ The main discovery and topology surface. Three views for finding Observatories, 
 
 **Primary components:**
 
-**Top navigation bar (transparent, floating):**
-- RAi (logo, always visible)
-- Domains (nav item)
-- Observatories (nav item)
-- Burger menu → Dashboard, Settings, Log out (if authed)
+**Top navigation bar:**
+- Top bar follows DL-28: navigation only. Primary CTA "Create Observatory" lives in ExploreInfoPanel, not the top bar.
 
 **View switcher:**
 - Feed (default) / Observatories / Map

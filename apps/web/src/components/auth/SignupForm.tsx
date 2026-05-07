@@ -9,8 +9,9 @@ import { AuthSubmit, authSubmitStyles } from './AuthSubmit';
 import styles from './LoginForm.module.css';
 
 // Email + password registration. Display name is optional (founder
-// decision §2 of ISSUE-07). After autoSignIn the post-auth redirect
-// helper sends the new user to /create — they have no Observatory yet.
+// decision §2 of ISSUE-07). After autoSignIn, resolvePostAuthDestination
+// sends the new user to /explore — they have no Observatory yet (DL-26).
+// The Create-Observatory entry point lives in ExploreInfoPanel's CTA.
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -87,7 +88,8 @@ export function SignupForm() {
     }
 
     // Same-origin call — the Next.js rewrite proxies `/api/me` upstream.
-    // Falls back to `/create` on any error, which always exists.
+    // Falls back to `/explore` on any error — `/explore` is public,
+    // always reachable, and surfaces the next-step CTA per DL-26.
     const destination = await resolvePostAuthDestination();
     router.replace(destination);
   };
