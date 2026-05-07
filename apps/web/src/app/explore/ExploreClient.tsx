@@ -61,6 +61,29 @@ export function ExploreClient() {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [authState, setAuthState] = useState<AuthState>('unknown');
 
+  // ISSUE-08R.2: lock document-level scroll while /explore is mounted.
+  // We set the styles imperatively (instead of toggling a global class)
+  // because Next.js's CSS Modules pipeline rejects bare top-level
+  // :global selectors, and we don't want to pollute the shared
+  // globals.css for a single-route concern. Previous values are saved
+  // and restored on unmount so navigating away leaves the document in
+  // its original state. Combined with .page { height: 100vh; overflow:
+  // hidden } in page.module.css this guarantees trackpad pinch/inertia
+  // can never scroll the page under the canvas.
+  useEffect(() => {
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.body.style.overscrollBehavior = prevBodyOverscroll;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, []);
+
   // Fetch domains via same-origin proxy.
   useEffect(() => {
     const controller = new AbortController();
@@ -155,6 +178,16 @@ export function ExploreClient() {
             onClearSelect={() => setSelectedSlug(null)}
           />
         )}
+
+        {/* Bottom hints live INSIDE the canvas area so they share the
+            absolute-positioned coordinate space and never contribute to
+            page scroll height. */}
+        <p className={`${styles.bottomHint} ${styles.bottomHintDesktop}`}>
+          Drag to move · Scroll to zoom
+        </p>
+        <p className={`${styles.bottomHint} ${styles.bottomHintMobile}`}>
+          Drag to move · Pinch to zoom
+        </p>
       </div>
 
       <div className={styles.sidePanel}>
@@ -166,13 +199,6 @@ export function ExploreClient() {
           />
         ) : null}
       </div>
-
-      <p className={`${styles.bottomHint} ${styles.bottomHintDesktop}`}>
-        Drag to move · Scroll to zoom
-      </p>
-      <p className={`${styles.bottomHint} ${styles.bottomHintMobile}`}>
-        Drag to move · Pinch to zoom
-      </p>
     </main>
   );
 }

@@ -1,14 +1,20 @@
 /* /explore — full-bleed canvas page with editorial overlays.
    Per DL-26 + docs/visual-reference.md: dark canvas (--surface-canvas),
    typographic top-left overlay, right-side info panel, bottom hint.
-   Mobile (≤768px) reflows into a column: overlay → canvas → panel. */
+   Mobile (≤768px) reflows into a column: overlay → canvas → panel.
+
+   ISSUE-08R.2: the page locks its own height to the viewport and
+   contains overscroll so trackpad pinch and elastic-scroll never
+   bubble out to the document. The bottom hint now lives inside
+   .canvasArea so it can't contribute to page scroll height. */
 
 .page {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--surface-canvas);
   color: var(--text-primary);
   overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 /* Top-left overlay. Wrapper itself is non-interactive so it never
@@ -67,6 +73,10 @@
   position: absolute;
   inset: 0;
   z-index: 1;
+  overflow: hidden;
+  /* All wheel/touch gestures inside the canvas are owned by the
+     pan/zoom logic; the browser must not interpret them as scroll. */
+  touch-action: none;
 }
 
 .sidePanel {
@@ -92,6 +102,10 @@
   pointer-events: none;
 }
 
+/* Bottom hint is now anchored inside .canvasArea (see ExploreClient).
+   Absolute positioning still works because .canvasArea is a positioned
+   ancestor; the hint cannot push page height because the page itself is
+   100vh / overflow: hidden. */
 .bottomHint {
   position: absolute;
   bottom: var(--space-6);
@@ -113,12 +127,18 @@
   display: none;
 }
 
+/* Document-level scroll lock is applied imperatively in ExploreClient
+   (inline style on <body>). Next.js CSS Modules rejects bare top-level
+   :global selectors, and we deliberately don't pollute the shared
+   globals.css for a single-route concern. The .page rule above already
+   contains the canvas; the body lock just stops the surrounding
+   document from scrolling under it. */
+
 @media (max-width: 768px) {
   .page {
     display: flex;
     flex-direction: column;
-    height: auto;
-    min-height: 100vh;
+    height: 100dvh;
   }
 
   .topOverlay {
@@ -130,8 +150,10 @@
   .canvasArea {
     position: relative;
     inset: auto;
-    height: 60vh;
+    height: 60dvh;
     width: 100%;
+    overflow: hidden;
+    touch-action: none;
   }
 
   .sidePanel {
