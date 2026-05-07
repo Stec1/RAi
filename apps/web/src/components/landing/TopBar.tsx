@@ -1,31 +1,40 @@
 'use client';
 
+// TopBar — canonical app-wide navigation chrome.
+//
+// Per DL-28 (TopBar Canonical Roles): the bar is navigation, not the
+// surface for a primary CTA. The RAi logo always routes to `/`. The
+// right-side actions are auth-aware and respect the 3-element
+// discipline from docs/visual-reference.md.
+//
+//   guest               → About · Log in · Get Started
+//   authNoObservatory   → Explore · About · Sign out
+//   authWithObservatory → Explore · Dashboard · Sign out
+//
+// Primary CTA "Create Observatory" lives in ExploreInfoPanel and on
+// /create — not in this bar (DL-28 §1).
+//
+// Auth state is resolved with useAuth() + a same-origin /api/me call.
+// Hydration-safe: first paint and any unresolved/loading state render
+// the guest variant.
+
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../hooks/useAuth';
 import styles from './TopBar.module.css';
 
-// Transparent / light-glass sticky top bar.
-//
-// Auth-aware right-side actions (max 3 visible at any time):
-//   - guest                 → "Log in" (ghost) + "Get Started" (cta)
-//   - authNoObservatory     → "Explore" (ghost) + "Create Observatory" (cta)
-//   - authWithObservatory   → "Explore" (ghost) + "Dashboard" (cta)
-//
-// Observatory state is resolved via the same-origin `/api/me` proxy
-// (browser cookies stay first-party; see apps/web/next.config.mjs).
-// Until BOTH the session and the observatory state resolve, we render
-// the guest variant. This is the safe default — it avoids hydration
-// flicker and never locks a visitor out of sign-in.
-
-type AuthState = 'guest' | 'authNoObservatory' | 'authWithObservatory';
+type Variant = 'guest' | 'authNoObservatory' | 'authWithObservatory';
 
 export function TopBar() {
+  const router = useRouter();
+  const { user, isLoading, signOut } = useAuth();
+
   const [scrolled, setScrolled] = useState(false);
-  const { user, isLoading } = useAuth();
-  const [observatoryResolved, setObservatoryResolved] = useState<
-    'unresolved' | 'none' | 'present'
-  >('unresolved');
+  const [observatoryResolved, setObservatoryResolved] = useState<{
+    hasObservatory: boolean;
+  } | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -40,7 +49,7 @@ export function TopBar() {
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      setObservatoryResolved('unresolved');
+      setObservatoryResolved(null);
       return;
     }
     const controller = new AbortController();
@@ -51,15 +60,13 @@ export function TopBar() {
       .then(async (res) => (res.ok ? res.json() : null))
       .then((data: { observatory: { id: string; name: string } | null } | null) => {
         if (!data) {
-          // Treat unknown shape / non-OK as unresolved — TopBar falls
-          // back to the guest variant rather than locking the user out.
-          setObservatoryResolved('unresolved');
+          setObservatoryResolved(null);
           return;
         }
-        setObservatoryResolved(data.observatory === null ? 'none' : 'present');
+        setObservatoryResolved({ hasObservatory: data.observatory !== null });
       })
       .catch(() => {
-        setObservatoryResolved('unresolved');
+        setObservatoryResolved(null);
       });
     return () => controller.abort();
   }, [isLoading, user]);
@@ -67,22 +74,37 @@ export function TopBar() {
   // Hydration guard: SSR has no session, so first paint MUST match the
   // guest variant. We only switch to an authenticated variant once both
   // useAuth and the observatory fetch have resolved.
-  const authState: AuthState =
-    !isLoading && user && observatoryResolved !== 'unresolved'
-      ? observatoryResolved === 'none'
-        ? 'authNoObservatory'
-        : 'authWithObservatory'
-      : 'guest';
+  const variant: Variant =
+    isLoading || !user || !observatoryResolved
+      ? 'guest'
+      : observatoryResolved.hasObservatory
+        ? 'authWithObservatory'
+        : 'authNoObservatory';
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      // Hard navigation to `/` so any client cache is rebuilt and
+      // /api/me is re-resolved with no cookie.
+      router.replace('/');
+    }
+  }
 
   return (
     <header className={`${styles.bar} ${scrolled ? styles.barScrolled : ''}`}>
       <div className={styles.inner}>
-        <Link href="/about" className={styles.logo} aria-label="RAi — About">
+        <Link href="/" className={styles.logo} aria-label="RAi — Home">
           RAi
         </Link>
-        <nav className={styles.actions}>
-          {authState === 'guest' ? (
+        <nav className={styles.actions} aria-label="Primary">
+          {variant === 'guest' && (
             <>
+              <Link href="/about" className={styles.link}>
+                About
+              </Link>
               <Link href="/login" className={styles.link}>
                 Log in
               </Link>
@@ -90,23 +112,41 @@ export function TopBar() {
                 Get Started
               </Link>
             </>
-          ) : authState === 'authNoObservatory' ? (
+          )}
+          {variant === 'authNoObservatory' && (
             <>
               <Link href="/explore" className={styles.link}>
                 Explore
               </Link>
-              <Link href="/create" className={styles.cta}>
-                Create Observatory
+              <Link href="/about" className={styles.link}>
+                About
               </Link>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className={styles.link}
+              >
+                Sign out
+              </button>
             </>
-          ) : (
+          )}
+          {variant === 'authWithObservatory' && (
             <>
               <Link href="/explore" className={styles.link}>
                 Explore
               </Link>
-              <Link href="/dashboard" className={styles.cta}>
+              <Link href="/dashboard" className={styles.link}>
                 Dashboard
               </Link>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className={styles.link}
+              >
+                Sign out
+              </button>
             </>
           )}
         </nav>

@@ -489,3 +489,24 @@
 **Revisit:** Yes — when a deliberate visual system for Domains (illustration, motion, or 3D) is designed.
 
 **See also:** DL-26, ISSUE-08R, ISSUE-08R.3.
+
+---
+
+## DL-28 — TopBar Canonical Roles
+
+**Decision:** The TopBar is the app-wide navigation chrome. It is navigation, not a surface for a primary CTA. The RAi logo always routes to `/`. The right-side actions are auth-aware and respect a 3-element discipline:
+
+- guest               → About · Log in · Get Started
+- authNoObservatory   → Explore · About · Sign out
+- authWithObservatory → Explore · Dashboard · Sign out
+
+**Why:**
+- The earlier auth-aware TopBar (ISSUE-08R.1) doubled the Create-Observatory CTA on /explore: once in TopBar and once in ExploreInfoPanel. Two primary CTAs on the same surface dilute intent.
+- Logo destinations on About are non-standard. Logo = home is the universally recognized pattern and is what founder review expected.
+- Treating TopBar as navigation only keeps the bar stable while the rest of the product evolves (dashboard chrome, observatory public page chrome, etc.).
+
+**Trade-off:** Authenticated users see no top-bar primary CTA. The primary entry point for users without an Observatory is the ExploreInfoPanel CTA on /explore (which already routes to /create). This is an explicit centralization of intent, not a regression.
+
+**Revisit:** Yes — when the dashboard chrome (ISSUE-12) introduces a full account menu. Sign out can then be folded into that menu, and the right-side block can shrink back to two elements for authenticated states.
+
+**See also:** DL-26, DL-27, ISSUE-08R, ISSUE-08R.4.

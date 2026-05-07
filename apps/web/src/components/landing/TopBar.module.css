@@ -72,6 +72,30 @@
   color: var(--accent-cold);
 }
 
+/* Allow <button> to inherit .link presentation without browser chrome. */
+button.link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.link:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+/* Keyboard focus ring uses the existing accent token. */
+.link:focus-visible,
+.cta:focus-visible,
+.logo:focus-visible {
+  outline: 2px solid var(--accent-cold);
+  outline-offset: 2px;
+  border-radius: var(--radius-inline);
+}
+
 @media (max-width: 480px) {
   .inner {
     padding: var(--space-3) var(--space-4);

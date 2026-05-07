@@ -6,8 +6,7 @@
 // authenticated users away from `/`.
 //
 // Authenticated visitors who want their post-auth surface use the
-// TopBar actions (Explore / Dashboard / Create Observatory), which
-// are auth-aware (see TopBar.tsx).
+// TopBar actions (Explore / Dashboard / About / Sign out), per DL-28.
 
 import { TopBar } from '../components/landing/TopBar';
 import { HeroSection } from '../components/landing/HeroSection';
