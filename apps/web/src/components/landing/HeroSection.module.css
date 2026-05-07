@@ -80,32 +80,6 @@
   color: var(--text-primary);
 }
 
-/* ───────── RA decorative hero object ─────────
-   Positioned absolutely on the right of the inner container.
-   Sized via clamp so it stays comfortably right of the headline
-   (max-width 22ch ≈ 700px) inside the 1200px container.
-   Hidden under 1100px to prevent any overlap with text. */
-.heroObject {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-  width: clamp(360px, 30vw, 480px);
-  height: auto;
-  aspect-ratio: 1 / 1;
-  object-fit: contain;
-  pointer-events: none;
-  user-select: none;
-  opacity: 0.95;
-  z-index: 0;
-}
-
-@media (max-width: 1100px) {
-  .heroObject {
-    display: none;
-  }
-}
-
 @media (max-width: 768px) {
   .section {
     padding: var(--space-24) var(--space-4) var(--space-16);

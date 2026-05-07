@@ -322,7 +322,7 @@ Build the public landing page that communicates what RAi is within seconds and d
 - Scrollable narrative sections:
   - What is RAi
   - How it works (publish → prove → get discovered)
-  - Domain showcase (active Domains)
+  - Domain showcase: deprecated by DL-27 (ISSUE-08R.3); section removed from Start Page narrative
   - CTA to create Observatory
 - Footer: links to About, Privacy Policy, Terms
 - Fully responsive (mobile browser support)
@@ -465,7 +465,7 @@ Build the base intelligence topology visualization with RA at center and all 7 D
 - ISSUE-08R supersedes the original visual direction of ISSUE-08 for Explore.
 - Original ISSUE-08 backend/domain data foundation remains valid (`/api/v1/domains` stays canonical).
 - Current production infrastructure, API proxy behavior, and auth fixes remain valid.
-- PNG graph nodes are deprecated for MVP Explore (retain PNG domain objects for showcase/brand/future detail use).
+- PNG graph nodes are deprecated for MVP Explore. PNG domain objects are also removed from the MVP visual system entirely (DL-27, ISSUE-08R.3); domain visuals are deferred to a future visual system.
 - Mini-map is deferred until Observatories or larger graph density justify it.
 - `/explore` is now the primary post-auth topology surface for users without an Observatory.
 - Future issues must not redirect no-Observatory users directly to `/create` unless DL-26 is explicitly superseded.

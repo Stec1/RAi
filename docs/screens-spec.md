@@ -43,7 +43,7 @@ First public contact with RAi. Communicates what RAi is within seconds. Premium 
 - Scrollable narrative sections:
   - What is RAi
   - How it works (publish → prove → get discovered)
-  - Domain showcase (active Domains with themes)
+  - Domain showcase: deferred (DL-27). Start Page narrative ends with CTA → /signup.
   - CTA to create Observatory
 - Footer with links (About, Privacy Policy, Terms)
 
