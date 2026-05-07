@@ -12,9 +12,13 @@
 import { TopBar } from '../components/landing/TopBar';
 import { HeroSection } from '../components/landing/HeroSection';
 import { HowItWorksSection } from '../components/landing/HowItWorksSection';
-import { DomainShowcaseSection } from '../components/landing/DomainShowcaseSection';
 import { CtaSection } from '../components/landing/CtaSection';
 import { Footer } from '../components/landing/Footer';
+
+// Per DL-27 (ISSUE-08R.3) the Start Page no longer renders a PNG-based
+// domain showcase. Domain visuals are deferred to a future visual
+// system; the canonical domain treatment is now SVG nodes on /explore
+// (DL-26). Narrative flow: Hero → How it Works → CTA → Footer.
 
 export default function Home() {
   return (
@@ -23,7 +27,6 @@ export default function Home() {
       <main>
         <HeroSection />
         <HowItWorksSection />
-        <DomainShowcaseSection />
         <CtaSection />
       </main>
       <Footer />

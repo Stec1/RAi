@@ -457,7 +457,7 @@
 **Also decided:**
 - `/explore` is the RAi Intelligence Topology surface
 - Domain PNG objects are not graph nodes for topology
-- PNG domain objects remain valid for landing/domain showcase/brand visuals/future detail pages
+- PNG domain objects were initially retained for landing/showcase/brand visuals; this retention is **superseded by DL-27**, which removes PNG domain objects from the MVP visual system entirely
 - ISSUE-08R replaces PNG graph nodes with clean Obsidian-like SVG domain nodes
 - Mini-map is deferred until Observatories or higher graph density justify it
 - SVG topology is acceptable for MVP Explore because the graph is small and typographic clarity matters
@@ -472,3 +472,20 @@
 **Trade-off:** This introduces temporary hybrid direction in docs while older map-oriented issues remain for historical context.
 
 **Revisit:** Yes — when Observatory-density and graph complexity materially increase.
+
+---
+
+## DL-27 — PNG Domain Objects Removed from MVP Visual System
+
+**Decision:** PNG domain object assets (`apps/web/public/domain-objects/**`) are removed from the RAi MVP visual system. The Start Page no longer renders a PNG-based domain showcase, the Hero no longer renders a decorative RA PNG, and the asset tree is deleted. The canonical Domain treatment for MVP is the SVG topology on `/explore` (DL-26). Domain visuals beyond the topology are deferred to a future visual system.
+
+**Why:**
+- The PNG showcase was a placeholder treatment. With `/explore` now the primary post-auth topology surface (DL-26), the SVG nodes already carry Domain identity; a parallel PNG showcase on the Start Page is redundant and visually inconsistent.
+- The PNG assets were not a stable visual system. Removing them now prevents accidental dependence in further work and clears space for a deliberate visual treatment when one is designed.
+- Minimising MVP surface area: every retained asset has to be maintained, documented, and re-evaluated. Deferring is cheaper than carrying.
+
+**Trade-off:** The Start Page narrative loses a Domain-focused section in the short term. This is acceptable: the post-auth `/explore` surface is the canonical place to encounter Domains, and the Start Page narrative still flows Hero → How it Works → CTA → Footer.
+
+**Revisit:** Yes — when a deliberate visual system for Domains (illustration, motion, or 3D) is designed.
+
+**See also:** DL-26, ISSUE-08R, ISSUE-08R.3.
