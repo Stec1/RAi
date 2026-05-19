@@ -46,7 +46,7 @@ RAi MVP is a web platform where AI creators publish research, register systems, 
 - Three views: Feed (publications stream), Observatories (ranked list), Map (intelligence topology)
 - Feed view: vertical stream of publications, filterable by Domain, sortable by trending/newest/top
 - Observatories view: ranked list by reputation, filterable by Domain
-- Map view: abstract network visualization with RA, Domains, and Observatories
+- Map view: Level 1 abstract network visualization with RA and Domains (current `/explore`)
 - Full-text search across Observatory names, bios, systems, publication titles
 - Public browsing without auth; upvoting requires auth
 - Post-auth default routing: authenticated users without an Observatory land on `/explore` first, then use CTA to `/create`
@@ -56,8 +56,8 @@ RAi MVP is a web platform where AI creators publish research, register systems, 
 - Abstract data-driven network visualization
 - RA at center — platform identity node
 - 7 Domains at fixed positions (3 active, 4 Coming Soon)
-- Observatories as nodes with Domain color association
-- Node size based on reputation score
+- Current MVP `/explore` scope: RA → Domains only (SVG topology)
+- No Observatory nodes in current `/explore` topology
 - Pan, zoom, hover, click interactions
 - Mini-map deferred for MVP Explore (superseded by DL-26 / ISSUE-08R)
 - Slide-in info panels for Domains and Observatories
@@ -121,6 +121,11 @@ RAi MVP is a web platform where AI creators publish research, register systems, 
 - About screen (platform explanation: Domains, Observatories, publications, reputation)
 - Login and Get Started screens
 
+### Premium Glass UI Foundation (planned direction)
+- Canonical style direction: Premium Dark Glass Intelligence Interface (DL-29)
+- Foundation rollout sequence: design tokens → shared primitives (`GlassCard`, `GlassPanel`, `GlassButton`, `PageShell`) → `/create` as first test screen
+- Glass is not universal: publication reading surfaces remain readability-first
+
 ---
 
 ## What Is NOT In MVP
@@ -129,6 +134,10 @@ The following are explicitly out of scope. Any prompt containing these topics mu
 
 - Enterable worlds or spatial navigation
 - Decorative cosmic universe (stars, planets as visual objects)
+- Three.js/R3F requirement for current `/explore`
+- Heavy 3D graph in MVP Explore
+- WebSocket/real-time graph before product need exists
+- Decorative PNG domain objects
 - Agent execution engine (RAi shows, does not execute)
 - Media attachments in publications (images, video, 3D)
 - Comments on publications

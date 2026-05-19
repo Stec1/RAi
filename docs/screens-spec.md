@@ -162,12 +162,12 @@ The main discovery and topology surface. Three views for finding Observatories, 
 
 **Map view (intelligence topology):**
 - Full-screen abstract network visualization
-- RA at center
+- SVG topology with RA at center
 - 7 Domains at fixed positions (3 active, 4 Coming Soon — visually distinct)
-- Observatories as nodes with Domain color association
-- Node size based on reputation score
-- Own Observatory highlighted with distinct indicator (if authed)
-- Mini-map deferred for MVP (revisit when Observatories / graph density justify it)
+- Current MVP Level 1 scope: RA → Domains only
+- No Observatories as current `/explore` graph nodes
+- No Three.js/R3F for current `/explore` topology
+- Mini-map deferred for MVP (revisit when future graph density justifies it)
 
 **Slide-in info panels (triggered by nav clicks or map object clicks):**
 - RA panel: About RAi text, platform stats
@@ -201,7 +201,7 @@ The main discovery and topology surface. Three views for finding Observatories, 
 **Redirect if Observatory exists:** `/dashboard`
 
 **Purpose:**
-3-step flow for creating an Observatory after the user has explored topology context in `/explore`.
+3-step flow for creating an Observatory after the user has explored topology context in `/explore`. This is the first target screen for Premium Dark Glass UI foundation rollout (DL-29).
 
 ### Step 1 — Identity
 - Observatory name input (permanent, unique) with real-time availability check

@@ -16,6 +16,24 @@ RAi is a premium editorial platform for AI intelligence. The design communicates
 
 ---
 
+## Premium Dark Glass Intelligence Interface
+
+RAi's canonical UI direction is Premium Dark Glass Intelligence Interface (DL-29): deep black-blue foundation, premium dark glassmorphism surfaces, transparent smoked glass cards/panels, beveled rounded edges, subtle inner reflections, thin luminous borders, and soft restrained glow.
+
+**Tone:** calm, premium, precise, restrained.
+
+**Where to apply:**
+- `/create`
+- Dashboard panels
+- Observatory panels
+- Settings/account panels
+- Important product cards
+- Explore info panels where appropriate
+
+**Important limitation:** glass is a product-surface treatment, not decoration. Not every card should be glass. Publication reading surfaces remain readability-first. Marketing/Start pages must avoid noisy glass collages.
+
+---
+
 ## Core Mood
 
 **Premium dark editorial. Refined minimalism. Quiet authority.**
@@ -162,6 +180,24 @@ The intelligence topology (map view in Explore) is the visual representation of 
 
 ---
 
+## Glass Surfaces — Do / Don't
+
+### DO
+- Use smoked transparent glass panels where surfaces float over intelligence/ambient backgrounds
+- Keep luminous borders thin and restrained
+- Use subtle inner reflections only
+- Keep typography editorial and highly readable
+- Prioritize calm precision over spectacle
+
+### DON'T
+- Don't apply glass to every card
+- Don't use noisy glass textures
+- Don't use cheap sci-fi HUD motifs
+- Don't place random decorative graphics inside cards
+- Don't use PNG decorative domain objects
+
+---
+
 ## Surface Rules
 
 - Use glass/blur surfaces only where panels float over the topology canvas or ambient backgrounds
@@ -173,6 +209,24 @@ The intelligence topology (map view in Explore) is the visual representation of 
 
 ---
 
+
+## Topology Rendering Levels
+
+### Level 1 — Current `/explore`
+- SVG topology only
+- Scope: RA → Domains
+- RA at center + 7 Domain nodes
+- No Three.js/R3F for current `/explore`
+- No Observatory nodes for current `/explore`
+
+### Level 2 — Future graph/cockpit surfaces
+- For high-density Observatory/agent/task/publication-link graph needs
+- May evaluate: `react-force-graph-3d`, `three`, `3d-force-graph`, `d3-force-3d`
+- Must communicate product structure, not visual spectacle
+- No heavy 3D graph for simple marketing/static pages
+- No real-time graph/WebSocket layer until product need exists
+
+---
 ## Topology Rendering
 
 **RA:**
@@ -187,11 +241,8 @@ The intelligence topology (map view in Explore) is the visual representation of 
 - Coming Soon: muted, reduced opacity, subtle "Coming Soon" label
 
 **Observatories:**
-- Nodes distributed across the topology
-- Color from Domain association
-- Size influenced by reputation score
-- Own Observatory: highlighted with distinct ring or glow indicator
-- Hover: tooltip with name, type, publication count
+- Level 1 `/explore`: Observatory nodes are intentionally omitted (DL-30)
+- Future Level 2 graph/cockpit may render Observatory nodes with Domain color and reputation-weighted styling when density justifies it
 
 ---
 

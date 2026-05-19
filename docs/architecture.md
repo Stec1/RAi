@@ -21,7 +21,8 @@
 | Auth | Better Auth | 1.x | Session cookies — no JWT |
 | AI | OpenAI GPT-4o | latest | Structured output |
 | Payments | Stripe | latest | Test mode until launch |
-| Visualization | Three.js | r128+ | Orthographic 2D/2.5D canvas for intelligence topology |
+| Visualization (current `/explore`) | SVG | — | Level 1 topology: RA → Domains with typographic precision |
+| Visualization (future Level 2 graph surfaces) | `react-force-graph-3d` / `three` / `3d-force-graph` / `d3-force-3d` | — | Evaluate only when high-density cockpit requirements are proven |
 | Email | Resend | latest | Transactional only |
 | File Storage | Cloudflare R2 | — | No local file storage |
 | Analytics | PostHog | latest | Event-based |
@@ -35,7 +36,7 @@
 ---
 
 
-> **DL-26 / ISSUE-08R note:** For current MVP Explore topology, clean SVG-based rendering is acceptable and preferred for typographic precision with RA + 7 Domains. Three.js/R3F remains available for later high-density Observatory topology expansion.
+> **DL-30 note:** Current `/explore` is Level 1 SVG topology (RA → Domains). Three.js/R3F is not required for current `/explore`. Future Level 2 graph/cockpit surfaces may evaluate 3D-force stack only when product complexity requires it. No WebSocket/real-time graph architecture is introduced at MVP level.
 
 ## Repo Structure
 ```
@@ -99,6 +100,11 @@ apps/web/
 │   │   ├── creation/           # 3-step creation flow components
 │   │   ├── publications/       # Publication card, formatting preview
 │   │   ├── ui/                 # Reusable UI primitives
+│   │   │   ├── tokens/         # Design tokens (planned Glass UI foundation)
+│   │   │   ├── GlassCard.tsx   # Planned shared primitive
+│   │   │   ├── GlassPanel.tsx  # Planned shared primitive
+│   │   │   ├── GlassButton.tsx # Planned shared primitive
+│   │   │   └── PageShell.tsx   # Planned shared layout primitive
 │   │   └── layouts/
 │   ├── hooks/
 │   │   ├── useAuth.ts
