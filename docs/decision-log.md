@@ -510,3 +510,85 @@
 **Revisit:** Yes — when the dashboard chrome (ISSUE-12) introduces a full account menu. Sign out can then be folded into that menu, and the right-side block can shrink back to two elements for authenticated states.
 
 **See also:** DL-26, DL-27, ISSUE-08R, ISSUE-08R.4.
+
+---
+
+## DL-29 — RAi Premium Glass UI Direction
+
+**Decision:** RAi adopts a Premium Dark Glass Intelligence Interface for key product surfaces. The style is deep black-blue, calm, restrained, and editorial: premium dark glassmorphism surfaces, transparent smoked glass cards/panels, beveled rounded edges, subtle inner reflections, thin luminous borders, and soft restrained glow.
+
+**Applies to:**
+- `/create` (first implementation target)
+- Dashboard panels
+- Observatory panels
+- Settings/account panels
+- Important product cards
+- Explore info panels where appropriate
+
+**Does not mean:**
+- Not every card becomes glass
+- Publication reading surfaces remain readability-first
+- Marketing/Start pages must not become noisy glass collages
+- No noisy glass textures
+- No cheap sci-fi HUD styling
+- No random decorative graphics inside cards
+- No PNG decorative domain objects
+
+**Implementation sequence:**
+1. Docs approval first
+2. Design tokens
+3. Shared primitives: `GlassCard`, `GlassPanel`, `GlassButton`, `PageShell`
+4. `/create` as first test screen
+5. No full-app redesign in one pass
+
+**Why:**
+- Preserves RAi's premium editorial identity while giving product surfaces a coherent depth system
+- Creates a reusable UI foundation instead of ad-hoc per-screen styling
+- Reduces implementation risk by sequencing rollout from one controlled screen
+
+**Trade-off:** Some screens temporarily remain on older surface treatment during migration. This is intentional and safer than app-wide redesign.
+
+**Revisit:** Yes — after `/create` rollout validates tokens/primitives quality across dashboard and settings surfaces
+
+---
+
+## DL-30 — RAi Graph UI Direction
+
+**Decision:** RAi adopts a two-level graph strategy.
+
+**Level 1 — Current `/explore` (MVP):**
+- `/explore` remains SVG topology
+- Scope: RA → Domains
+- RA is the center node
+- 7 Domains are SVG nodes around RA
+- No Three.js/R3F for current `/explore`
+- No 3D force graph for current `/explore`
+- No Observatory nodes on current `/explore`
+- No WebSocket/real-time graph for current `/explore`
+
+**Level 2 — Future Observatory / Agent Graph Cockpit:**
+Future high-density graph surfaces may evaluate:
+- `react-force-graph-3d`
+- `three`
+- `3d-force-graph`
+- `d3-force-3d`
+
+Only when product needs exist (Observatory nodes, agent/task nodes, publication/proof links, analytics panel, cockpit-style dashboard).
+
+**Rules:**
+- Graphs must communicate structure and product meaning, not spectacle
+- No heavy 3D graph on simple marketing/static pages
+- No WebSocket/real-time graph until product need exists
+- No cosmic/game HUD direction
+- No decorative graph for aesthetics-only
+
+**Supersession:** This decision **supersedes DL-10 for current `/explore` implementation**. DL-10 remains historical/long-term context and does not require Three.js/R3F for current `/explore`.
+
+**Why:**
+- Current `/explore` graph is small and requires typographic precision and controlled readability
+- SVG is the fastest, clearest MVP topology implementation for RA → Domains
+- Advanced graph stacks should be introduced only with real complexity and density
+
+**Trade-off:** Visual spectacle is reduced in the short term; clarity and product meaning are improved.
+
+**Revisit:** Yes — when high-density graph requirements are product-proven

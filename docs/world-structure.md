@@ -83,22 +83,26 @@ The core product layer of RAi. Each user gets one Observatory: a permanent publi
 - One per user account — permanent, cannot be transferred
 - Unique permanent address: `rai.app/@name`
 - AI-generated Visual Signature — defines colors, gradients, and ambient effects on the topology and Observatory page
-- Public mode: visible on the topology and via direct link
-- Private mode: accessible only via direct link, invisible on topology
+- Public mode: discoverable via direct link and discovery surfaces; topology visibility is Level-dependent
+- Private mode: accessible only via direct link, excluded from discovery topology surfaces
 - Owner manages via Control Panel (Dashboard)
 - Visitors see via Observatory Public Page
 - Contains registered Systems and published Publications
 - Accumulates reputation score from activity and community evaluation
 
 **Visibility rules:**
-- `public` → appears on intelligence topology + accessible via direct URL
-- `private` → accessible via direct URL only, invisible on topology
+- `public` → accessible via direct URL and discoverable in platform surfaces
+- `private` → accessible via direct URL only, excluded from public discovery surfaces
 
 **Technical:**
 - `Observatory` table: `id`, `userId`, `name` (unique), `displayName`, `type`, `publicMode`, `visualSignature` (JSONB), `domainIds[]`, `bio`, `socialLinks` (JSONB), `reputationScore`, `publicationsCount`, `createdAt`
-- Topology position generated via `nameHash(name) → deterministic x/y coordinates`
+- Topology position generated via `nameHash(name) → deterministic x/y coordinates` (used when Level 2 graph surfaces require Observatory nodes)
 - `visualSignature` structure: parameters defining colors, gradients, and ambient visual effects
 - Observatory types: `individual`, `studio`, `product`
+
+**Current topology level (DL-30):**
+- Current `/explore` Level 1 shows RA → Domains only
+- Observatory nodes are deferred to future Level 2 graph/cockpit expansion
 
 ---
 

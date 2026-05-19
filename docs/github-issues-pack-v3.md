@@ -460,6 +460,14 @@ Build the base intelligence topology visualization with RA at center and all 7 D
 
 ---
 
+### ISSUE-08R + DL-30 alignment note
+
+- ISSUE-08R remains the canonical current `/explore` direction: SVG topology, Level 1 scope RA → Domains.
+- ISSUE-08 backend/domain data foundation remains valid and unchanged.
+- Current `/explore` must not introduce Three.js/R3F, 3D-force graph, or real-time/WebSocket graph behavior.
+
+---
+
 ### ISSUE-08R — Explore Topology Redesign Alignment Note
 
 - ISSUE-08R supersedes the original visual direction of ISSUE-08 for Explore.
@@ -520,11 +528,11 @@ Add the full navigation layer to the Explore screen: top nav bar, hover/click in
 
 ---
 
-## ISSUE-10 — Observatories on Map
+## ISSUE-10 — Observatories on Map (Deferred to Level 2 Graph Expansion)
 
 **Goal**
 
-Render all public Observatories on the intelligence topology with correct visual representation, hover tooltips, and click behavior.
+[Deferred by DL-30 for current `/explore`.] Reclassify this issue as future Level 2 Observatory/Agent Graph Cockpit expansion. It must not force Observatory nodes on current Level 1 `/explore` topology.
 
 **Scope**
 
@@ -560,6 +568,20 @@ Render all public Observatories on the intelligence topology with correct visual
 - [ ] Deterministic positions verified
 - [ ] Redis cache confirmed working
 - [ ] Performance with 300 Observatories < 3s render
+
+---
+
+### Glass UI foundation note (post-docs approval)
+
+After DL-29/DL-30 docs approval, open a dedicated foundation issue before broad UI redesign:
+- design tokens
+- `GlassCard`
+- `GlassPanel`
+- `GlassButton`
+- `PageShell`
+- `/create` as first test screen
+
+This sequence is mandatory to avoid app-wide style churn.
 
 ---
 
