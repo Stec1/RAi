@@ -5,10 +5,10 @@
    • CTAs ≥ 44px tap height for mobile reach. */
 
 .panel {
-  background: rgba(8, 8, 20, 0.78);
+  background: var(--surface-glass);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border-hairline);
   border-radius: 16px;
   padding: var(--space-6);
   display: flex;
@@ -62,7 +62,7 @@
   align-self: flex-start;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-inline);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-hairline);
 }
 
 .statusActive {

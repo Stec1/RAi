@@ -35,8 +35,8 @@ export default function SignupPage() {
   return (
     <AuthShell>
       <AuthCard
-        tagline="Don't describe your AI. Prove it."
-        title="Create your RAi account"
+        tagline="Every place has a story. Tell yours."
+        title="Create your RAI account"
         footer={
           <p>
             Already have an account?{' '}

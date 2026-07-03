@@ -1,0 +1,262 @@
+/* ArtStoryOverlay — immersive full-screen presentation (PATCH-PIVOT-01).
+   Editorial typography per the existing scale; the hero gradient comes
+   from the observatory's VisualSignature via inline style. Hero ink is
+   theme-invariant by design (it sits on the signature gradient, not on a
+   theme surface). All ambient motion is opacity/transform only and rests
+   composed under prefers-reduced-motion. */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--surface-base);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.close {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 52;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-inline);
+  border: 1px solid rgba(245, 242, 236, 0.35);
+  background: rgba(10, 10, 18, 0.35);
+  color: rgba(245, 242, 236, 0.92);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.close:hover {
+  border-color: rgba(245, 242, 236, 0.9);
+  background: rgba(10, 10, 18, 0.55);
+}
+
+.close svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+/* ───────── Generative hero field ───────── */
+
+.hero {
+  position: relative;
+  min-height: 52vh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  /* Ink over the signature gradient — intentionally not themed. */
+  color: rgba(245, 242, 236, 0.95);
+}
+
+.ambientWrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ambientStatic,
+.ambientGlow,
+.ambientDrift {
+  position: absolute;
+  inset: -25%;
+}
+
+.ambientStatic {
+  background: radial-gradient(
+    circle at 30% 35%,
+    rgba(255, 255, 255, 0.18),
+    transparent 60%
+  );
+}
+
+@keyframes storyGlow {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+}
+
+.ambientGlow {
+  background: radial-gradient(
+    circle at 30% 35%,
+    rgba(255, 255, 255, 0.26),
+    transparent 58%
+  );
+  animation: storyGlow 9s ease-in-out infinite;
+}
+
+@keyframes storyDrift {
+  0% {
+    transform: translate3d(-3%, 0, 0);
+  }
+  50% {
+    transform: translate3d(3%, 2%, 0);
+  }
+  100% {
+    transform: translate3d(-3%, 0, 0);
+  }
+}
+
+.ambientDrift {
+  background:
+    radial-gradient(
+      ellipse 42% 34% at 26% 38%,
+      rgba(255, 255, 255, 0.2),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 36% 30% at 72% 62%,
+      rgba(255, 255, 255, 0.14),
+      transparent 70%
+    );
+  animation: storyDrift 16s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambientGlow,
+  .ambientDrift {
+    animation: none;
+    transform: none;
+    opacity: 0.7;
+  }
+}
+
+/* Readability scrim under the hero text. */
+.heroScrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(6, 6, 12, 0.55),
+    transparent 55%
+  );
+  pointer-events: none;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-6) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.eyebrow {
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.title {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-56);
+  line-height: 1.05;
+  letter-spacing: var(--tracking-display);
+  color: inherit;
+  max-width: 18ch;
+}
+
+.tagline {
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-18);
+  line-height: 1.6;
+  max-width: 48ch;
+  opacity: 0.9;
+}
+
+/* ───────── Story body ───────── */
+
+.body {
+  max-width: calc(var(--measure-prose) + var(--space-12));
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-6) var(--space-24);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sectionHeading {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-24);
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+}
+
+.sectionBody {
+  font-size: var(--font-size-18);
+  line-height: 1.7;
+  color: var(--text-primary);
+  max-width: var(--measure-prose);
+}
+
+.ctaRow {
+  margin-top: var(--space-4);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-6);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-inline);
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.cta:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    min-height: 46vh;
+  }
+
+  .title {
+    font-size: var(--font-size-36);
+  }
+
+  .heroContent {
+    padding: var(--space-8) var(--space-4) var(--space-6);
+  }
+
+  .body {
+    padding: var(--space-12) var(--space-4) var(--space-16);
+    gap: var(--space-8);
+  }
+}

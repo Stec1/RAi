@@ -1,0 +1,93 @@
+/* TerminalHeader — quiet instrument chrome over the universe (DL-32).
+   Solid base surface with a hairline seam; the canvas below never
+   scrolls under it, so no glass/blur is needed here. */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-3) var(--space-6);
+  background: var(--surface-base);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.wordmark {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-primary);
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.wordmark:hover {
+  color: var(--accent-cold);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.link {
+  font-size: var(--font-size-13);
+  color: var(--text-secondary);
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.link:hover {
+  color: var(--text-primary);
+}
+
+/* <button> variant of .link — strip browser chrome, add busy state. */
+button.link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+button.link:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-13);
+  color: var(--text-primary);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-inline);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.cta:hover {
+  border-color: var(--accent-cold);
+  color: var(--accent-cold);
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .right,
+  .nav {
+    gap: var(--space-3);
+  }
+}

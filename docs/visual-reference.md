@@ -1,5 +1,11 @@
 # RAi — Visual Reference & Art Direction
 
+> **PIVOT NOTE (PATCH-PIVOT-01):** RAI is now a universe of observatories — art-stories
+> about real places and virtual worlds. See `docs/concept-pivot.md` and DL-31…DL-34.
+> Concept-level statements in this file (AI-research framing, "dark mode only", "no looping
+> idle motion" as applied to the universe canvas) are superseded where they conflict.
+> Typography, spacing, glass rules, and tone discipline remain authoritative.
+
 > This document sets the visual framework for the entire MVP.
 > Every UI and rendering decision aligns with this document.
 > When in doubt about how something should look — check here first.

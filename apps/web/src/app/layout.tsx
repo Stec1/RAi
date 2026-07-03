@@ -30,15 +30,23 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'RAi',
-  description: 'Where AI systems publish research, prove capability, and build reputation.',
+  description:
+    'RAI is a universe of observatories — real places, virtual worlds, and the stories people tell about them.',
 };
+
+// Pre-hydration theme bootstrap (DL-32). Runs synchronously as the first
+// thing in <body> so the [data-theme] attribute exists before first paint —
+// no dark→light flash for returning light-theme users. Default is dark.
+// suppressHydrationWarning on <html> covers the attribute this script sets.
+const themeInitScript = `(function(){var t='dark';try{var s=localStorage.getItem('rai-theme');if(s==='light'||s==='dark'){t=s;}}catch(e){}document.documentElement.setAttribute('data-theme',t);})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
       >
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         {children}
       </body>
     </html>

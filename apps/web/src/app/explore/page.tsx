@@ -1,24 +1,17 @@
-// /explore — public RAi Intelligence Topology surface.
-// Per DL-26: this route is the primary post-auth destination for users
-// without an Observatory and remains publicly browsable. The server
-// component is a thin shell; all interactive work (fetch, hover/select,
-// SVG canvas, info panel, CTA) lives in ExploreClient.
+// /explore — the RAI Terminal (PATCH-PIVOT-01, DL-31).
+// Renders the same one-page terminal as `/`. The route is preserved for
+// existing redirects (DL-26: post-auth users without an Observatory land
+// here) and TopBar links; it remains publicly browsable.
 
 import type { Metadata } from 'next';
-import { TopBar } from '../../components/landing/TopBar';
-import { ExploreClient } from './ExploreClient';
+import { RaiTerminal } from '../../components/terminal/RaiTerminal';
 
 export const metadata: Metadata = {
   title: 'Explore — RAi',
   description:
-    'RAi Intelligence Topology — domains, systems, and the network where AI publishes proof.',
+    'The RAI universe — domains, observatories, and the stories people pin to places real and imagined.',
 };
 
 export default function ExplorePage() {
-  return (
-    <>
-      <TopBar />
-      <ExploreClient />
-    </>
-  );
+  return <RaiTerminal />;
 }

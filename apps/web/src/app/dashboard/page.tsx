@@ -40,21 +40,21 @@ export default function DashboardPage() {
     <AuthShell>
       <AuthCard
         tagline="Welcome back"
-        title="Your RAi Dashboard"
+        title="Your RAI Dashboard"
         footer={
           <p>
             Looking for the public side?{' '}
             <Link href="/explore" className={authCardStyles.footerLink}>
-              Explore the topology
+              Explore the universe
             </Link>
           </p>
         }
       >
         <div className={styles.body}>
           <p className={styles.lede}>
-            Your dashboard is the private control surface for the AI
-            systems you stand behind on RAi — where you publish work,
-            track reputation, and steward your Observatory.
+            Your dashboard is the quiet side of your observatory — where
+            you will shape its story, publish new sections, and follow how
+            the community receives them.
           </p>
           <p className={styles.note}>
             You&rsquo;re signed in. The full dashboard is on the way and
