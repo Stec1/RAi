@@ -592,3 +592,79 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 **Trade-off:** Visual spectacle is reduced in the short term; clarity and product meaning are improved.
 
 **Revisit:** Yes — when high-density graph requirements are product-proven
+
+---
+
+## DL-31 — Concept Pivot: RAI as a Universe of Observatories
+
+**Decision:** RAI is repositioned from an AI-research publication platform to a universe of observatories: art-story presentations of real places (a castle, a restaurant, a street, an event, a business) and virtual worlds (generative art, imagined spaces, any format), published by people and verified by community. The 7 Domains are retained as the thematic structure of the universe. This decision supersedes prior concept framing wherever they conflict; see `docs/concept-pivot.md` for the full concept.
+
+**Also decided:**
+- DL-25 is retained and reinterpreted, not replaced: the platform shows stories, coordinates community verification, settles reputation — and never executes anything itself.
+- Community mechanics (comments, contestation, DAO-style resolution, ambassador monetization) are future scope: documentation only, never UI in this patch.
+
+**Why:**
+- Knowledge about places is scattered across social posts, map reviews, and the memories of guides; no space lets the story of a place live as one coherent, art-directed presentation.
+- The observatory model (public identity + published artefacts + community verification + reputation) transfers intact to place-stories; the platform mechanics survive the pivot.
+- Domains as thematic regions give the universe structure without inventing new taxonomy.
+
+**Trade-off:** Existing docs carry AI-research-era framing until progressively updated. PIVOT NOTE banners mark the superseded documents rather than rewriting everything at once.
+
+**Revisit:** No — this is the product direction. Refinements arrive as successor decisions.
+
+**See also:** `docs/concept-pivot.md`, DL-25, DL-32, DL-33, DL-34.
+
+---
+
+## DL-32 — Terminal UI and Dual Theme
+
+**Decision:** The canonical UI frame is the RAI Terminal — a one-page, full-viewport frame (header bar · universe canvas · status line) hosting the living universe on `/` and `/explore`. Dark and Light themes are both first-class: dark remains the default; light is a "paper terminal" (warm paper surfaces, graphite text, same layout discipline). This supersedes "dark mode only in MVP".
+
+**Mechanics:**
+- Theme is a `data-theme` attribute on `<html>`, persisted in `localStorage['rai-theme']`, applied by a tiny pre-hydration inline script (no flash), toggled from the terminal header.
+- All chrome consumes semantic tokens; the light theme redefines only the semantic token layer in `globals.css`. Domain identity colors stay as-is in both themes.
+
+**Why:**
+- A one-page terminal makes the universe the product surface instead of a page inside a marketing site.
+- Place-stories are read in daylight contexts (travel, restaurants, walking around); a paper theme is a product requirement, not a preference toggle.
+- The token system was built for exactly this: one semantic layer, two value sets.
+
+**Trade-off:** Every existing surface must be legible in both themes, which constrains future hard-coded styling. Enforced by keeping hex literals confined to `globals.css`.
+
+**Revisit:** Yes — if theme maintenance cost outweighs usage.
+
+**See also:** DL-28 (TopBar roles preserved in the terminal header), DL-29, DL-31.
+
+---
+
+## DL-33 — Living Universe Motion
+
+**Decision:** The universe canvas is allowed calm, looping ambient motion: the RA halo pulse, staggered domain "breathing", occasional traveling signals along connection lines, and a slow background twinkle. This is a scoped exception to the "no looping animations on idle UI" rule; it applies to the universe canvas only and must respect `prefers-reduced-motion` (static fallback must still look composed). All other UI keeps existing motion restrictions.
+
+**Why:**
+- A universe of stories that sits perfectly still reads as a diagram; restrained ambient motion communicates that the universe is alive without becoming a screensaver.
+- Opacity/transform-only CSS animation keeps the cost negligible and preserves pan/zoom performance.
+- The exception is scoped and revocable; it does not open the door to decorative motion elsewhere.
+
+**Trade-off:** A permanent low level of visual activity on the primary surface. Bounded by sparseness rules (roughly one traveling signal visible at a time, sub-1Hz breathing cycles).
+
+**Revisit:** Yes — if user feedback reads the motion as noise rather than life.
+
+**See also:** DL-31, DL-32, docs/visual-reference.md motion rules.
+
+---
+
+## DL-34 — World Mode Deferred
+
+**Decision:** The real-world interactive map mode and the mode switcher between it and the virtual universe are deferred to a dedicated future patch. Working placeholder name in docs: "World Mode" (final name undecided — do not invent one). No World Mode UI ships in this patch: no map surface, no switcher, no dead controls.
+
+**Why:**
+- The virtual universe must prove the observatory/art-story model first; a map mode multiplies scope without validating anything new.
+- A mode switcher with one working mode is a broken promise in the UI.
+- Real-world pinning has its own hard problems (geodata, clustering, permissions) that deserve a dedicated patch.
+
+**Trade-off:** "Pinned to the world" exists in concept documentation before it exists in product. Accepted: the virtual universe carries the concept until World Mode lands.
+
+**Revisit:** Yes — when PATCH-PIVOT-01 is validated and World Mode gets its own patch.
+
+**See also:** DL-31, `docs/concept-pivot.md`.

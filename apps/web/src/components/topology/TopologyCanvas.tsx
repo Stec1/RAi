@@ -17,6 +17,12 @@
 //
 // All other rendering (RA glyph, domain nodes, connection lines) stays
 // intact — only the interaction layer changes.
+//
+// PATCH-PIVOT-01 (DL-31/DL-33): the canvas is now the living universe —
+// it additionally renders an ambient starfield behind the graph and
+// observatory nodes near their domains. The interaction layer above is
+// untouched; observatory groups carry data-slug so click-vs-drag keeps
+// treating them as nodes.
 
 import {
   useCallback,
@@ -30,6 +36,12 @@ import {
 import { TopologyRA } from './TopologyRA';
 import { TopologyDomains } from './TopologyDomains';
 import { TopologyConnections } from './TopologyConnections';
+import { TopologyStarfield } from './TopologyStarfield';
+import {
+  TopologyObservatories,
+  type ObservatoryOnCanvas,
+} from './TopologyObservatories';
+import type { MockObservatory } from '../../data/mock-observatories';
 import {
   DESKTOP_RADII,
   MOBILE_MAX_WIDTH,
@@ -40,11 +52,13 @@ import {
 
 interface Props {
   domains: DomainSeed[];
+  observatories: MockObservatory[];
   hoveredSlug: string | null;
   selectedSlug: string | null;
   onHover: (slug: string | null) => void;
   onSelect: (slug: string) => void;
   onClearSelect: () => void;
+  onOpenObservatory: (slug: string) => void;
 }
 
 // Zoom range and step constants. Wheel deltas use a small exponential step
@@ -96,11 +110,13 @@ type DragState = {
 
 export function TopologyCanvas({
   domains,
+  observatories,
   hoveredSlug,
   selectedSlug,
   onHover,
   onSelect,
   onClearSelect,
+  onOpenObservatory,
 }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const innerGroupRef = useRef<SVGGElement | null>(null);
@@ -133,6 +149,26 @@ export function TopologyCanvas({
       computeDomainPositions(domains, isMobile ? MOBILE_RADII : DESKTOP_RADII),
     [domains, isMobile],
   );
+
+  // Observatory nodes settle at a fixed offset from their domain. An
+  // observatory whose domain isn't in the fetched set simply doesn't
+  // render — no orphan nodes.
+  const observatoryNodes = useMemo<ObservatoryOnCanvas[]>(() => {
+    const out: ObservatoryOnCanvas[] = [];
+    for (const observatory of observatories) {
+      const domainPosition = positions[observatory.domainSlug];
+      if (!domainPosition) continue;
+      out.push({
+        observatory,
+        domainPosition,
+        position: {
+          x: domainPosition.x + observatory.offset.x,
+          y: domainPosition.y + observatory.offset.y,
+        },
+      });
+    }
+    return out;
+  }, [observatories, positions]);
 
   // Convert screen coords to inner-group (viewBox) coords using the live
   // CTM. Returns null if the SVG hasn't laid out yet.
@@ -397,7 +433,7 @@ export function TopologyCanvas({
       width="100%"
       height="100%"
       role="img"
-      aria-label="RAi Intelligence Topology"
+      aria-label="The RAI universe"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -423,6 +459,7 @@ export function TopologyCanvas({
         ref={innerGroupRef}
         transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}
       >
+        <TopologyStarfield />
         <TopologyConnections
           domains={domains}
           positions={positions}
@@ -436,6 +473,10 @@ export function TopologyCanvas({
           selectedSlug={selectedSlug}
           onHover={onHover}
           onSelect={onSelect}
+        />
+        <TopologyObservatories
+          nodes={observatoryNodes}
+          onOpen={onOpenObservatory}
         />
         <TopologyRA />
       </g>

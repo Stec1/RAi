@@ -1,34 +1,16 @@
-// Start Page (`/`) — public, always rendered.
+// Start Page (`/`) — the RAI Terminal (PATCH-PIVOT-01, DL-31/DL-32).
 //
-// Per docs/screens-spec.md (Screen 1) the root route is the public
-// Start Page for every visitor. DL-26 governs only the post-auth
-// destination chosen by login/signup; it does NOT require redirecting
-// authenticated users away from `/`.
+// The scroll-narrative landing (Hero → How it Works → CTA) is retired;
+// its narrative lives in /about copy now. `/` is a one-page terminal
+// hosting the living universe, rendered for every visitor — DL-26 still
+// governs only the post-auth destination chosen by login/signup, and
+// authenticated users are never redirected away from `/`.
 //
-// Authenticated visitors who want their post-auth surface use the
-// TopBar actions (Explore / Dashboard / About / Sign out), per DL-28.
+// `/explore` renders the same terminal; both routes stay so existing
+// redirects and TopBar links keep working.
 
-import { TopBar } from '../components/landing/TopBar';
-import { HeroSection } from '../components/landing/HeroSection';
-import { HowItWorksSection } from '../components/landing/HowItWorksSection';
-import { CtaSection } from '../components/landing/CtaSection';
-import { Footer } from '../components/landing/Footer';
-
-// Per DL-27 (ISSUE-08R.3) the Start Page no longer renders a PNG-based
-// domain showcase. Domain visuals are deferred to a future visual
-// system; the canonical domain treatment is now SVG nodes on /explore
-// (DL-26). Narrative flow: Hero → How it Works → CTA → Footer.
+import { RaiTerminal } from '../components/terminal/RaiTerminal';
 
 export default function Home() {
-  return (
-    <>
-      <TopBar />
-      <main>
-        <HeroSection />
-        <HowItWorksSection />
-        <CtaSection />
-      </main>
-      <Footer />
-    </>
-  );
+  return <RaiTerminal />;
 }

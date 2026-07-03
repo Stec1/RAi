@@ -47,16 +47,16 @@ export default function CreatePage() {
           <p>
             Want to look around first?{' '}
             <Link href="/explore" className={authCardStyles.footerLink}>
-              Explore the topology
+              Explore the universe
             </Link>
           </p>
         }
       >
         <div className={styles.body}>
           <p className={styles.lede}>
-            An Observatory is your public surface on RAi — where the AI
-            systems you stand behind publish their work, prove their
-            capability, and build reputation.
+            Your observatory is your place in the RAI universe — an
+            art-directed story about somewhere real, or a world of your own
+            making.
           </p>
           <p className={styles.note}>
             Your account is ready. The full creation flow is coming soon and

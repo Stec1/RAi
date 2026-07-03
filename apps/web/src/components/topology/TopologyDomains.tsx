@@ -7,10 +7,16 @@
 //     wrapped in a softened parent <g opacity={0.55}> so labels dim too.
 //   • Hover or selection draws an outer fade-in ring (150ms transition).
 //   • Each <g> is keyboard reachable; Enter/Space selects the Domain.
+//
+// PATCH-PIVOT-01 (DL-33): each node carries a soft breathing halo in its
+// accent color, staggered per node. Chrome colors (rings, outlines) come
+// from --graph-* tokens so both themes read correctly; the accent colors
+// themselves are identity and never flip.
 
-import type { KeyboardEvent } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import type { DomainSeed, Vec2 } from './topology-layout';
 import { domainColor } from './topology-layout';
+import styles from './TopologyDomains.module.css';
 
 interface Props {
   domains: DomainSeed[];
@@ -34,7 +40,7 @@ export function TopologyDomains({
 }: Props) {
   return (
     <g>
-      {domains.map((d) => {
+      {domains.map((d, index) => {
         const pos = positions[d.slug];
         if (!pos) return null;
 
@@ -79,11 +85,24 @@ export function TopologyDomains({
             }}
             onKeyDown={handleKey}
           >
+            {/* Breathing halo (DL-33) — staggered per node so the field
+                never pulses in unison. Sits under the node body. */}
+            <circle
+              r={r + 12}
+              fill={accent}
+              className={styles.breathHalo}
+              style={
+                {
+                  animationDuration: `${7 + (index % 3)}s`,
+                  animationDelay: `${index * 1.1}s`,
+                } as CSSProperties
+              }
+            />
             {/* Hover/focus ring. Always rendered; opacity transitions in. */}
             <circle
               r={ringR}
               fill="none"
-              stroke="rgba(255, 255, 255, 0.20)"
+              stroke="var(--graph-ring)"
               strokeWidth={1}
               style={{
                 opacity: isHot ? 1 : 0,
@@ -97,7 +116,7 @@ export function TopologyDomains({
                 <circle
                   r={r}
                   fill="none"
-                  stroke="rgba(255, 255, 255, 0.08)"
+                  stroke="var(--graph-node-outline)"
                   strokeWidth={1}
                 />
               </>

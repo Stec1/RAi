@@ -1,0 +1,42 @@
+/* Traveling connection signals (PATCH-PIVOT-01, DL-33). A small light dot
+   leaves RA and travels the line to its domain, then rests dark for the
+   remainder of a long cycle. Delays are staggered per line so roughly one
+   signal is visible somewhere on the graph every few seconds — a pulse,
+   not a stream. Transform/opacity only; --sig-x/--sig-y carry the line's
+   endpoint in viewBox units from inline style.
+   Reduced motion: signals are simply absent (opacity 0) — the resting
+   graph is the composed static state. */
+
+@keyframes signalTravel {
+  0% {
+    transform: translate(0px, 0px);
+    opacity: 0;
+  }
+  2% {
+    opacity: 0.9;
+  }
+  13% {
+    opacity: 0.9;
+  }
+  15% {
+    transform: translate(var(--sig-x), var(--sig-y));
+    opacity: 0;
+  }
+  100% {
+    transform: translate(var(--sig-x), var(--sig-y));
+    opacity: 0;
+  }
+}
+
+.signal {
+  fill: var(--graph-signal);
+  opacity: 0;
+  animation: signalTravel 19s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal {
+    animation: none;
+    opacity: 0;
+  }
+}

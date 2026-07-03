@@ -1,0 +1,29 @@
+/* Ambient point field twinkle (DL-33). Opacity-only — GPU-friendly and
+   invisible to the pan/zoom transform. Per-point duration/delay come from
+   inline styles (deterministic PRNG) so the field never synchronizes.
+   Reduced motion: static mid-opacity — the sky still reads as composed. */
+
+@keyframes starTwinkle {
+  0% {
+    opacity: 0.16;
+  }
+  50% {
+    opacity: 0.62;
+  }
+  100% {
+    opacity: 0.16;
+  }
+}
+
+.point {
+  fill: var(--graph-point);
+  opacity: 0.35;
+  animation: starTwinkle 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .point {
+    animation: none;
+    opacity: 0.32;
+  }
+}

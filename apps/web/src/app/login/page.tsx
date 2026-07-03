@@ -36,8 +36,8 @@ export default function LoginPage() {
   return (
     <AuthShell>
       <AuthCard
-        tagline="Don't describe your AI. Prove it."
-        title="Log in to RAi"
+        tagline="Every place has a story. Tell yours."
+        title="Log in to RAI"
         footer={
           <p>
             New to RAi?{' '}

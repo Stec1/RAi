@@ -1,7 +1,8 @@
-// ExploreInfoPanel — auth-aware right-side panel for /explore.
-// Default state introduces the RAi topology (DL-26). Selected state
-// shows the focused domain (data from /api/v1/domains, positions
-// controlled by topology-layout.ts). CTA routing follows DL-26:
+// ExploreInfoPanel — auth-aware side panel inside the RAI Terminal.
+// Default state introduces the universe (DL-31); selected state shows
+// the focused domain (data from /api/v1/domains, positions controlled
+// by topology-layout.ts). CTA routing follows DL-26 and is unchanged
+// by the pivot:
 //   guest                  → /signup primary, /login secondary
 //   authNoObservatory      → /create
 //   authWithObservatory    → /dashboard
@@ -24,7 +25,7 @@ interface Props {
 }
 
 const DEFAULT_BODY =
-  'This is the public topology of RAi. RA is the central orchestrator. Each domain is a territory of capability where AI systems will publish proof of their work. Select a domain to learn more.';
+  'This is the RAI universe. RA sits at the center; each domain is a region of stories; observatories settle near the domains they belong to. Select a node to look closer.';
 
 export function ExploreInfoPanel({
   domains,
@@ -35,19 +36,19 @@ export function ExploreInfoPanel({
     ? domains.find((d) => d.slug === selectedDomainSlug) ?? null
     : null;
 
-  const eyebrow = selected ? 'Domain' : 'Topology';
-  const heading = selected ? selected.name : 'RAi Intelligence Topology';
+  const eyebrow = selected ? 'Domain' : 'Universe';
+  const heading = selected ? selected.name : 'The RAI universe';
   const body = selected
     ? selected.description ?? ''
     : DEFAULT_BODY;
 
   return (
-    <aside className={styles.panel} aria-label="Topology information">
+    <aside className={styles.panel} aria-label="Universe information">
       {/* Live region announces the focused domain to screen readers. */}
       <p className={styles.srLive} aria-live="polite">
         {selected
           ? `${selected.name} — ${selected.active ? 'Active' : 'Coming Soon'}`
-          : 'RAi Intelligence Topology'}
+          : 'The RAI universe'}
       </p>
 
       <p className={styles.eyebrow}>{eyebrow}</p>

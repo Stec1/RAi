@@ -1,5 +1,11 @@
 # RAi — Screens Specification
 
+> **PIVOT NOTE (PATCH-PIVOT-01):** RAI is now a universe of observatories — art-stories
+> about real places and virtual worlds. `/` and `/explore` both render the one-page
+> RAI Terminal hosting the living universe. See `docs/concept-pivot.md` and DL-31…DL-34.
+> Concept-level statements below are superseded where they conflict; routes, auth rules,
+> and post-auth routing remain canonical.
+
 > Short spec for every MVP screen.
 > Describes purpose, primary components, and key user actions.
 > This is the app map. Not a design spec — a structural reference.

@@ -4,18 +4,18 @@ import { Footer } from '../../components/landing/Footer';
 import { Reveal } from '../../components/landing/Reveal';
 import styles from './page.module.css';
 
-// /about — public, single-column editorial overview of RAi for users who
-// want to understand the platform in depth before signing up.
+// /about — public, single-column editorial overview of RAI for visitors
+// who want to understand the universe in depth before signing up.
 //
-// Copy is sourced from docs/vision.md, docs/world-structure.md, and
-// docs/domain-definitions.md. This is MVP-facing prose only — no
-// references to "SI" or future-only systems. The narrative line "Don't
-// describe your AI. Prove it." comes directly from vision.md.
+// Copy is sourced from docs/concept-pivot.md (PATCH-PIVOT-01, DL-31).
+// MVP-facing prose only: no SI terminology, no governance jargon
+// (community verification is always "community-verified"), no dated
+// promises. World Mode is described as coming, never demoed.
 
 export const metadata = {
   title: 'About — RAi',
   description:
-    'RAi is a public observatory platform where AI systems publish research, prove capability, and build reputation.',
+    'RAI is a universe of observatories — art-directed stories about real places and virtual worlds.',
 };
 
 export default function AboutPage() {
@@ -26,13 +26,16 @@ export default function AboutPage() {
         <section className={styles.section} aria-labelledby="about-heading">
           <Reveal as="div" className={`${styles.hero}`}>
             <div className={styles.inner}>
-              <p className={styles.eyebrow}>About RAi</p>
+              <p className={styles.eyebrow}>About RAI</p>
               <h1 id="about-heading" className={styles.heading}>
-                A public observatory for AI systems.
+                A universe of observatories.
               </h1>
               <p className={styles.lead}>
-                RAi is where AI systems publish research, prove capability, and
-                build reputation. <strong>Don&apos;t describe your AI. Prove it.</strong>
+                Knowledge about places is scattered across social posts, map
+                reviews, and the memories of guides. RAI gathers it into
+                observatories — coherent, art-directed stories about real
+                places and virtual worlds.{' '}
+                <strong>Every place has a story. Tell yours.</strong>
               </p>
             </div>
           </Reveal>
@@ -41,20 +44,22 @@ export default function AboutPage() {
         <section className={styles.section} aria-labelledby="what-heading">
           <Reveal as="div" className={styles.body}>
             <div className={styles.inner}>
-              <p className={styles.tag}>The platform</p>
+              <p className={styles.tag}>The idea</p>
               <h2 id="what-heading" className={styles.subheading}>
-                What RAi is
+                What RAI is
               </h2>
               <p className={styles.paragraph}>
-                RAi is a premium observatory platform. AI creators run their agents,
-                submit raw output, and RAi turns that output into structured
-                publications. The community evaluates. Reputation accumulates. Clients
-                discover capability through proof of work, not marketing claims.
+                RAI is a universe of observatories — real places, virtual
+                worlds, and the stories people tell about them. You arrive in
+                a living graph: RA at the center, seven domains around it,
+                observatories settling near the domains they belong to. Each
+                observatory opens as a full-screen art-story — one subject,
+                told well.
               </p>
               <p className={styles.paragraph}>
-                <strong>RAi shows. RAi does not execute.</strong> Every publication is
-                evidence. Every upvote is verification. Every position in a ranking is
-                earned.
+                <strong>RAI shows. RAI does not execute.</strong> The platform
+                presents stories, coordinates their verification, and settles
+                reputation. The telling belongs to the people who publish.
               </p>
             </div>
           </Reveal>
@@ -65,69 +70,65 @@ export default function AboutPage() {
             <div className={styles.inner}>
               <p className={styles.tag}>How it&apos;s organized</p>
               <h2 id="structure-heading" className={styles.subheading}>
-                Observatories, Domains, and Publications
+                Observatories and Domains
               </h2>
               <ul className={styles.list}>
                 <li className={styles.listItem}>
-                  <strong>Observatory.</strong> A public research space at
-                  rai.app/@name. Not a profile, not a portfolio. A place where an
-                  agent or creator demonstrates proof of work through systems,
-                  publications, and track record.
+                  <strong>Observatory.</strong> Your place in the RAI universe:
+                  an art-story about something real — a castle, a restaurant,
+                  a street, an event, a business — or something virtual, like
+                  generative art or an imagined space. Any format: narrative,
+                  gallery, graph, presentation room, and 3D in the future.
                 </li>
                 <li className={styles.listItem}>
-                  <strong>Domain.</strong> RAi begins with three active Domains —
-                  Nexum (coordination), Keth (analysis), and Solum (grounded
-                  execution) — with four more prepared for expansion.
+                  <strong>Domain.</strong> Seven domains give the universe its
+                  thematic structure. Three are active today; four are being
+                  prepared. An observatory settles near the domain its story
+                  belongs to.
                 </li>
                 <li className={styles.listItem}>
-                  <strong>Publication.</strong> A structured artefact of an
-                  agent&apos;s work. Every publication is proof of capability. The
-                  community evaluates publications, and reputation builds from real
-                  results.
+                  <strong>Art-story.</strong> The unit of publication: one
+                  coherent, art-directed presentation of a subject — not a
+                  feed of posts, not a review page, not a listing.
                 </li>
               </ul>
             </div>
           </Reveal>
         </section>
 
-        <section className={styles.section} aria-labelledby="who-heading">
+        <section className={styles.section} aria-labelledby="worlds-heading">
           <Reveal as="div" className={styles.body}>
             <div className={styles.inner}>
-              <p className={styles.tag}>Who it&apos;s for</p>
-              <h2 id="who-heading" className={styles.subheading}>
-                Built for creators who can show their work
-              </h2>
-              <ul className={styles.list}>
-                <li className={styles.listItem}>
-                  <strong>AI creators and developers</strong> who have built agents,
-                  workflows, or tools and want to show what they can actually do.
-                </li>
-                <li className={styles.listItem}>
-                  <strong>AI studios and agencies</strong> who want a public track
-                  record instead of a corporate site with marketing text.
-                </li>
-                <li className={styles.listItem}>
-                  <strong>Companies and individuals</strong> looking for AI solutions
-                  who want to see proof of capability, not advertising.
-                </li>
-              </ul>
-            </div>
-          </Reveal>
-        </section>
-
-        <section className={styles.section} aria-labelledby="why-heading">
-          <Reveal as="div" className={styles.body}>
-            <div className={styles.inner}>
-              <p className={styles.tag}>Why it matters</p>
-              <h2 id="why-heading" className={styles.subheading}>
-                Telling a good agent from a bad one is impossible without proof.
+              <p className={styles.tag}>The two worlds</p>
+              <h2 id="worlds-heading" className={styles.subheading}>
+                A virtual universe now, the real world next
               </h2>
               <p className={styles.paragraph}>
-                AI agents are becoming millions. RAi creates the infrastructure for
-                AI reputation: publish results, the community evaluates, reputation
-                grows, clients discover. Reputation is built on the quality of work,
-                not on reviews. Discovery happens through real results, not marketing
-                descriptions.
+                Today RAI is a virtual universe: the living graph you can
+                wander on the terminal, where stories are discovered by
+                proximity and curiosity. A second mode is coming — a
+                real-world map where observatories pin to actual coordinates,
+                so the story of a place lives where the place does. Until it
+                arrives, the universe is the map.
+              </p>
+            </div>
+          </Reveal>
+        </section>
+
+        <section className={styles.section} aria-labelledby="community-heading">
+          <Reveal as="div" className={styles.body}>
+            <div className={styles.inner}>
+              <p className={styles.tag}>Trust</p>
+              <h2 id="community-heading" className={styles.subheading}>
+                Community-verified, by design
+              </h2>
+              <p className={styles.paragraph}>
+                Stories on RAI will be open to contribution and
+                community-verified: claims can be questioned, corrections
+                proposed, and disagreements resolved in the open. Reputation
+                will build from how a story holds up — not from who shouts
+                loudest. These mechanics arrive after the universe itself;
+                the principle is fixed now.
               </p>
             </div>
           </Reveal>
@@ -137,10 +138,10 @@ export default function AboutPage() {
           <Reveal as="div" className={styles.cta}>
             <div className={styles.ctaInner}>
               <h2 id="cta-heading" className={styles.ctaHeading}>
-                Ready to publish what your AI has done?
+                Start an observatory.
               </h2>
               <p className={styles.paragraph}>
-                Create your Observatory and start building a track record.
+                Pick a place — real or imagined — and give its story a home.
               </p>
               <Link href="/signup" className={styles.ctaButton}>
                 Get Started

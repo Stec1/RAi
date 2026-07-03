@@ -27,9 +27,25 @@
   /* Border */
   --border-hairline: rgba(255, 255, 255, 0.07);
 
+  /* Glass surface — panels floating over the universe canvas (DL-29/DL-32).
+     Pair with --border-hairline and backdrop blur; max 2 blur levels. */
+  --surface-glass: rgba(8, 8, 20, 0.78);
+
   /* Signals */
   --signal-success: #4abf6a;
   --signal-danger: #bf5a4a;
+
+  /*
+   * Universe graph chrome (PATCH-PIVOT-01 / DL-33). These color the
+   * non-identity parts of the living universe — connection lines,
+   * hover rings, ambient points, traveling signals — and flip with the
+   * theme. Domain identity colors (below) never flip.
+   */
+  --graph-line: rgba(255, 255, 255, 0.06);
+  --graph-ring: rgba(255, 255, 255, 0.2);
+  --graph-node-outline: rgba(255, 255, 255, 0.08);
+  --graph-point: rgba(232, 237, 245, 0.8);
+  --graph-signal: rgba(255, 244, 214, 0.9);
 
   /*
    * Domain identification tokens.
@@ -86,8 +102,47 @@
   --ease-standard: cubic-bezier(0.2, 0.6, 0.2, 1);
 }
 
+/*
+ * Light theme — the "paper terminal" (DL-32). Redefines ONLY the semantic
+ * layer: warm paper surfaces, graphite text, low-alpha black hairlines,
+ * accents adjusted for AA contrast on light ground. Domain identity
+ * colors, typography, spacing, radii, and motion are theme-invariant.
+ * --accent-warm is intentionally NOT redefined: RA stays warm everywhere.
+ */
+[data-theme='light'] {
+  --surface-base: #f5f4f0;
+  --surface-canvas: #efeee9;
+  --surface-panel: #ffffff;
+  --surface-elevated: #ffffff;
+
+  --text-primary: #17171d;
+  --text-secondary: #575e6e;
+
+  --accent-cold: #2f5e99;
+
+  --border-hairline: rgba(12, 12, 24, 0.12);
+
+  --surface-glass: rgba(255, 255, 255, 0.8);
+
+  --signal-success: #2e7d4a;
+  --signal-danger: #a34632;
+
+  --graph-line: rgba(18, 18, 30, 0.1);
+  --graph-ring: rgba(18, 18, 30, 0.3);
+  --graph-node-outline: rgba(18, 18, 30, 0.1);
+  --graph-point: rgba(46, 50, 66, 0.55);
+  --graph-signal: rgba(52, 56, 74, 0.75);
+
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
+}
+
+html {
+  /* Dark is the default scheme; [data-theme='light'] flips it above. */
+  color-scheme: dark;
 }
 
 html,
@@ -96,7 +151,6 @@ body {
   padding: 0;
   background: var(--surface-base);
   color: var(--text-primary);
-  color-scheme: dark;
   font-family: var(--font-inter), system-ui, -apple-system, Segoe UI, sans-serif;
   font-size: var(--font-size-15);
   line-height: 1.6;

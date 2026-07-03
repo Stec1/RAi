@@ -1,0 +1,41 @@
+/* ThemeToggle — quiet ghost control in the terminal header (DL-32).
+   Icon visibility is driven by [data-theme] on <html>; the default
+   (no attribute yet / dark) shows the sun. */
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-inline);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.moon {
+  display: none;
+}
+
+:global([data-theme='light']) .sun {
+  display: none;
+}
+
+:global([data-theme='light']) .moon {
+  display: block;
+}

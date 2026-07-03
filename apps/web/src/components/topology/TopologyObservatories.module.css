@@ -1,0 +1,106 @@
+/* Observatory node presentation (PATCH-PIVOT-01, DL-31/DL-33).
+   Ambient halos derive from each observatory's VisualSignature
+   ambientEffect; all motion is opacity/transform only and rests to a
+   composed static state under prefers-reduced-motion. */
+
+.node {
+  cursor: pointer;
+  outline: none;
+}
+
+/* Name + kind label — hidden until hover/focus. */
+.label {
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+  pointer-events: none;
+}
+
+.node:hover .label,
+.node:focus-visible .label,
+.node:focus .label {
+  opacity: 1;
+}
+
+/* Ambient halos behind the glyph. */
+.haloStatic {
+  opacity: 0.12;
+}
+
+@keyframes obsGlow {
+  0% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.1;
+  }
+}
+
+.haloGlow {
+  opacity: 0.18;
+  animation: obsGlow 7s ease-in-out infinite;
+}
+
+@keyframes obsDrift {
+  0% {
+    transform: translate(-2px, 0);
+  }
+  50% {
+    transform: translate(2px, 1px);
+  }
+  100% {
+    transform: translate(-2px, 0);
+  }
+}
+
+.haloDrift {
+  opacity: 0.16;
+  animation: obsDrift 11s ease-in-out infinite;
+}
+
+/* `pulse` nodeStyle — the outer ring of the glyph itself breathes. */
+@keyframes obsPulse {
+  0% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.18);
+  }
+  100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+}
+
+.pulseRing {
+  opacity: 0.35;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: obsPulse 6.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .haloGlow,
+  .haloDrift,
+  .pulseRing {
+    animation: none;
+  }
+
+  .haloGlow {
+    opacity: 0.18;
+  }
+
+  .haloDrift {
+    opacity: 0.16;
+    transform: none;
+  }
+
+  .pulseRing {
+    opacity: 0.35;
+    transform: none;
+  }
+}

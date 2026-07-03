@@ -1,0 +1,127 @@
+/* GuestIntroPanel — floating glass introduction, top-left of the canvas
+   (balances the info panel on the right). Glass per visual-reference
+   rules: translucent surface token, hairline border, one blur level. */
+
+.panel {
+  position: absolute;
+  top: var(--space-8);
+  left: var(--space-8);
+  z-index: 3;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  background: var(--surface-glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-panel);
+  pointer-events: auto;
+}
+
+.dismiss {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-inline);
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.dismiss:hover {
+  color: var(--text-primary);
+}
+
+.dismiss svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+.eyebrow {
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.tagline {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-24);
+  line-height: 1.25;
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+  max-width: 16ch;
+}
+
+.body {
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-15);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.ctaRow {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.ctaPrimary,
+.ctaSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-inline);
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  transition: background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.ctaPrimary {
+  background: var(--text-primary);
+  color: var(--surface-base);
+  border: 1px solid var(--text-primary);
+}
+
+.ctaPrimary:hover {
+  background: var(--accent-cold);
+  border-color: var(--accent-cold);
+  color: var(--surface-base);
+}
+
+.ctaSecondary {
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-hairline);
+}
+
+.ctaSecondary:hover {
+  border-color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .panel {
+    top: var(--space-4);
+    left: var(--space-4);
+    right: var(--space-4);
+    max-width: none;
+  }
+}
