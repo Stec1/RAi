@@ -77,6 +77,8 @@ UI text tone: short, specific, no marketing hyperbole. Not "Unleash your AI pote
 
 The intelligence topology (map view in Explore) is the visual representation of the platform's knowledge network. It must feel like an abstract data visualization — not a cosmic scene.
 
+> Superseded for the Explore terminal — see DL-36 / DL-37: the canvas is a "living intelligence instrument" with scoped ambient motion; cosmic imagery remains forbidden (DL-37 anti-cliché list).
+
 **How it should feel:**
 - You are looking at an intelligence network — connections between ideas, Domains, and research spaces
 - Observatories are nodes in a network, not decorative objects
@@ -183,6 +185,7 @@ The intelligence topology (map view in Explore) is the visual representation of 
 - Shake or wiggle
 - Auto-rotating camera without user input
 - Looping animations on idle UI elements
+  > Superseded for the Explore terminal canvas only — see DL-33 (amended) / DL-37: living-instrument ambient motion, reduced-motion safe. All other UI keeps this rule.
 
 ---
 
@@ -248,6 +251,7 @@ The intelligence topology (map view in Explore) is the visual representation of 
 
 **Observatories:**
 - Level 1 `/explore`: Observatory nodes are intentionally omitted (DL-30)
+  > Superseded for the Explore terminal — see DL-35: Observatories are first-class nodes on the Explore topology.
 - Future Level 2 graph/cockpit may render Observatory nodes with Domain color and reputation-weighted styling when density justifies it
 
 ---

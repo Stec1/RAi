@@ -1,0 +1,91 @@
+/* ActivityStrip (DL-36). One entry visible at a time; entries are
+   stacked absolutely and take turns via a shared keyframe timeline
+   (each entry's delay offsets it into its 4s window of an N*4s cycle).
+   Subtle: opacity fade only, no sliding tickers.
+   Reduced motion: cycling stops; only the first entry is shown. */
+
+.strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-6);
+  border-top: 1px solid var(--border-hairline);
+  background: var(--surface-base);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-11);
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.label {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--text-primary);
+  flex: none;
+}
+
+.entries {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 1.5em;
+}
+
+@keyframes activityCycle {
+  0% {
+    opacity: 0;
+  }
+  2% {
+    opacity: 1;
+  }
+  18% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.entry {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: activityCycle linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry {
+    animation: none;
+    opacity: 0;
+  }
+
+  .entry:first-child {
+    opacity: 1;
+  }
+}
+
+/* Static list mode (mobile Activity tab). */
+.list {
+  margin: 0;
+  padding: var(--space-4) var(--space-6);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-11);
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.listItem {
+  border-bottom: 1px solid var(--border-hairline);
+  padding-bottom: var(--space-2);
+}

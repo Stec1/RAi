@@ -36,15 +36,15 @@
   --signal-danger: #bf5a4a;
 
   /*
-   * Universe graph chrome (PATCH-PIVOT-01 / DL-33). These color the
-   * non-identity parts of the living universe — connection lines,
-   * hover rings, ambient points, traveling signals — and flip with the
-   * theme. Domain identity colors (below) never flip.
+   * Universe graph chrome (DL-33 amended / DL-37). These color the
+   * non-identity parts of the living instrument — connection lines,
+   * hover rings, edge flow currents, traveling packets — and flip with
+   * the theme. Domain identity colors (below) never flip.
    */
   --graph-line: rgba(255, 255, 255, 0.06);
   --graph-ring: rgba(255, 255, 255, 0.2);
   --graph-node-outline: rgba(255, 255, 255, 0.08);
-  --graph-point: rgba(232, 237, 245, 0.8);
+  --graph-flow: rgba(232, 237, 245, 0.16);
   --graph-signal: rgba(255, 244, 214, 0.9);
 
   /*
@@ -130,7 +130,7 @@
   --graph-line: rgba(18, 18, 30, 0.1);
   --graph-ring: rgba(18, 18, 30, 0.3);
   --graph-node-outline: rgba(18, 18, 30, 0.1);
-  --graph-point: rgba(46, 50, 66, 0.55);
+  --graph-flow: rgba(18, 18, 30, 0.18);
   --graph-signal: rgba(52, 56, 74, 0.75);
 
   color-scheme: light;

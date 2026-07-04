@@ -1,8 +1,8 @@
 'use client';
 
-// TopologyCanvas — pure-SVG renderer for the /explore intelligence topology.
+// TopologyCanvas — pure-SVG renderer for the Explore topology.
 //
-// ISSUE-08R.2 hardening:
+// ISSUE-08R.2 hardening (preserved intact):
 //   - Native non-passive `wheel` listener with preventDefault() so trackpad
 //     pinch (ctrlKey wheel) zooms the canvas instead of scrolling the page.
 //   - Pointer-centered zoom via SVG CTM math: the world point under the
@@ -11,18 +11,22 @@
 //     viewBox units (1/CTM.a, 1/CTM.d) so motion tracks 1:1 at any zoom.
 //   - Light inertial pan tail (~250–400ms ease-out) sampled from the last
 //     ~80ms of pointer motion; cancelled on next pointerdown / unmount.
-//   - Click-vs-drag distinction: the click-to-clear-selection behaviour
-//     only fires when total pointer movement is below CLICK_MOVE_THRESHOLD;
-//     drags never inadvertently clear the selection.
+//   - Click-vs-drag distinction via CLICK_MOVE_THRESHOLD.
 //
-// All other rendering (RA glyph, domain nodes, connection lines) stays
-// intact — only the interaction layer changes.
+// PATCH-PIVOT-02 — central click dispatch (Phase 0 root-cause fix):
+// handlePointerDown calls setPointerCapture on the <svg>, and with
+// capture held, browsers dispatch the synthesized `click` at the capture
+// target — so per-node React onClick handlers NEVER fire from real
+// pointer input. The fix: the true pointerdown target (captured BEFORE
+// capture retargeting applies) is stored in the drag state, and the
+// pointerup click-vs-drag branch routes selection centrally from that
+// snapshot: domain / observatory / RA select, or background clear.
+// Node components keep only hover reporting and the keyboard path.
 //
-// PATCH-PIVOT-01 (DL-31/DL-33): the canvas is now the living universe —
-// it additionally renders an ambient starfield behind the graph and
-// observatory nodes near their domains. The interaction layer above is
-// untouched; observatory groups carry data-slug so click-vs-drag keeps
-// treating them as nodes.
+// Also per DL-35/DL-36/DL-37: observatory nodes render with guarded
+// positions (fallback coordinates if their domain is missing or a
+// position is non-finite), and the canvas reports zoom changes and
+// accepts an external reset signal for the panel's zoom control.
 
 import {
   useCallback,
@@ -36,7 +40,6 @@ import {
 import { TopologyRA } from './TopologyRA';
 import { TopologyDomains } from './TopologyDomains';
 import { TopologyConnections } from './TopologyConnections';
-import { TopologyStarfield } from './TopologyStarfield';
 import {
   TopologyObservatories,
   type ObservatoryOnCanvas,
@@ -50,15 +53,38 @@ import {
   type DomainSeed,
 } from './topology-layout';
 
+// A reference to any selectable entity on the canvas. Shared with the
+// terminal's Registry/Inspector selection model.
+export type EntityRef =
+  | { kind: 'ra' }
+  | { kind: 'domain'; slug: string }
+  | { kind: 'observatory'; slug: string };
+
+const OBSERVATORY_SLUG_PREFIX = 'observatory:';
+
+function entityFromSlugAttr(slugAttr: string): EntityRef {
+  if (slugAttr === 'ra') return { kind: 'ra' };
+  if (slugAttr.startsWith(OBSERVATORY_SLUG_PREFIX)) {
+    return {
+      kind: 'observatory',
+      slug: slugAttr.slice(OBSERVATORY_SLUG_PREFIX.length),
+    };
+  }
+  return { kind: 'domain', slug: slugAttr };
+}
+
 interface Props {
   domains: DomainSeed[];
   observatories: MockObservatory[];
-  hoveredSlug: string | null;
-  selectedSlug: string | null;
-  onHover: (slug: string | null) => void;
-  onSelect: (slug: string) => void;
+  hovered: EntityRef | null;
+  selected: EntityRef | null;
+  onHoverEntity: (ref: EntityRef | null) => void;
+  onSelectEntity: (ref: EntityRef) => void;
   onClearSelect: () => void;
-  onOpenObservatory: (slug: string) => void;
+  /** Reports the current zoom factor after wheel/pinch/reset changes. */
+  onViewChange?: (zoom: number) => void;
+  /** Increment to reset pan/zoom to the initial view. */
+  resetToken?: number;
 }
 
 // Zoom range and step constants. Wheel deltas use a small exponential step
@@ -80,7 +106,7 @@ const CLICK_MOVE_THRESHOLD = 3;
 const VELOCITY_WINDOW_MS = 80;
 const INERTIA_DECAY = 0.92;
 const INERTIA_MIN_VELOCITY = 0.02; // viewBox units per ms
-const INERTIA_MIN_KICK = 0.4 / 16; // ~ 0.4 px/frame at 60Hz, in vb units/ms — see launch check
+const INERTIA_MIN_KICK = 0.4 / 16; // ~ 0.4 px/frame at 60Hz, in vb units/ms
 
 type Pan = { x: number; y: number };
 
@@ -104,19 +130,22 @@ type DragState = {
   // Accumulated total movement in screen pixels (for click-vs-drag).
   totalDxScreen: number;
   totalDyScreen: number;
-  // Whether the pointer started over the canvas background (vs a node).
-  startedOnBackground: boolean;
+  // data-slug of the node under the ORIGINAL pointerdown target, or null
+  // for canvas background. Captured before pointer capture retargets
+  // subsequent events; this is the click-dispatch source of truth.
+  startSlug: string | null;
 };
 
 export function TopologyCanvas({
   domains,
   observatories,
-  hoveredSlug,
-  selectedSlug,
-  onHover,
-  onSelect,
+  hovered,
+  selected,
+  onHoverEntity,
+  onSelectEntity,
   onClearSelect,
-  onOpenObservatory,
+  onViewChange,
+  resetToken,
 }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const innerGroupRef = useRef<SVGGElement | null>(null);
@@ -130,6 +159,11 @@ export function TopologyCanvas({
   const zoomRef = useRef<number>(zoom);
   panRef.current = pan;
   zoomRef.current = zoom;
+
+  // Mirror onViewChange so the wheel listener never re-registers when the
+  // parent passes a fresh callback identity.
+  const onViewChangeRef = useRef<Props['onViewChange']>(onViewChange);
+  onViewChangeRef.current = onViewChange;
 
   const dragRef = useRef<DragState | null>(null);
   const inertiaFrameRef = useRef<number | null>(null);
@@ -150,44 +184,33 @@ export function TopologyCanvas({
     [domains, isMobile],
   );
 
-  // Observatory nodes settle at a fixed offset from their domain. An
-  // observatory whose domain isn't in the fetched set simply doesn't
-  // render — no orphan nodes.
+  // Observatory nodes settle at a fixed offset from their domain. If the
+  // domain is missing from the fetched payload, or any coordinate is
+  // non-finite, the node falls back to its defined fixed coordinate —
+  // an observatory is never dropped and never lands on NaN (§ Phase 4
+  // position guards).
   const observatoryNodes = useMemo<ObservatoryOnCanvas[]>(() => {
-    const out: ObservatoryOnCanvas[] = [];
-    for (const observatory of observatories) {
-      const domainPosition = positions[observatory.domainSlug];
-      if (!domainPosition) continue;
-      out.push({
-        observatory,
-        domainPosition,
-        position: {
-          x: domainPosition.x + observatory.offset.x,
-          y: domainPosition.y + observatory.offset.y,
-        },
-      });
-    }
-    return out;
+    return observatories.map((observatory) => {
+      const rawDomain = positions[observatory.domainSlug] ?? null;
+      const domainPosition =
+        rawDomain &&
+        Number.isFinite(rawDomain.x) &&
+        Number.isFinite(rawDomain.y)
+          ? rawDomain
+          : null;
+      const derived = domainPosition
+        ? {
+            x: domainPosition.x + observatory.offset.x,
+            y: domainPosition.y + observatory.offset.y,
+          }
+        : observatory.fallbackPosition;
+      const position =
+        Number.isFinite(derived.x) && Number.isFinite(derived.y)
+          ? derived
+          : observatory.fallbackPosition;
+      return { observatory, position, domainPosition };
+    });
   }, [observatories, positions]);
-
-  // Convert screen coords to inner-group (viewBox) coords using the live
-  // CTM. Returns null if the SVG hasn't laid out yet.
-  const screenToInner = useCallback(
-    (clientX: number, clientY: number): { x: number; y: number } | null => {
-      const inner = innerGroupRef.current;
-      const svg = svgRef.current;
-      if (!inner || !svg) return null;
-      const ctm = inner.getScreenCTM();
-      if (!ctm) return null;
-      const inverse = ctm.inverse();
-      const pt = svg.createSVGPoint();
-      pt.x = clientX;
-      pt.y = clientY;
-      const world = pt.matrixTransform(inverse);
-      return { x: world.x, y: world.y };
-    },
-    [],
-  );
 
   const cancelInertia = useCallback(() => {
     if (inertiaFrameRef.current !== null) {
@@ -195,6 +218,22 @@ export function TopologyCanvas({
       inertiaFrameRef.current = null;
     }
   }, []);
+
+  // External reset (the topology panel's `reset` control). Skips the
+  // mount pass so the initial view isn't clobbered.
+  const firstResetRef = useRef(true);
+  useEffect(() => {
+    if (firstResetRef.current) {
+      firstResetRef.current = false;
+      return;
+    }
+    cancelInertia();
+    zoomRef.current = 1;
+    panRef.current = { x: 0, y: 0 };
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    onViewChangeRef.current?.(1);
+  }, [resetToken, cancelInertia]);
 
   // Native wheel listener. React's onWheel is registered as passive in
   // some browsers, which means preventDefault() is a no-op there — letting
@@ -217,8 +256,7 @@ export function TopologyCanvas({
       const ctm = inner.getScreenCTM();
       if (!ctm) return;
 
-      // World coords under the cursor BEFORE zooming. Reusing screenToInner
-      // would re-fetch the CTM; we already have it, so do the math inline.
+      // World coords under the cursor BEFORE zooming.
       const inverse = ctm.inverse();
       const pt = svg.createSVGPoint();
       pt.x = event.clientX;
@@ -236,8 +274,6 @@ export function TopologyCanvas({
       // cursor invariant. The transform is `translate(pan) scale(zoom)`,
       // so screen-to-world is `world = (screen - pan) / zoom`. Holding
       // `world` constant gives `newPan = screen - world * newZoom`.
-      // Using the cached `before` (computed via the full CTM) handles
-      // the SVG viewBox→client mapping correctly.
       const prevPan = panRef.current;
       const newPanX = prevPan.x + (prevZoom - nextZoom) * before.x;
       const newPanY = prevPan.y + (prevZoom - nextZoom) * before.y;
@@ -250,6 +286,7 @@ export function TopologyCanvas({
 
       setZoom(nextZoom);
       setPan({ x: newPanX, y: newPanY });
+      onViewChangeRef.current?.(nextZoom);
     };
 
     svg.addEventListener('wheel', onWheel, { passive: false });
@@ -262,8 +299,11 @@ export function TopologyCanvas({
 
       cancelInertia();
 
+      // Snapshot the true target BEFORE capture retargeting applies —
+      // this is the only reliable node reference for click dispatch.
       const target = event.target as Element | null;
-      const startedOnBackground = !target?.closest('[data-slug]');
+      const startSlug =
+        target?.closest('[data-slug]')?.getAttribute('data-slug') ?? null;
 
       // Cache the screen→viewBox scale once at drag start. CTM is stable
       // during a drag (no zoom changes mid-drag in this implementation).
@@ -291,7 +331,7 @@ export function TopologyCanvas({
         samples: [],
         totalDxScreen: 0,
         totalDyScreen: 0,
-        startedOnBackground,
+        startSlug,
       };
     },
     [cancelInertia],
@@ -371,13 +411,13 @@ export function TopologyCanvas({
       const moved = Math.hypot(drag.totalDxScreen, drag.totalDyScreen);
 
       if (moved < CLICK_MOVE_THRESHOLD) {
-        // Treated as a click. Only clear selection if the click landed on
-        // the canvas background — clicking a node is handled by the node.
-        if (drag.startedOnBackground) {
-          const target = event.target as Element | null;
-          if (!target?.closest('[data-slug]')) {
-            onClearSelect();
-          }
+        // Treated as a click. Central dispatch from the pointerdown
+        // snapshot (Phase 0 fix): the pointerup/click targets are the
+        // capturing <svg>, so per-node handlers can't be trusted here.
+        if (drag.startSlug) {
+          onSelectEntity(entityFromSlugAttr(drag.startSlug));
+        } else {
+          onClearSelect();
         }
         return;
       }
@@ -397,7 +437,7 @@ export function TopologyCanvas({
         startInertia(vx, vy);
       }
     },
-    [onClearSelect, startInertia],
+    [onClearSelect, onSelectEntity, startInertia],
   );
 
   const handlePointerCancel = useCallback((event: PointerEvent<SVGSVGElement>) => {
@@ -421,9 +461,13 @@ export function TopologyCanvas({
     };
   }, []);
 
-  // Avoid an unused-import warning while keeping screenToInner available
-  // for future hit-testing logic without re-introducing it later.
-  void screenToInner;
+  const hoveredDomainSlug = hovered?.kind === 'domain' ? hovered.slug : null;
+  const selectedDomainSlug = selected?.kind === 'domain' ? selected.slug : null;
+  const hoveredObservatorySlug =
+    hovered?.kind === 'observatory' ? hovered.slug : null;
+  const selectedObservatorySlug =
+    selected?.kind === 'observatory' ? selected.slug : null;
+  const raHot = hovered?.kind === 'ra' || selected?.kind === 'ra';
 
   return (
     <svg
@@ -444,9 +488,7 @@ export function TopologyCanvas({
       }}
     >
       {/* Transparent background rect — gives the SVG a hit area across the
-          full viewport so pointerdown on empty space starts a pan. The
-          click-to-clear-selection logic now lives in handlePointerUp so
-          drags never accidentally clear. */}
+          full viewport so pointerdown on empty space starts a pan. */}
       <rect
         x={-5000}
         y={-5000}
@@ -459,26 +501,38 @@ export function TopologyCanvas({
         ref={innerGroupRef}
         transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}
       >
-        <TopologyStarfield />
         <TopologyConnections
           domains={domains}
           positions={positions}
-          hoveredSlug={hoveredSlug}
-          selectedSlug={selectedSlug}
+          hoveredSlug={hoveredDomainSlug}
+          selectedSlug={selectedDomainSlug}
         />
         <TopologyDomains
           domains={domains}
           positions={positions}
-          hoveredSlug={hoveredSlug}
-          selectedSlug={selectedSlug}
-          onHover={onHover}
-          onSelect={onSelect}
+          hoveredSlug={hoveredDomainSlug}
+          selectedSlug={selectedDomainSlug}
+          onHover={(slug) =>
+            onHoverEntity(slug ? { kind: 'domain', slug } : null)
+          }
+          onSelect={(slug) => onSelectEntity({ kind: 'domain', slug })}
         />
         <TopologyObservatories
           nodes={observatoryNodes}
-          onOpen={onOpenObservatory}
+          hoveredSlug={hoveredObservatorySlug}
+          selectedSlug={selectedObservatorySlug}
+          onHover={(slug) =>
+            onHoverEntity(slug ? { kind: 'observatory', slug } : null)
+          }
+          onSelect={(slug) => onSelectEntity({ kind: 'observatory', slug })}
         />
-        <TopologyRA />
+        <TopologyRA
+          hot={raHot}
+          onHoverChange={(hovering) =>
+            onHoverEntity(hovering ? { kind: 'ra' } : null)
+          }
+          onSelect={() => onSelectEntity({ kind: 'ra' })}
+        />
       </g>
     </svg>
   );

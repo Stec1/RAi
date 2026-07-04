@@ -1,13 +1,41 @@
-/* Traveling connection signals (PATCH-PIVOT-01, DL-33). A small light dot
-   leaves RA and travels the line to its domain, then rests dark for the
-   remainder of a long cycle. Delays are staggered per line so roughly one
-   signal is visible somewhere on the graph every few seconds — a pulse,
-   not a stream. Transform/opacity only; --sig-x/--sig-y carry the line's
-   endpoint in viewBox units from inline style.
-   Reduced motion: signals are simply absent (opacity 0) — the resting
-   graph is the composed static state. */
+/* Live-link motion for active edges (DL-33 amended / DL-37).
 
-@keyframes signalTravel {
+   Flow: a very low-contrast dashed overlay whose stroke-dashoffset
+   drifts slowly — a current, not a marquee. Dash period is 14px
+   (3 dash + 11 gap); one -14px offset per cycle keeps the loop
+   seamless. Hover/selection brightens and quickens it slightly.
+
+   Packet: a brighter dot that leaves RA and travels the edge, then
+   rests dark for most of a long cycle (travel ≈ 2.9s of 21s). Delays
+   are staggered per active edge so ≈1 packet is visible at a time.
+
+   Reduced motion: flow and packets are simply absent — the resting
+   hairline graph is the composed static state in both themes. */
+
+@keyframes edgeFlow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -14px;
+  }
+}
+
+.flow {
+  stroke: var(--graph-flow);
+  stroke-width: 1;
+  stroke-dasharray: 3 11;
+  stroke-linecap: round;
+  animation: edgeFlow 2.6s linear infinite;
+  transition: opacity 150ms ease;
+}
+
+.flowHot {
+  stroke: var(--graph-signal);
+  animation-duration: 1.6s;
+}
+
+@keyframes packetTravel {
   0% {
     transform: translate(0px, 0px);
     opacity: 0;
@@ -15,10 +43,10 @@
   2% {
     opacity: 0.9;
   }
-  13% {
+  12% {
     opacity: 0.9;
   }
-  15% {
+  14% {
     transform: translate(var(--sig-x), var(--sig-y));
     opacity: 0;
   }
@@ -28,14 +56,20 @@
   }
 }
 
-.signal {
+.packet {
   fill: var(--graph-signal);
   opacity: 0;
-  animation: signalTravel 19s linear infinite;
+  animation: packetTravel 21s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .signal {
+  .flow,
+  .flowHot {
+    animation: none;
+    opacity: 0.55;
+  }
+
+  .packet {
     animation: none;
     opacity: 0;
   }

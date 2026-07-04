@@ -1,28 +1,34 @@
 'use client';
 
-// RaiTerminal — the one-page frame for the RAI universe (PATCH-PIVOT-01,
-// DL-31/DL-32). Rendered by both `/` and `/explore`; the route split is
-// preserved only for existing redirects and TopBar links.
+// RaiTerminal — the Explore information terminal (DL-31/DL-32/DL-36).
+// Rendered by both `/` and `/explore`; the route split is preserved only
+// for existing redirects and TopBar links.
 //
-// Frame: terminal header (DL-28 roles + theme toggle) · universe canvas ·
-// mono status line. Floating over the canvas: the auth-aware info panel
-// (DL-26 CTAs unchanged) and, for guests, a dismissible intro panel.
-// Observatory nodes open the full-screen art-story overlay in place.
+// Desktop frame: command strip · [Registry rail | framed Topology panel |
+// docked Inspector] · Activity strip. The graph is one panel among
+// several, not a full-bleed canvas. Below ~1024px the Registry,
+// Inspector, and Activity collapse into a tabbed bottom sheet beneath
+// the topology panel.
 //
-// This component absorbed the orchestration that previously lived in
-// ExploreClient (ISSUE-08R):
-//   1. Fetches the 7 Domains from the same-origin proxy `/api/v1/domains`.
+// Selection model (PATCH-PIVOT-02): one EntityRef drives everything —
+// clicking a graph node, a Registry row, or a Domain's mini-list row
+// selects the entity into the Inspector; hovering either surface
+// highlights the node and its edge. The art-story overlay opens ONLY
+// from the Inspector's `Open art-story` button (see the Phase 0
+// diagnosis in TopologyCanvas.tsx for why node-click-to-overlay was
+// unreliable).
+//
+// Orchestration preserved from PATCH-PIVOT-01:
+//   1. Domains come from the same-origin proxy `/api/v1/domains`.
 //      Direct cross-origin calls to Railway are forbidden — production
 //      auth depends on the same-origin proxy.
-//   2. Resolves the visitor's auth state via useAuth + `/api/me` once for
-//      the whole terminal (header, info panel, guest intro).
-//   3. Owns hover/select state for the topology and panel.
-//   4. Locks document-level scroll while mounted (one-pager; trackpad
-//      pinch/inertia must never scroll the page under the canvas).
+//   2. Auth state resolves once via useAuth + `/api/me` for the whole
+//      terminal (header, Inspector CTA, guest intro).
+//   3. Document-level scroll stays locked while mounted (one-pager).
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { TopologyCanvas } from '../topology/TopologyCanvas';
+import { TopologyCanvas, type EntityRef } from '../topology/TopologyCanvas';
 import { ExploreInfoPanel } from '../topology/ExploreInfoPanel';
 import type { AuthState } from '../topology/ExploreInfoPanel';
 import type { DomainSeed } from '../topology/topology-layout';
@@ -32,6 +38,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { TerminalHeader, type HeaderVariant } from './TerminalHeader';
 import { ArtStoryOverlay } from './ArtStoryOverlay';
 import { GuestIntroPanel } from './GuestIntroPanel';
+import { RegistryRail } from './RegistryRail';
+import { ActivityStrip, ActivityList } from './ActivityStrip';
 import styles from './RaiTerminal.module.css';
 
 interface DomainsResponse {
@@ -63,18 +71,30 @@ function toSeeds(domains: DomainDTO[]): DomainSeed[] {
   }));
 }
 
+function refEquals(a: EntityRef | null, b: EntityRef | null): boolean {
+  if (!a || !b) return a === b;
+  if (a.kind !== b.kind) return false;
+  if (a.kind === 'ra') return true;
+  return (a as { slug: string }).slug === (b as { slug: string }).slug;
+}
+
+type SheetTab = 'registry' | 'inspector' | 'activity';
+
 export function RaiTerminal() {
   const router = useRouter();
   const { user, isLoading: authLoading, signOut } = useAuth();
 
   const [domains, setDomains] = useState<DomainSeed[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<EntityRef | null>(null);
+  const [selected, setSelected] = useState<EntityRef | null>(null);
+  const [openStorySlug, setOpenStorySlug] = useState<string | null>(null);
   const [authState, setAuthState] = useState<AuthState>('unknown');
   const [introDismissed, setIntroDismissed] = useState(false);
-  const [openStorySlug, setOpenStorySlug] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [activeTab, setActiveTab] = useState<SheetTab>('inspector');
+  const [zoomPct, setZoomPct] = useState(100);
+  const [resetToken, setResetToken] = useState(0);
 
   // Lock document-level scroll while the terminal is mounted. Styles are
   // set imperatively (not via a global class) because Next.js's CSS
@@ -163,12 +183,19 @@ export function RaiTerminal() {
     }
   }
 
+  // Unified selection: same entity again toggles off; any selection
+  // surfaces the Inspector tab on the mobile sheet.
+  const handleSelect = (ref: EntityRef) => {
+    setSelected((prev) => (refEquals(prev, ref) ? null : ref));
+    setActiveTab('inspector');
+  };
+
   // Hydration guard (DL-28): SSR has no session, so first paint renders
   // the guest header. 'unknown' maps to guest until auth resolves.
   const headerVariant: HeaderVariant =
     authState === 'unknown' ? 'guest' : authState;
 
-  const focusedSlug = selectedSlug ?? hoveredSlug;
+  const focus = selected ?? hovered;
   const showIntro = authState === 'guest' && !introDismissed;
 
   const openStory = openStorySlug
@@ -178,9 +205,15 @@ export function RaiTerminal() {
     ? domains?.find((d) => d.slug === openStory.domainSlug)?.name
     : undefined;
 
-  const statusCounts = domains
-    ? `${domains.length} domains · ${MOCK_OBSERVATORIES.length} observatories`
-    : 'connecting…';
+  const readouts = domains
+    ? `${domains.length} domains · ${domains.filter((d) => d.active).length} active · ${MOCK_OBSERVATORIES.length} observatories`
+    : null;
+
+  const tabs: Array<{ id: SheetTab; label: string }> = [
+    { id: 'registry', label: 'Registry' },
+    { id: 'inspector', label: 'Inspector' },
+    { id: 'activity', label: 'Activity' },
+  ];
 
   return (
     <div className={styles.terminal}>
@@ -188,56 +221,114 @@ export function RaiTerminal() {
         variant={headerVariant}
         signingOut={signingOut}
         onSignOut={handleSignOut}
+        contextLabel="Explore · Virtual Universe"
+        readouts={readouts}
       />
 
-      <main className={styles.universe} aria-labelledby="terminal-heading">
-        <h1 id="terminal-heading" className={styles.srOnly}>
-          RAI — a universe of observatories
-        </h1>
-
-        {/* The canvas host owns all wheel/touch gestures; panels float
-            above it and keep their own pointer behavior. */}
-        <div className={styles.canvasHost}>
-          {error ? (
-            <p className={styles.status}>{error}</p>
-          ) : !domains ? (
-            <p className={styles.status}>Loading…</p>
-          ) : (
-            <TopologyCanvas
+      <div className={styles.body} data-tab={activeTab}>
+        <aside className={styles.registryRegion} aria-label="Registry">
+          {domains ? (
+            <RegistryRail
               domains={domains}
               observatories={MOCK_OBSERVATORIES}
-              hoveredSlug={hoveredSlug}
-              selectedSlug={selectedSlug}
-              onHover={setHoveredSlug}
-              onSelect={(slug) =>
-                setSelectedSlug((prev) => (prev === slug ? null : slug))
-              }
-              onClearSelect={() => setSelectedSlug(null)}
-              onOpenObservatory={setOpenStorySlug}
+              hovered={hovered}
+              selected={selected}
+              onHover={setHovered}
+              onSelect={handleSelect}
             />
+          ) : (
+            <p className={styles.regionPending}>connecting…</p>
           )}
-        </div>
+        </aside>
 
-        <div className={styles.sidePanel}>
+        <section
+          className={styles.topologyRegion}
+          aria-labelledby="terminal-heading"
+        >
+          <h1 id="terminal-heading" className={styles.srOnly}>
+            RAI — a universe of observatories
+          </h1>
+          <div className={styles.topologyPanel}>
+            <div className={styles.panelHeader}>
+              <span className={styles.panelTitle}>Topology</span>
+              <span className={styles.zoomControl}>
+                <span aria-live="off">{`zoom ${zoomPct}%`}</span>
+                <button
+                  type="button"
+                  className={styles.zoomReset}
+                  onClick={() => setResetToken((t) => t + 1)}
+                >
+                  reset
+                </button>
+              </span>
+            </div>
+            <div className={styles.canvasHost}>
+              {error ? (
+                <p className={styles.status}>{error}</p>
+              ) : !domains ? (
+                <p className={styles.status}>Loading…</p>
+              ) : (
+                <TopologyCanvas
+                  domains={domains}
+                  observatories={MOCK_OBSERVATORIES}
+                  hovered={hovered}
+                  selected={selected}
+                  onHoverEntity={setHovered}
+                  onSelectEntity={handleSelect}
+                  onClearSelect={() => setSelected(null)}
+                  onViewChange={(z) => setZoomPct(Math.round(z * 100))}
+                  resetToken={resetToken}
+                />
+              )}
+              {showIntro ? (
+                <GuestIntroPanel onDismiss={() => setIntroDismissed(true)} />
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <aside className={styles.inspectorRegion} aria-label="Inspector">
           {domains ? (
             <ExploreInfoPanel
+              focus={focus}
               domains={domains}
-              selectedDomainSlug={focusedSlug}
+              observatories={MOCK_OBSERVATORIES}
               authState={authState}
+              onOpenStory={setOpenStorySlug}
+              onSelectObservatory={(slug) =>
+                handleSelect({ kind: 'observatory', slug })
+              }
             />
-          ) : null}
+          ) : (
+            <p className={styles.regionPending}>connecting…</p>
+          )}
+        </aside>
+
+        {/* Mobile-only sheet tabs; desktop shows all regions at once. */}
+        <div className={styles.tabs} role="tablist" aria-label="Terminal panels">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={styles.tab}
+              data-active={activeTab === tab.id ? 'true' : undefined}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {showIntro ? (
-          <GuestIntroPanel onDismiss={() => setIntroDismissed(true)} />
-        ) : null}
-      </main>
+        <div className={styles.activityRegion} aria-label="Sample activity">
+          <ActivityList />
+        </div>
+      </div>
 
-      <footer className={styles.statusLine} aria-label="Universe status">
-        <span>{`RAI · virtual universe · ${statusCounts}`}</span>
-        <span className={styles.hintDesktop}>drag to move · scroll to zoom</span>
-        <span className={styles.hintMobile}>drag to move · pinch to zoom</span>
-      </footer>
+      <div className={styles.activityStripHost}>
+        <ActivityStrip />
+      </div>
 
       {openStory ? (
         <ArtStoryOverlay

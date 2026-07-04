@@ -1,23 +1,18 @@
-/* ExploreInfoPanel styles. Per docs/visual-reference.md:
-   • Surface: deep translucent navy with backdrop blur 24px.
-   • Hairline border in low-alpha white.
-   • Editorial typography: Space Grotesk display, Inter UI.
-   • CTAs ≥ 44px tap height for mobile reach. */
+/* Inspector content (DL-36). DOCKED, not floating: the terminal region
+   owns the frame (hairline seam + base surface), so this panel is plain
+   content — glass is reserved for surfaces that float over the canvas
+   (docs/visual-reference.md surface rules). Editorial typography:
+   Space Grotesk display, Inter UI. CTAs ≥ 44px tap height. */
 
 .panel {
-  background: var(--surface-glass);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--border-hairline);
-  border-radius: 16px;
-  padding: var(--space-6);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  padding: var(--space-6);
   color: var(--text-primary);
-  max-width: 360px;
   width: 100%;
-  pointer-events: auto;
+  height: 100%;
+  overflow-y: auto;
 }
 
 /* Visually hidden but exposed to assistive tech for selection announcements. */
@@ -75,6 +70,9 @@
 
 .theme {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-family: var(--font-inter), sans-serif;
   font-size: var(--font-size-13);
   letter-spacing: var(--tracking-label);
@@ -90,20 +88,134 @@
   color: var(--text-primary);
 }
 
-.footer {
+/* RA platform stats. */
+.stats {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.statRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--border-hairline);
+  padding-bottom: var(--space-2);
+}
+
+.statLabel {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.statValue {
+  margin: 0;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-15);
+  color: var(--text-primary);
+}
+
+/* Domain → observatories mini-list. */
+.miniList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.miniListLabel {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.miniListEmpty {
   margin: 0;
   font-family: var(--font-inter), sans-serif;
   font-size: var(--font-size-13);
-  line-height: 1.5;
   color: var(--text-secondary);
   font-style: italic;
+}
+
+.miniListRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-inline);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.miniListRow:hover {
+  border-color: var(--text-secondary);
+}
+
+.miniListDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.miniListName {
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  flex: 1;
+  min-width: 0;
+}
+
+.miniListKind {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-11);
+  color: var(--text-secondary);
+}
+
+/* Primary entry to the art-story overlay. */
+.openStory {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-inline);
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  background: var(--text-primary);
+  color: var(--surface-base);
+  border: 1px solid var(--text-primary);
+  transition: background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.openStory:hover,
+.openStory:focus-visible {
+  background: var(--accent-cold);
+  border-color: var(--accent-cold);
+  color: var(--surface-base);
 }
 
 .ctaGroup {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  margin-top: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-4);
 }
 
 .ctaPrimary,
@@ -126,21 +238,20 @@
 }
 
 .ctaPrimary {
-  background: var(--text-primary);
-  color: var(--surface-base);
+  background: transparent;
+  color: var(--text-primary);
   border: 1px solid var(--text-primary);
 }
 
 .ctaPrimary:hover,
 .ctaPrimary:focus-visible {
-  background: var(--accent-cold);
   border-color: var(--accent-cold);
-  color: var(--surface-base);
+  color: var(--accent-cold);
 }
 
 .ctaSecondary {
   background: transparent;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   border: 1px solid var(--border-hairline);
 }
 
@@ -148,16 +259,4 @@
 .ctaSecondary:focus-visible {
   border-color: var(--text-primary);
   color: var(--text-primary);
-}
-
-.ctaPrimary:focus-visible,
-.ctaSecondary:focus-visible {
-  outline: 2px solid var(--accent-cold);
-  outline-offset: 2px;
-}
-
-@media (max-width: 768px) {
-  .panel {
-    max-width: 100%;
-  }
 }

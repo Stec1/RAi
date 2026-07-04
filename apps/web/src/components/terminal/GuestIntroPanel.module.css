@@ -1,11 +1,17 @@
-/* GuestIntroPanel — floating glass introduction, top-left of the canvas
-   (balances the info panel on the right). Glass per visual-reference
-   rules: translucent surface token, hairline border, one blur level. */
+/* GuestIntroPanel — floating glass introduction, bottom-left of the
+   canvas, DESKTOP ONLY. Bottom-left keeps it clear of the node cluster
+   in the upper half of the default view (the PATCH-PIVOT-01 top-left
+   placement occluded both observatory nodes for guests — part of the
+   Phase 0 diagnosis). Below 1024px the panel is not rendered visible:
+   a floating panel would cover most of the small canvas, and the
+   bottom sheet's Inspector tab already carries the same intro copy and
+   guest CTAs. Glass per visual-reference rules: translucent surface
+   token, hairline border, one blur level. */
 
 .panel {
   position: absolute;
-  top: var(--space-8);
-  left: var(--space-8);
+  bottom: var(--space-6);
+  left: var(--space-6);
   z-index: 3;
   max-width: 400px;
   display: flex;
@@ -117,11 +123,8 @@
   border-color: var(--text-primary);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1023.98px) {
   .panel {
-    top: var(--space-4);
-    left: var(--space-4);
-    right: var(--space-4);
-    max-width: none;
+    display: none;
   }
 }

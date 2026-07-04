@@ -554,6 +554,12 @@
 
 ## DL-30 — RAi Graph UI Direction
 
+> **Partially superseded by DL-35 (PATCH-PIVOT-02):** the Level 1 clause
+> "No Observatory nodes on current `/explore`" no longer holds — under the
+> pivot (DL-31), Observatories are first-class nodes on the Explore
+> topology. The rest of DL-30 (SVG for Level 1, no Three.js/R3F, no
+> WebSocket, Level 2 evaluation criteria) remains in force.
+
 **Decision:** RAi adopts a two-level graph strategy.
 
 **Level 1 — Current `/explore` (MVP):**
@@ -637,20 +643,26 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 
 ---
 
-## DL-33 — Living Universe Motion
+## DL-33 — Living Universe Motion (amended in PATCH-PIVOT-02)
 
-**Decision:** The universe canvas is allowed calm, looping ambient motion: the RA halo pulse, staggered domain "breathing", occasional traveling signals along connection lines, and a slow background twinkle. This is a scoped exception to the "no looping animations on idle UI" rule; it applies to the universe canvas only and must respect `prefers-reduced-motion` (static fallback must still look composed). All other UI keeps existing motion restrictions.
+> **Amended:** the original PATCH-PIVOT-01 version of this decision authorized a
+> background starfield ("slow background twinkle") and cosmic breathing. Founder
+> review rejected that direction: the starfield read as a dirty screen (especially
+> in the light theme) and violated the product's own anti-cosmic art direction.
+> The decision is rewritten below; the successor aesthetic is DL-37.
+
+**Decision:** The Explore canvas has NO starfield and NO cosmic imagery. Its motion is a living-instrument language (DL-37): the RA heartbeat (warm pulse plus a single soft ripple every 12–16s), staggered breathing on active domain nodes, a very low-contrast flowing current along RA↔active-domain edges with an occasional brighter packet, and signature-driven pulses on observatory nodes. This remains a scoped exception to the "no looping animations on idle UI" rule; it applies to the Explore topology canvas only and must respect `prefers-reduced-motion` (static fallback must still look composed in both themes). All other UI keeps existing motion restrictions.
 
 **Why:**
-- A universe of stories that sits perfectly still reads as a diagram; restrained ambient motion communicates that the universe is alive without becoming a screensaver.
-- Opacity/transform-only CSS animation keeps the cost negligible and preserves pan/zoom performance.
-- The exception is scoped and revocable; it does not open the door to decorative motion elsewhere.
+- A universe of stories that sits perfectly still reads as a diagram; life must come from rhythm and data-flow, not from decor.
+- A starfield is decor: it added noise, read as grime on paper surfaces, and contradicted the "not a cosmic scene" rule in docs/visual-reference.md.
+- Opacity/transform/stroke-dashoffset-only CSS animation keeps the cost negligible and preserves pan/zoom performance.
 
-**Trade-off:** A permanent low level of visual activity on the primary surface. Bounded by sparseness rules (roughly one traveling signal visible at a time, sub-1Hz breathing cycles).
+**Trade-off:** A permanent low level of visual activity on the primary surface. Bounded by sparseness rules (roughly one packet visible at a time, sub-1Hz breathing cycles, one RA ripple per ~14s).
 
 **Revisit:** Yes — if user feedback reads the motion as noise rather than life.
 
-**See also:** DL-31, DL-32, docs/visual-reference.md motion rules.
+**See also:** DL-31, DL-32, DL-36, DL-37, docs/visual-reference.md motion rules.
 
 ---
 
@@ -668,3 +680,56 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 **Revisit:** Yes — when PATCH-PIVOT-01 is validated and World Mode gets its own patch.
 
 **See also:** DL-31, `docs/concept-pivot.md`.
+
+---
+
+## DL-35 — Observatories Are First-Class on the Explore Topology
+
+**Decision:** Observatory nodes render on the Explore topology as first-class entities: signature-styled nodes (color, nodeStyle, ambient effect from `VisualSignature`) tethered to their domain, present in the Registry rail, selectable into the Inspector, and openable as full-screen art-stories. This supersedes the DL-30 Level 1 clause that intentionally omitted Observatory nodes from `/explore`.
+
+**Why:**
+- Under DL-31 the product IS a universe of observatories; a topology without them shows structure but no life and no content.
+- The MVP graph stays small (RA + 7 domains + a handful of observatories), so DL-30's density concerns do not yet apply.
+- Reachability of stories from the graph is the core loop; the omission clause blocked it.
+
+**Trade-off:** The Level 1 graph grows in element count earlier than DL-30 planned. Bounded for now by the two mock observatories; the density criteria in DL-30's Level 2 section still govern when a heavier graph stack is considered.
+
+**Revisit:** Yes — when real Observatory data lands and node counts grow past what a hand-tuned SVG can carry.
+
+**See also:** DL-30 (superseded clause), DL-31, DL-36.
+
+---
+
+## DL-36 — Explore Terminal Layout
+
+**Decision:** Explore is an information terminal, not a full-bleed canvas. Desktop regions: a command strip (wordmark, context label, live readouts computed from fetched data, theme toggle, DL-28 auth-aware nav), a Registry rail listing domains and observatories, a framed Topology panel hosting the graph (with a quiet zoom/reset control), a docked persistent Inspector for the selected entity (RA / domain / observatory) carrying the auth-aware CTA and the `Open art-story` entry, and a bottom Activity strip (mock events until a real feed exists). The graph is one panel among several. Below ~1024px the Registry/Inspector/Activity collapse into a tabbed bottom sheet beneath the topology panel.
+
+**Why:**
+- Founder review: layering ambient motion over the same full-bleed canvas did not change the Explore UX — it made a screensaver. A terminal gives the graph an instrument's frame and gives data a place to live.
+- A docked Inspector plus a Registry rail makes every entity reachable by list as well as by node — reachability no longer depends on hitting a small SVG target (see the PATCH-PIVOT-02 Phase 0 diagnosis).
+- The layout scales: real observatories, activity feeds, and search have obvious homes without redesign.
+
+**Trade-off:** More chrome around the graph; the "infinite canvas" feeling is reduced on desktop. Accepted — the terminal frame is the product's identity (DL-32), and pan/zoom inside the panel is preserved intact.
+
+**Revisit:** Yes — when real Observatory/activity data replaces the mocks and usage shows which regions earn their space.
+
+**See also:** DL-28, DL-32, DL-35, DL-37.
+
+---
+
+## DL-37 — Living Intelligence Aesthetic
+
+**Decision:** The Explore topology canvas is a "living intelligence instrument": calm, precise ambient life expressed through rhythm and data-flow — RA heartbeat with a rare expanding ripple, staggered breathing on active domains, low-contrast flowing currents with occasional packets on active edges, signature-driven observatory pulses, and focus-on-interaction (hover/registry hover brightens a node and its edge). This is a scoped exception to the `docs/visual-reference.md` prohibitions on sci-fi HUD / cosmic imagery, and applies to the Explore canvas ONLY. Restraint principles remain in force everywhere: typography discipline, no neon as primary, no clutter, ≤5 interactive elements per section.
+
+**Binding anti-cliché list (canvas must contain NONE of):** starfield / cosmic / space imagery; radar sweeps or scanning lines; rotating, orbiting, or spinning elements; targeting reticles, crosshairs, or bracket/corner "HUD frames" around nodes; hexagon grids, matrix-rain, scanlines, or circuit-board decoration; neon as a primary color; busy or constant motion. If it resembles a sci-fi movie HUD, it is wrong.
+
+**Why:**
+- The instrument metaphor (a quiet, self-aware terminal) matches DL-32; a screensaver or a movie cockpit does not.
+- Data-flow motion (edge currents, packets, heartbeat) communicates that the network is alive; decor (stars, sweeps, spinning rings) only communicates genre.
+- A hard anti-cliché list keeps future patches from drifting toward HUD kitsch one small ornament at a time.
+
+**Trade-off:** The canvas motion vocabulary is deliberately narrow; expressiveness must come from signatures and data, not new ornament types.
+
+**Revisit:** Yes — alongside DL-36 when real data replaces the mocks.
+
+**See also:** DL-29, DL-32, DL-33 (amended), DL-36.

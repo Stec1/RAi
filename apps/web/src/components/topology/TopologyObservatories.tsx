@@ -1,32 +1,43 @@
-// TopologyObservatories — observatory nodes on the universe canvas
-// (PATCH-PIVOT-01, DL-31). Visually distinct from domain nodes: smaller,
-// styled from each observatory's VisualSignature (primaryColor, nodeStyle,
-// ambientEffect), tethered to their domain by a faint dashed line.
+// TopologyObservatories — observatory nodes on the Explore topology
+// (DL-35: first-class entities). Visually distinct from domain nodes:
+// smaller, styled from each observatory's VisualSignature (primaryColor,
+// nodeStyle, ambientEffect), joined to their domain by a short live
+// tether (slow dash flow per DL-37).
 //
-// Hover/focus reveals a name + kind label; click (or Enter/Space) opens
-// the full-screen art-story overlay via onOpen. Each group carries
-// data-slug so TopologyCanvas's click-vs-drag logic treats these as
-// nodes, not background.
+// Entry model (PATCH-PIVOT-02): a node click SELECTS the observatory in
+// the Inspector — it does not open the overlay. The Inspector's "Open
+// art-story" button is the single overlay entry. Mouse/touch selection
+// is dispatched centrally by TopologyCanvas from its pointerup hit-test
+// (pointer capture retargets click events to the <svg> root, so a
+// per-node onClick never fires with real input — Phase 0 diagnosis).
+// This component reports hover and handles the keyboard path.
 //
-// Currently fed by MOCK data (src/data/mock-observatories.ts) — swap the
-// source, not this renderer, when real Observatory data lands.
+// `hot` (hover from pointer, Registry row, or selection) reveals the
+// name + kind label and the focus ring — CSS :hover alone can't cover
+// Registry-driven highlighting.
+//
+// Currently fed by MOCK data (src/data/mock-observatories.ts) — swap
+// the source, not this renderer, when real Observatory data lands.
 
-import type { CSSProperties, KeyboardEvent } from 'react';
+import type { KeyboardEvent } from 'react';
 import type { MockObservatory } from '../../data/mock-observatories';
 import type { Vec2 } from './topology-layout';
 import styles from './TopologyObservatories.module.css';
 
 export type ObservatoryOnCanvas = {
   observatory: MockObservatory;
-  /** Resolved canvas position: domain position + fixed offset. */
+  /** Resolved canvas position (guarded — see TopologyCanvas). */
   position: Vec2;
-  /** The owning domain's position — the tether's far end. */
-  domainPosition: Vec2;
+  /** The tether's far end: the owning domain, when present. */
+  domainPosition: Vec2 | null;
 };
 
 interface Props {
   nodes: ObservatoryOnCanvas[];
-  onOpen: (slug: string) => void;
+  hoveredSlug: string | null;
+  selectedSlug: string | null;
+  onHover: (slug: string | null) => void;
+  onSelect: (slug: string) => void;
 }
 
 const KIND_LABEL: Record<MockObservatory['kind'], string> = {
@@ -37,9 +48,6 @@ const KIND_LABEL: Record<MockObservatory['kind'], string> = {
 function NodeGlyph({ observatory }: { observatory: MockObservatory }) {
   const { nodeStyle, primaryColor, ambientEffect } = observatory.signature;
 
-  // Soft ambient halo behind the glyph. `glow` breathes; `drift` sways
-  // sideways; `pulse`/`static` rest (the pulse style animates the glyph
-  // itself). Classes live in the module CSS with reduced-motion fallbacks.
   const haloClass =
     ambientEffect === 'glow'
       ? styles.haloGlow
@@ -52,12 +60,7 @@ function NodeGlyph({ observatory }: { observatory: MockObservatory }) {
       <circle r={14} fill={primaryColor} className={haloClass} />
       {nodeStyle === 'ring' && (
         <>
-          <circle
-            r={8}
-            fill="none"
-            stroke={primaryColor}
-            strokeWidth={1.5}
-          />
+          <circle r={8} fill="none" stroke={primaryColor} strokeWidth={1.5} />
           <circle r={2.2} fill={primaryColor} />
         </>
       )}
@@ -80,46 +83,66 @@ function NodeGlyph({ observatory }: { observatory: MockObservatory }) {
   );
 }
 
-export function TopologyObservatories({ nodes, onOpen }: Props) {
+export function TopologyObservatories({
+  nodes,
+  hoveredSlug,
+  selectedSlug,
+  onHover,
+  onSelect,
+}: Props) {
   return (
     <g>
       {nodes.map(({ observatory, position, domainPosition }) => {
+        const isHot =
+          hoveredSlug === observatory.slug || selectedSlug === observatory.slug;
+
         const handleKey = (event: KeyboardEvent<SVGGElement>) => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            onOpen(observatory.slug);
+            onSelect(observatory.slug);
           }
         };
 
         return (
           <g key={observatory.slug}>
-            {/* Tether back to the owning domain — belonging, not traffic. */}
-            <line
-              x1={position.x}
-              y1={position.y}
-              x2={domainPosition.x}
-              y2={domainPosition.y}
-              stroke="var(--graph-line)"
-              strokeWidth={1}
-              strokeDasharray="2 4"
-              aria-hidden="true"
-            />
+            {/* Live tether back to the owning domain (DL-37). */}
+            {domainPosition ? (
+              <line
+                x1={position.x}
+                y1={position.y}
+                x2={domainPosition.x}
+                y2={domainPosition.y}
+                className={`${styles.tether} ${isHot ? styles.tetherHot : ''}`}
+                aria-hidden="true"
+              />
+            ) : null}
             <g
               transform={`translate(${position.x} ${position.y})`}
               className={styles.node}
+              data-hot={isHot ? 'true' : undefined}
               role="button"
               tabIndex={0}
-              aria-label={`${observatory.title} — ${KIND_LABEL[observatory.kind]}. Open art-story.`}
+              aria-label={`${observatory.title} — ${KIND_LABEL[observatory.kind]}`}
+              aria-pressed={selectedSlug === observatory.slug}
               data-slug={`observatory:${observatory.slug}`}
-              onClick={(event) => {
-                event.stopPropagation();
-                onOpen(observatory.slug);
-              }}
+              onPointerEnter={() => onHover(observatory.slug)}
+              onPointerLeave={() => onHover(null)}
+              onFocus={() => onHover(observatory.slug)}
+              onBlur={() => onHover(null)}
               onKeyDown={handleKey}
             >
+              {/* Focus ring — driven by hot state (pointer, Registry
+                  row, or selection). */}
+              <circle
+                r={13}
+                fill="none"
+                stroke="var(--graph-ring)"
+                strokeWidth={1}
+                style={{ opacity: isHot ? 1 : 0, transition: 'opacity 150ms ease' }}
+              />
               <NodeGlyph observatory={observatory} />
-              {/* Hover/focus label — name above, kind beneath it. */}
-              <g className={styles.label} aria-hidden="true">
+              {/* Name + kind label — revealed on hot. */}
+              <g className={styles.label} data-hot={isHot ? 'true' : undefined} aria-hidden="true">
                 <text
                   y={-26}
                   textAnchor="middle"
@@ -137,9 +160,7 @@ export function TopologyObservatories({ nodes, onOpen }: Props) {
                   fontSize={9}
                   letterSpacing="0.08em"
                   fill="var(--text-secondary)"
-                  style={
-                    { textTransform: 'uppercase' } as CSSProperties
-                  }
+                  style={{ textTransform: 'uppercase' }}
                 >
                   {KIND_LABEL[observatory.kind]}
                 </text>

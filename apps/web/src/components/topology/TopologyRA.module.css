@@ -1,6 +1,11 @@
-/* TopologyRA halo pulse. 8s loop, opacity 40% → 70% → 40%, ease-in-out.
-   Per docs/visual-reference.md motion rules: gentle ambient breathing,
-   never bouncy. Respects prefers-reduced-motion. */
+/* TopologyRA motion (DL-33 amended / DL-37).
+   Heartbeat: the existing 8s halo pulse, plus ONE soft concentric ring
+   that expands and fades once per ~14s cycle (active for ~20% of it) —
+   a single quiet ripple that fades out fully before the next one, never
+   a continuous sweep.
+   transform-box: fill-box keeps the scale centered on the circle.
+   Reduced motion: both animations off; halo rests mid-opacity, ripple
+   hidden — the still core reads as composed in both themes. */
 
 @keyframes raHaloPulse {
   0%   { opacity: 0.4; }
@@ -13,9 +18,39 @@
   transform-origin: center;
 }
 
+@keyframes raRipple {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  3% {
+    opacity: 0.35;
+  }
+  17% {
+    transform: scale(3);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+.ripple {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: raRipple 14s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .haloPulse {
     animation: none;
     opacity: 0.55;
+  }
+
+  .ripple {
+    animation: none;
+    opacity: 0;
   }
 }

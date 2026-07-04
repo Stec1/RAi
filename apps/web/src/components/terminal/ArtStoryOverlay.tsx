@@ -10,10 +10,17 @@
 //
 // Accessibility: role="dialog" aria-modal, focus moves to the close
 // button on open, Tab is trapped inside the overlay, Escape closes, and
-// focus returns to the previously focused element (the observatory node)
-// on exit.
+// focus returns to the previously focused element (the Inspector's
+// `Open art-story` button) on exit.
+//
+// PATCH-PIVOT-02: rendered through a React portal to document.body so
+// the overlay always sits ABOVE all terminal chrome and can never be
+// clipped, scaled, or stacked under a panel — regardless of where the
+// opener lives in the tree. (The overlay only ever mounts from a client
+// interaction, so document is always defined.)
 
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { MockObservatory } from '../../data/mock-observatories';
 import styles from './ArtStoryOverlay.module.css';
 
@@ -93,7 +100,7 @@ export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
           ? styles.ambientGlow
           : styles.ambientStatic;
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
       className={styles.overlay}
@@ -157,6 +164,7 @@ export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
