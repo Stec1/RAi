@@ -1,48 +1,110 @@
-/* RaiTerminal frame (PATCH-PIVOT-01, DL-32): header · universe · status
-   line, locked to the viewport. The page never scrolls (document scroll
-   is locked imperatively in RaiTerminal.tsx); only the canvas pans.
+/* RaiTerminal frame (DL-32/DL-36): command strip · [registry | framed
+   topology panel | docked inspector] · activity strip, locked to the
+   viewport. The document never scrolls (locked imperatively in
+   RaiTerminal.tsx); panels scroll internally, the canvas pans.
+
+   Mobile-first: below 1024px the registry/inspector/activity regions
+   form a tabbed bottom sheet under the topology panel (which region is
+   visible follows the [data-tab] attribute on .body). At ≥1024px the
+   grid shows everything and the tabs disappear.
 
    Gesture ownership: touch-action: none lives on .canvasHost (and the
-   SVG itself), NOT on .universe — panels floating above the canvas keep
-   native touch scrolling for their own content. */
+   SVG itself), never on the regions — sheet content keeps native touch
+   scrolling. */
 
 .terminal {
   display: flex;
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  background: var(--surface-canvas);
+  background: var(--surface-base);
   color: var(--text-primary);
   overflow: hidden;
   overscroll-behavior: contain;
 }
 
-.universe {
-  position: relative;
+.body {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Topology panel ─────────────────────────────────────────── */
+
+.topologyRegion {
+  order: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3);
+}
+
+.topologyPanel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-panel);
+  background: var(--surface-canvas);
+  overflow: hidden;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border-hairline);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.panelTitle {
+  color: var(--text-primary);
+}
+
+.zoomControl {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.zoomReset {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--border-hairline);
+  text-underline-offset: 3px;
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.zoomReset:hover {
+  color: var(--text-primary);
 }
 
 .canvasHost {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
+  position: relative;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   touch-action: none;
   /* Dragging the universe must never select node labels (ISSUE-08R.2
-     "no text-select on drag" — previously unenforced, visible when a
-     drag swept across SVG text). */
+     "no text-select on drag"). */
   user-select: none;
   -webkit-user-select: none;
-}
-
-.sidePanel {
-  position: absolute;
-  top: var(--space-8);
-  right: var(--space-8);
-  width: 360px;
-  z-index: 2;
-  pointer-events: none;
 }
 
 /* Loading / error message centered over the canvas. */
@@ -59,24 +121,74 @@
   pointer-events: none;
 }
 
-/* Status line — quiet mono strip (DL-32). */
-.statusLine {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-2) var(--space-6);
+/* ── Sheet regions (mobile) / rails (desktop) ───────────────── */
+
+.registryRegion,
+.inspectorRegion,
+.activityRegion {
+  display: none;
+  order: 2;
+  min-height: 0;
+  max-height: 38dvh;
+  overflow-y: auto;
   border-top: 1px solid var(--border-hairline);
   background: var(--surface-base);
-  font-family: var(--font-jetbrains-mono), monospace;
-  font-size: var(--font-size-11);
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
 }
 
-.hintMobile {
+@media (max-width: 1023.98px) {
+  .body[data-tab='registry'] .registryRegion {
+    display: block;
+  }
+
+  .body[data-tab='inspector'] .inspectorRegion {
+    display: block;
+  }
+
+  .body[data-tab='activity'] .activityRegion {
+    display: block;
+  }
+}
+
+.regionPending {
+  margin: 0;
+  padding: var(--space-6);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ── Sheet tabs (mobile only) ───────────────────────────────── */
+
+.tabs {
+  order: 1;
+  display: flex;
+  border-top: 1px solid var(--border-hairline);
+  background: var(--surface-base);
+}
+
+.tab {
+  flex: 1;
+  padding: var(--space-3) var(--space-2);
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+}
+
+.tab[data-active='true'] {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent-cold);
+}
+
+/* Desktop activity strip is hidden on mobile (Activity is a tab). */
+.activityStripHost {
   display: none;
 }
 
@@ -92,30 +204,44 @@
   border: 0;
 }
 
-@media (max-width: 768px) {
-  /* The info panel becomes a bottom sheet over the canvas; its inner
-     card scrolls if content exceeds the sheet. */
-  .sidePanel {
-    top: auto;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    max-height: 46%;
-    padding: var(--space-3);
-    overflow-y: auto;
-    touch-action: pan-y;
+/* ── Desktop terminal grid (≥1024px) ────────────────────────── */
+
+@media (min-width: 1024px) {
+  .body {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) 300px;
+    grid-template-areas: 'registry topology inspector';
   }
 
-  .statusLine {
-    padding: var(--space-2) var(--space-4);
+  .topologyRegion {
+    grid-area: topology;
+    padding: var(--space-4);
   }
 
-  .hintDesktop {
+  .registryRegion,
+  .inspectorRegion {
+    display: block;
+    order: 0;
+    max-height: none;
+    border-top: 0;
+  }
+
+  .registryRegion {
+    grid-area: registry;
+    border-right: 1px solid var(--border-hairline);
+  }
+
+  .inspectorRegion {
+    grid-area: inspector;
+    border-left: 1px solid var(--border-hairline);
+  }
+
+  .tabs,
+  .activityRegion {
     display: none;
   }
 
-  .hintMobile {
-    display: inline;
+  .activityStripHost {
+    display: block;
   }
 }

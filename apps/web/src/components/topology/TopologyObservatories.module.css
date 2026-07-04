@@ -1,14 +1,16 @@
-/* Observatory node presentation (PATCH-PIVOT-01, DL-31/DL-33).
+/* Observatory node presentation (DL-35 / DL-37).
    Ambient halos derive from each observatory's VisualSignature
-   ambientEffect; all motion is opacity/transform only and rests to a
-   composed static state under prefers-reduced-motion. */
+   ambientEffect; the tether to the owning domain carries a slow live
+   dash flow. All motion is opacity/transform/stroke-dashoffset only and
+   rests to a composed static state under prefers-reduced-motion. */
 
 .node {
   cursor: pointer;
   outline: none;
 }
 
-/* Name + kind label — hidden until hover/focus. */
+/* Name + kind label — hidden until hot (pointer hover, keyboard focus,
+   Registry-row hover, or selection via data-hot). */
 .label {
   opacity: 0;
   transition: opacity var(--duration-fast) var(--ease-standard);
@@ -16,9 +18,32 @@
 }
 
 .node:hover .label,
-.node:focus-visible .label,
-.node:focus .label {
+.node:focus .label,
+.label[data-hot='true'] {
   opacity: 1;
+}
+
+/* Live tether — same dash grammar as edge flow, quieter. */
+@keyframes tetherFlow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -12px;
+  }
+}
+
+.tether {
+  stroke: var(--graph-line);
+  stroke-width: 1;
+  stroke-dasharray: 2 10;
+  stroke-linecap: round;
+  animation: tetherFlow 3.2s linear infinite;
+}
+
+.tetherHot {
+  stroke: var(--graph-flow);
+  animation-duration: 2s;
 }
 
 /* Ambient halos behind the glyph. */
@@ -84,10 +109,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .tether,
+  .tetherHot,
   .haloGlow,
   .haloDrift,
   .pulseRing {
     animation: none;
+  }
+
+  .tether,
+  .tetherHot {
+    opacity: 0.7;
   }
 
   .haloGlow {

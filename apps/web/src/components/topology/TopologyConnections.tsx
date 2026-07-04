@@ -1,13 +1,15 @@
-// TopologyConnections — the RA→Domain lines beneath the nodes.
+// TopologyConnections — the RA→Domain edges beneath the nodes.
 //
-// Per docs/visual-reference.md and DL-26: connection lines are subtle
-// (--graph-line, theme-aware) by default and brighten to the Domain
-// accent color when that Domain is hovered or selected. Rendered before
-// nodes so the lines sit visually under each circle.
-//
-// PATCH-PIVOT-01 (DL-33): each line occasionally carries a traveling
-// "signal" — a small light dot moving from RA to the domain. Timing and
-// stagger live in TopologyConnections.module.css.
+// Per DL-37 (Living Intelligence Aesthetic):
+//   • Every edge keeps its resting hairline (--graph-line), brightening
+//     to the Domain accent when that Domain is hovered or selected.
+//   • ACTIVE-domain edges additionally carry a continuous, very
+//     low-contrast flowing dash (stroke-dashoffset, slow) reading as a
+//     live current, plus an occasional brighter "packet" dot traveling
+//     RA → domain — staggered so roughly one packet is visible across
+//     the whole graph at a time.
+//   • Coming-soon edges stay quiet: hairline only, no flow, no packets.
+//   • Hovering/selecting a domain quickens and brightens its flow.
 
 import type { CSSProperties } from 'react';
 import type { DomainSeed, Vec2 } from './topology-layout';
@@ -27,21 +29,23 @@ export function TopologyConnections({
   hoveredSlug,
   selectedSlug,
 }: Props) {
+  // Stagger packets across ACTIVE edges only; index within the active
+  // subset keeps the ~one-visible-at-a-time rhythm stable regardless of
+  // how domains are ordered in the payload.
+  let activeIndex = -1;
+
   return (
     <g aria-hidden="true">
-      {domains.map((d, index) => {
+      {domains.map((d) => {
         const pos = positions[d.slug];
         if (!pos) return null;
-        const isActiveLink =
-          hoveredSlug === d.slug || selectedSlug === d.slug;
-        // Resting line: 1px hairline, very low alpha. Active link:
-        // 1.5px in the Domain color at modest alpha — enough to read
-        // as "lit" without competing with the nodes.
-        const stroke = isActiveLink
-          ? domainColor(d.slug)
-          : 'var(--graph-line)';
-        const strokeOpacity = isActiveLink ? 0.35 : 1;
-        const strokeWidth = isActiveLink ? 1.5 : 1;
+        if (d.active) activeIndex += 1;
+
+        const isHot = hoveredSlug === d.slug || selectedSlug === d.slug;
+        const stroke = isHot ? domainColor(d.slug) : 'var(--graph-line)';
+        const strokeOpacity = isHot ? 0.35 : 1;
+        const strokeWidth = isHot ? 1.5 : 1;
+
         return (
           <g key={d.slug}>
             <line
@@ -54,19 +58,31 @@ export function TopologyConnections({
               strokeWidth={strokeWidth}
               style={{ transition: 'stroke 150ms ease, stroke-width 150ms ease' }}
             />
-            {/* Traveling signal dot (DL-33). The keyframes translate it
-                from RA (0,0) to the line's endpoint via --sig-x/--sig-y. */}
-            <circle
-              r={2.2}
-              className={styles.signal}
-              style={
-                {
-                  '--sig-x': `${pos.x}px`,
-                  '--sig-y': `${pos.y}px`,
-                  animationDelay: `${index * 2.7}s`,
-                } as CSSProperties
-              }
-            />
+            {d.active ? (
+              <>
+                {/* Live current — slow dash flow RA → domain (DL-37). */}
+                <line
+                  x1={0}
+                  y1={0}
+                  x2={pos.x}
+                  y2={pos.y}
+                  className={`${styles.flow} ${isHot ? styles.flowHot : ''}`}
+                />
+                {/* Occasional packet. 21s cycle, 7s stagger across the
+                    three active edges → ≈1 visible at any moment. */}
+                <circle
+                  r={2.2}
+                  className={styles.packet}
+                  style={
+                    {
+                      '--sig-x': `${pos.x}px`,
+                      '--sig-y': `${pos.y}px`,
+                      animationDelay: `${activeIndex * 7}s`,
+                    } as CSSProperties
+                  }
+                />
+              </>
+            ) : null}
           </g>
         );
       })}

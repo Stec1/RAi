@@ -48,6 +48,12 @@ export type MockObservatory = {
    * offsets move to derived placement.
    */
   offset: { x: number; y: number };
+  /**
+   * Absolute canvas coordinate used when the owning domain is missing
+   * from the fetched payload or its position is non-finite (Phase 4
+   * position guards) — the node must never disappear or land on NaN.
+   */
+  fallbackPosition: { x: number; y: number };
 };
 
 export const MOCK_OBSERVATORIES: MockObservatory[] = [
@@ -88,6 +94,7 @@ export const MOCK_OBSERVATORIES: MockObservatory[] = [
     ],
     cta: 'Guided walk — coming soon',
     offset: { x: 54, y: -42 },
+    fallbackPosition: { x: -216, y: -194 },
   },
   {
     slug: 'signal-garden',
@@ -108,18 +115,19 @@ export const MOCK_OBSERVATORIES: MockObservatory[] = [
     sections: [
       {
         heading: 'Seed',
-        body: 'The garden begins as a single procedural stem in a dark field. Every visitor arrives as a signal — a timestamp, a path, a pause — and the stem records it. Nothing here is drawn by hand. The garden only grows while someone is watching.',
+        body: 'The garden begins as a single procedural stem in a dark field. Every visitor arrives as a signal — a timestamp, a path, a pause — and the stem records it in its geometry. Nothing here is drawn by hand; nothing is stored but the signals themselves. The garden only grows while someone is watching.',
       },
       {
         heading: 'Growth',
-        body: 'Signals accumulate into branches. A returning visitor thickens a stem; a long pause opens a leaf; a new path forks the geometry. The palette drifts between violet and teal as the density changes. No two hours of the garden render the same way.',
+        body: 'Signals accumulate into branches. A returning visitor thickens a stem; a long pause opens a leaf; a new path forks the geometry where two curiosities diverged. The palette drifts between violet and teal as density changes, and old growth slowly loses saturation, the way memory does. No two hours of the garden render the same way.',
       },
       {
         heading: 'The Night Bloom',
-        body: 'Once a cycle, when activity falls low enough, the garden blooms in the dark: every recorded signal lights at once, briefly, then settles back into slow growth. Visitors who catch it tend to stay longer than they planned.',
+        body: 'Once a cycle, when activity falls low enough, the garden blooms in the dark: every recorded signal lights at once, briefly — a map of everyone who ever paused here — then settles back into slow growth. Visitors who catch the bloom tend to stay longer than they planned. Some return only for it.',
       },
     ],
     cta: 'Enter the garden — coming soon',
     offset: { x: -58, y: 36 },
+    fallbackPosition: { x: -10, y: -270 },
   },
 ];

@@ -1,29 +1,28 @@
-/* Domain node breathing (PATCH-PIVOT-01, DL-33). A soft accent-colored
-   halo behind each node body pulses opacity on a 7–9s cycle; per-node
-   duration and delay are staggered from the render index so the field
-   feels alive, never synchronized. Opacity-only — GPU-friendly.
-   Reduced motion: animation off, halo rests at a composed low opacity. */
+/* Active-domain breathing (DL-33 amended / DL-37). The node body group
+   breathes opacity 0.86 ↔ 1 on a 7–9s cycle, staggered per node from
+   the render index so the field never pulses in unison. Opacity-only —
+   GPU-friendly, invisible to pan/zoom.
+   Reduced motion: animation off; the node rests at full presence. */
 
 @keyframes domainBreath {
   0% {
-    opacity: 0.08;
+    opacity: 0.86;
   }
   50% {
-    opacity: 0.24;
+    opacity: 1;
   }
   100% {
-    opacity: 0.08;
+    opacity: 0.86;
   }
 }
 
-.breathHalo {
-  opacity: 0.14;
+.breath {
   animation: domainBreath 8s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .breathHalo {
+  .breath {
     animation: none;
-    opacity: 0.14;
+    opacity: 1;
   }
 }

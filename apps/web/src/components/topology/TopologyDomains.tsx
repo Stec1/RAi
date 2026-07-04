@@ -8,10 +8,14 @@
 //   • Hover or selection draws an outer fade-in ring (150ms transition).
 //   • Each <g> is keyboard reachable; Enter/Space selects the Domain.
 //
-// PATCH-PIVOT-01 (DL-33): each node carries a soft breathing halo in its
-// accent color, staggered per node. Chrome colors (rings, outlines) come
-// from --graph-* tokens so both themes read correctly; the accent colors
-// themselves are identity and never flip.
+// PATCH-PIVOT-02 (DL-37): active domains breathe gently (node-body
+// opacity, 6–10s staggered cycles) and carry a faint inner luminance.
+// Coming-soon nodes stay dim and still. Mouse/touch selection is
+// dispatched centrally by TopologyCanvas from its pointerup hit-test —
+// pointer capture retargets click events to the <svg> root, so a
+// per-node onClick would never fire with real input (PATCH-PIVOT-02
+// Phase 0 diagnosis). This component only reports hover and handles
+// the keyboard path.
 
 import type { CSSProperties, KeyboardEvent } from 'react';
 import type { DomainSeed, Vec2 } from './topology-layout';
@@ -79,25 +83,8 @@ export function TopologyDomains({
             onPointerLeave={() => onHover(null)}
             onFocus={() => onHover(d.slug)}
             onBlur={() => onHover(null)}
-            onClick={(event) => {
-              event.stopPropagation();
-              onSelect(d.slug);
-            }}
             onKeyDown={handleKey}
           >
-            {/* Breathing halo (DL-33) — staggered per node so the field
-                never pulses in unison. Sits under the node body. */}
-            <circle
-              r={r + 12}
-              fill={accent}
-              className={styles.breathHalo}
-              style={
-                {
-                  animationDuration: `${7 + (index % 3)}s`,
-                  animationDelay: `${index * 1.1}s`,
-                } as CSSProperties
-              }
-            />
             {/* Hover/focus ring. Always rendered; opacity transitions in. */}
             <circle
               r={ringR}
@@ -109,17 +96,28 @@ export function TopologyDomains({
                 transition: 'opacity 150ms ease',
               }}
             />
-            {/* Node body — Active = filled, Coming Soon = outlined */}
+            {/* Node body — Active = filled + breathing, Coming Soon =
+                outlined and still (DL-37). */}
             {d.active ? (
-              <>
+              <g
+                className={styles.breath}
+                style={
+                  {
+                    animationDuration: `${7 + (index % 3)}s`,
+                    animationDelay: `${index * 1.3}s`,
+                  } as CSSProperties
+                }
+              >
                 <circle r={r} fill={accent} />
+                {/* Faint inner luminance — static, not a glow effect. */}
+                <circle r={r * 0.5} fill="var(--graph-ring)" opacity={0.35} />
                 <circle
                   r={r}
                   fill="none"
                   stroke="var(--graph-node-outline)"
                   strokeWidth={1}
                 />
-              </>
+              </g>
             ) : (
               <circle
                 r={r}

@@ -1,16 +1,17 @@
 'use client';
 
-// TerminalHeader — the RAI Terminal's header bar (PATCH-PIVOT-01, DL-32).
-// Replaces the TopBar ON THE TERMINAL SURFACE ONLY (`/` and `/explore`);
-// every other page keeps the existing TopBar. Navigation preserves the
-// DL-28 canonical roles exactly — same destinations, terminal styling:
+// TerminalHeader — the terminal's command strip (DL-32/DL-36).
+// Wordmark (→ `/`), context label, live readouts computed from real
+// fetched data (never hardcoded), the ThemeToggle, and the DL-28
+// auth-aware navigation — same destinations as the TopBar, terminal
+// styling:
 //
 //   guest               → About · Log in · Get Started
 //   authNoObservatory   → Explore · About · Sign out
 //   authWithObservatory → Explore · Dashboard · Sign out
 //
-// The wordmark routes to `/` (DL-28). The ThemeToggle is chrome, not a
-// navigation action, so the 3-element action discipline holds.
+// The ThemeToggle and readouts are chrome, not navigation actions, so
+// the 3-element action discipline holds.
 
 import Link from 'next/link';
 import { ThemeToggle } from '../theme/ThemeToggle';
@@ -25,15 +26,31 @@ interface Props {
   variant: HeaderVariant;
   signingOut: boolean;
   onSignOut: () => void;
+  /** e.g. "EXPLORE · VIRTUAL UNIVERSE" */
+  contextLabel: string;
+  /** Live readouts derived from fetched data; null while connecting. */
+  readouts: string | null;
 }
 
-export function TerminalHeader({ variant, signingOut, onSignOut }: Props) {
+export function TerminalHeader({
+  variant,
+  signingOut,
+  onSignOut,
+  contextLabel,
+  readouts,
+}: Props) {
   return (
     <header className={styles.header}>
-      <Link href="/" className={styles.wordmark} aria-label="RAI — Home">
-        RAI
-      </Link>
+      <div className={styles.left}>
+        <Link href="/" className={styles.wordmark} aria-label="RAI — Home">
+          RAI
+        </Link>
+        <span className={styles.context} aria-hidden="true">
+          {contextLabel}
+        </span>
+      </div>
       <div className={styles.right}>
+        <span className={styles.readouts}>{readouts ?? 'connecting…'}</span>
         <nav className={styles.nav} aria-label="Primary">
           {variant === 'guest' && (
             <>
