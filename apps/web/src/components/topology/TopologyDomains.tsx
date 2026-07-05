@@ -1,21 +1,18 @@
-// TopologyDomains — renders the 7 Domain nodes around RA as pure SVG.
+// TopologyDomains — the 7 Domain nodes as glowing identity-colored orbs
+// (Living Crystal Graph, DL-37 amended).
 //
-// Per DL-26 and docs/visual-reference.md:
-//   • Active Domains: filled disc in the Domain accent color, hairline
-//     ring on top for crisp definition. Brighter, ~16px radius.
-//   • Coming Soon Domains: outlined disc (low-alpha fill, 1px stroke),
-//     wrapped in a softened parent <g opacity={0.55}> so labels dim too.
-//   • Hover or selection draws an outer fade-in ring (150ms transition).
-//   • Each <g> is keyboard reachable; Enter/Space selects the Domain.
+//   • Active domains: a radial-gradient orb (hot white center → identity
+//     color) inside a soft bloom halo; slightly larger; breathing.
+//   • Coming-soon domains: smaller, dimmer, cooler — minimal bloom, an
+//     outlined disc with a faint fill; still and quiet.
+//   • Hover or selection draws the outer ring (150ms) — same behavior,
+//     new luminance.
 //
-// PATCH-PIVOT-02 (DL-37): active domains breathe gently (node-body
-// opacity, 6–10s staggered cycles) and carry a faint inner luminance.
-// Coming-soon nodes stay dim and still. Mouse/touch selection is
-// dispatched centrally by TopologyCanvas from its pointerup hit-test —
-// pointer capture retargets click events to the <svg> root, so a
-// per-node onClick would never fire with real input (PATCH-PIVOT-02
-// Phase 0 diagnosis). This component only reports hover and handles
-// the keyboard path.
+// Interaction is unchanged from PATCH-PIVOT-02: mouse/touch selection is
+// dispatched centrally by TopologyCanvas from its pointerup hit-test
+// (pointer capture retargets click events to the <svg> root); this
+// component reports hover and handles the keyboard path. Labels keep the
+// existing type scale.
 
 import type { CSSProperties, KeyboardEvent } from 'react';
 import type { DomainSeed, Vec2 } from './topology-layout';
@@ -31,8 +28,8 @@ interface Props {
   onSelect: (slug: string) => void;
 }
 
-const ACTIVE_RADIUS = 16;
-const COMING_RADIUS = 12;
+const ACTIVE_RADIUS = 15;
+const COMING_RADIUS = 10;
 
 export function TopologyDomains({
   domains,
@@ -44,6 +41,27 @@ export function TopologyDomains({
 }: Props) {
   return (
     <g>
+      {/* Per-domain orb gradients. Defined once for the whole set. */}
+      <defs>
+        {domains.map((d) => {
+          const accent = domainColor(d.slug);
+          return (
+            <g key={`defs-${d.slug}`}>
+              <radialGradient id={`lcg-orb-${d.slug}`}>
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+                <stop offset="38%" stopColor={accent} stopOpacity="1" />
+                <stop offset="100%" stopColor={accent} stopOpacity="0.88" />
+              </radialGradient>
+              <radialGradient id={`lcg-bloom-${d.slug}`}>
+                <stop offset="0%" stopColor={accent} stopOpacity="0.5" />
+                <stop offset="60%" stopColor={accent} stopOpacity="0.16" />
+                <stop offset="100%" stopColor={accent} stopOpacity="0" />
+              </radialGradient>
+            </g>
+          );
+        })}
+      </defs>
+
       {domains.map((d, index) => {
         const pos = positions[d.slug];
         if (!pos) return null;
@@ -51,8 +69,7 @@ export function TopologyDomains({
         const accent = domainColor(d.slug);
         const isHot = hoveredSlug === d.slug || selectedSlug === d.slug;
         const r = d.active ? ACTIVE_RADIUS : COMING_RADIUS;
-        // Outer focus/hover ring sits 6px outside the node radius.
-        const ringR = r + 6;
+        const ringR = r + 7;
 
         const handleKey = (event: KeyboardEvent<SVGGElement>) => {
           if (event.key === 'Enter' || event.key === ' ') {
@@ -76,7 +93,7 @@ export function TopologyDomains({
             style={{
               cursor: 'pointer',
               outline: 'none',
-              opacity: d.active ? 1 : 0.55,
+              opacity: d.active ? 1 : 0.6,
               transition: 'opacity 150ms ease',
             }}
             onPointerEnter={() => onHover(d.slug)}
@@ -85,7 +102,24 @@ export function TopologyDomains({
             onBlur={() => onHover(null)}
             onKeyDown={handleKey}
           >
-            {/* Hover/focus ring. Always rendered; opacity transitions in. */}
+            {/* Bloom halo — the orb's luminance. Breathes when active;
+                intensifies when hot. Light theme dampens it to a soft
+                color shadow (module CSS). */}
+            <circle
+              r={r * 2.6}
+              fill={`url(#lcg-bloom-${d.slug})`}
+              className={`${styles.bloom} ${d.active ? styles.bloomBreath : ''}`}
+              data-hot={isHot ? 'true' : undefined}
+              style={
+                d.active
+                  ? ({
+                      animationDuration: `${7 + (index % 3)}s`,
+                      animationDelay: `${index * 1.3}s`,
+                    } as CSSProperties)
+                  : undefined
+              }
+            />
+            {/* Hover/focus ring */}
             <circle
               r={ringR}
               fill="none"
@@ -96,34 +130,16 @@ export function TopologyDomains({
                 transition: 'opacity 150ms ease',
               }}
             />
-            {/* Node body — Active = filled + breathing, Coming Soon =
-                outlined and still (DL-37). */}
+            {/* Orb body — Active = luminous gradient orb; Coming Soon =
+                quiet outlined disc. */}
             {d.active ? (
-              <g
-                className={styles.breath}
-                style={
-                  {
-                    animationDuration: `${7 + (index % 3)}s`,
-                    animationDelay: `${index * 1.3}s`,
-                  } as CSSProperties
-                }
-              >
-                <circle r={r} fill={accent} />
-                {/* Faint inner luminance — static, not a glow effect. */}
-                <circle r={r * 0.5} fill="var(--graph-ring)" opacity={0.35} />
-                <circle
-                  r={r}
-                  fill="none"
-                  stroke="var(--graph-node-outline)"
-                  strokeWidth={1}
-                />
-              </g>
+              <circle r={r} fill={`url(#lcg-orb-${d.slug})`} className={styles.orbCore} />
             ) : (
               <circle
                 r={r}
-                fill={`${accent}14`}
+                fill={`${accent}1f`}
                 stroke={accent}
-                strokeOpacity={0.5}
+                strokeOpacity={0.55}
                 strokeWidth={1}
               />
             )}
@@ -138,9 +154,6 @@ export function TopologyDomains({
             >
               {d.name}
             </text>
-            {/* Status caption — Active uses accent-cold; Coming Soon uses
-                muted text-secondary. The parent <g> opacity dampens the
-                Coming Soon labels by design (no override). */}
             <text
               y={r + 40}
               textAnchor="middle"

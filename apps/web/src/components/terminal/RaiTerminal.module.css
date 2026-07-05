@@ -76,23 +76,49 @@
   gap: var(--space-3);
 }
 
-.zoomReset {
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: var(--border-hairline);
-  text-underline-offset: 3px;
-  transition: color var(--duration-fast) var(--ease-standard);
+/* View pill controls (DL-37: real actions only). Glass pills floating
+   over the canvas — dark rounded pills on the deep theme, light pills
+   on paper. Bottom-right, clear of the guest intro at bottom-left. */
+.pillCluster {
+  position: absolute;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  pointer-events: auto;
 }
 
-.zoomReset:hover {
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 var(--space-4);
+  border-radius: 999px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--text-secondary);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.pill:hover {
   color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+.pill[data-active='true'] {
+  color: var(--accent-cold);
+  border-color: var(--accent-cold);
 }
 
 .canvasHost {

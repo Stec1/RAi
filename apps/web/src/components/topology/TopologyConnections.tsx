@@ -1,19 +1,22 @@
-// TopologyConnections — the RA→Domain edges beneath the nodes.
+// TopologyConnections — luminous curved RA→Domain edges (Living Crystal
+// Graph, DL-37 amended).
 //
-// Per DL-37 (Living Intelligence Aesthetic):
-//   • Every edge keeps its resting hairline (--graph-line), brightening
-//     to the Domain accent when that Domain is hovered or selected.
-//   • ACTIVE-domain edges additionally carry a continuous, very
-//     low-contrast flowing dash (stroke-dashoffset, slow) reading as a
-//     live current, plus an occasional brighter "packet" dot traveling
-//     RA → domain — staggered so roughly one packet is visible across
-//     the whole graph at a time.
-//   • Coming-soon edges stay quiet: hairline only, no flow, no packets.
-//   • Hovering/selecting a domain quickens and brightens its flow.
+//   • Every edge: a thin, gently curved quadratic bezier with a
+//     white→identity-color gradient stroke (userSpaceOnUse so the
+//     gradient runs hub → node); resting subtle, hot brighter.
+//   • ACTIVE edges additionally carry a continuous low-contrast flow
+//     (stroke-dashoffset along the curve) plus an occasional brighter
+//     packet traveling the same path (CSS offset-path), staggered so
+//     ≈1 packet is visible across the graph at a time.
+//   • Coming-soon edges stay quiet: gradient hairline only.
+//   • Hover/selection brightens the edge and quickens its flow.
+//
+// Edge→node relationships, hover/selection inputs, and stagger rhythm
+// are unchanged from PATCH-PIVOT-02 — only the rendering changed.
 
 import type { CSSProperties } from 'react';
 import type { DomainSeed, Vec2 } from './topology-layout';
-import { domainColor } from './topology-layout';
+import { curvedEdgePath, domainColor } from './topology-layout';
 import styles from './TopologyConnections.module.css';
 
 interface Props {
@@ -23,60 +26,72 @@ interface Props {
   selectedSlug: string | null;
 }
 
+const ORIGIN: Vec2 = { x: 0, y: 0 };
+
 export function TopologyConnections({
   domains,
   positions,
   hoveredSlug,
   selectedSlug,
 }: Props) {
-  // Stagger packets across ACTIVE edges only; index within the active
-  // subset keeps the ~one-visible-at-a-time rhythm stable regardless of
-  // how domains are ordered in the payload.
   let activeIndex = -1;
 
   return (
     <g aria-hidden="true">
-      {domains.map((d) => {
+      <defs>
+        {domains.map((d) => {
+          const pos = positions[d.slug];
+          if (!pos) return null;
+          return (
+            <linearGradient
+              key={`edge-grad-${d.slug}`}
+              id={`lcg-edge-${d.slug}`}
+              gradientUnits="userSpaceOnUse"
+              x1={0}
+              y1={0}
+              x2={pos.x}
+              y2={pos.y}
+            >
+              <stop offset="0%" style={{ stopColor: 'var(--graph-edge-base)' }} />
+              <stop offset="100%" stopColor={domainColor(d.slug)} stopOpacity={0.85} />
+            </linearGradient>
+          );
+        })}
+      </defs>
+
+      {domains.map((d, index) => {
         const pos = positions[d.slug];
         if (!pos) return null;
         if (d.active) activeIndex += 1;
 
         const isHot = hoveredSlug === d.slug || selectedSlug === d.slug;
-        const stroke = isHot ? domainColor(d.slug) : 'var(--graph-line)';
-        const strokeOpacity = isHot ? 0.35 : 1;
-        const strokeWidth = isHot ? 1.5 : 1;
+        const path = curvedEdgePath(ORIGIN, pos, index);
 
         return (
           <g key={d.slug}>
-            <line
-              x1={0}
-              y1={0}
-              x2={pos.x}
-              y2={pos.y}
-              stroke={stroke}
-              strokeOpacity={strokeOpacity}
-              strokeWidth={strokeWidth}
-              style={{ transition: 'stroke 150ms ease, stroke-width 150ms ease' }}
+            <path
+              d={path}
+              fill="none"
+              stroke={`url(#lcg-edge-${d.slug})`}
+              className={`${styles.edge} ${d.active ? styles.edgeActive : styles.edgeComing}`}
+              data-hot={isHot ? 'true' : undefined}
             />
             {d.active ? (
               <>
-                {/* Live current — slow dash flow RA → domain (DL-37). */}
-                <line
-                  x1={0}
-                  y1={0}
-                  x2={pos.x}
-                  y2={pos.y}
+                {/* Live current — slow dash flow along the curve. */}
+                <path
+                  d={path}
+                  fill="none"
                   className={`${styles.flow} ${isHot ? styles.flowHot : ''}`}
                 />
-                {/* Occasional packet. 21s cycle, 7s stagger across the
-                    three active edges → ≈1 visible at any moment. */}
+                {/* Occasional packet traveling the same curve. 21s
+                    cycle, 7s stagger across three active edges. */}
                 <circle
                   r={2.2}
                   className={styles.packet}
                   style={
                     {
-                      '--sig-x': `${pos.x}px`,
-                      '--sig-y': `${pos.y}px`,
+                      offsetPath: `path('${path}')`,
                       animationDelay: `${activeIndex * 7}s`,
                     } as CSSProperties
                   }

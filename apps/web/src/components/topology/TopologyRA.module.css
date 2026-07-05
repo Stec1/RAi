@@ -1,21 +1,34 @@
-/* TopologyRA motion (DL-33 amended / DL-37).
-   Heartbeat: the existing 8s halo pulse, plus ONE soft concentric ring
-   that expands and fades once per ~14s cycle (active for ~20% of it) —
-   a single quiet ripple that fades out fully before the next one, never
-   a continuous sweep.
-   transform-box: fill-box keeps the scale centered on the circle.
-   Reduced motion: both animations off; halo rests mid-opacity, ripple
-   hidden — the still core reads as composed in both themes. */
+/* TopologyRA motion + theme translation (DL-37 amended).
+   Heartbeat: the 8s halo pulse plus ONE soft concentric ring that
+   expands and fades once per ~14s cycle — a single quiet ripple that
+   fades out fully before the next one, never a continuous sweep.
+   Theme: the luminous bloom halo renders in dark theme only; the light
+   "paper" theme shows a soft warm shadow instead (glow does not read
+   on white). The gem facets are solid and theme-invariant.
+   Reduced motion: pulse and ripple off; halo rests mid-opacity. */
 
 @keyframes raHaloPulse {
-  0%   { opacity: 0.4; }
-  50%  { opacity: 0.7; }
-  100% { opacity: 0.4; }
+  0%   { opacity: 0.5; }
+  50%  { opacity: 0.85; }
+  100% { opacity: 0.5; }
 }
 
 .haloPulse {
   animation: raHaloPulse 8s ease-in-out infinite;
   transform-origin: center;
+}
+
+/* Theme split: luminous halo (dark) vs soft shadow (light). */
+.haloShadow {
+  display: none;
+}
+
+:global([data-theme='light']) .haloLuminous {
+  display: none;
+}
+
+:global([data-theme='light']) .haloShadow {
+  display: block;
 }
 
 @keyframes raRipple {
@@ -43,10 +56,14 @@
   animation: raRipple 14s linear infinite;
 }
 
+.gem {
+  /* Crisp facets; no filter here — the bloom lives on the halo only. */
+}
+
 @media (prefers-reduced-motion: reduce) {
   .haloPulse {
     animation: none;
-    opacity: 0.55;
+    opacity: 0.65;
   }
 
   .ripple {

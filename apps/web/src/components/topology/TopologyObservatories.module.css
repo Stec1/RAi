@@ -1,8 +1,9 @@
-/* Observatory node presentation (DL-35 / DL-37).
-   Ambient halos derive from each observatory's VisualSignature
-   ambientEffect; the tether to the owning domain carries a slow live
-   dash flow. All motion is opacity/transform/stroke-dashoffset only and
-   rests to a composed static state under prefers-reduced-motion. */
+/* Observatory satellite presentation (DL-35 / DL-37 amended).
+   Bloom halos derive from each observatory's VisualSignature
+   ambientEffect; the curved tether carries a slow live dash flow. All
+   motion is opacity/transform/stroke-dashoffset only and rests to a
+   composed static state under prefers-reduced-motion. The light
+   "paper" theme dampens blooms to soft color shadows. */
 
 .node {
   cursor: pointer;
@@ -23,7 +24,7 @@
   opacity: 1;
 }
 
-/* Live tether — same dash grammar as edge flow, quieter. */
+/* Live curved tether — same dash grammar as edge flow, quieter. */
 @keyframes tetherFlow {
   from {
     stroke-dashoffset: 0;
@@ -34,37 +35,47 @@
 }
 
 .tether {
-  stroke: var(--graph-line);
   stroke-width: 1;
   stroke-dasharray: 2 10;
   stroke-linecap: round;
   animation: tetherFlow 3.2s linear infinite;
+  opacity: 0.7;
+  transition: opacity 150ms ease;
 }
 
 .tetherHot {
-  stroke: var(--graph-flow);
+  opacity: 1;
   animation-duration: 2s;
 }
 
-/* Ambient halos behind the glyph. */
+:global([data-theme='light']) .tether {
+  stroke-width: 1.4;
+}
+
+/* Bloom halos behind the glyph. */
 .haloStatic {
-  opacity: 0.12;
+  opacity: 0.5;
 }
 
 @keyframes obsGlow {
   0% {
-    opacity: 0.1;
+    opacity: 0.4;
+    transform: scale(0.94);
   }
   50% {
-    opacity: 0.3;
+    opacity: 0.85;
+    transform: scale(1.06);
   }
   100% {
-    opacity: 0.1;
+    opacity: 0.4;
+    transform: scale(0.94);
   }
 }
 
 .haloGlow {
-  opacity: 0.18;
+  opacity: 0.6;
+  transform-box: fill-box;
+  transform-origin: center;
   animation: obsGlow 7s ease-in-out infinite;
 }
 
@@ -81,7 +92,7 @@
 }
 
 .haloDrift {
-  opacity: 0.16;
+  opacity: 0.55;
   animation: obsDrift 11s ease-in-out infinite;
 }
 
@@ -108,6 +119,13 @@
   animation: obsPulse 6.5s ease-in-out infinite;
 }
 
+/* Light theme: blooms as soft color shadows, not glow. */
+:global([data-theme='light']) .haloStatic,
+:global([data-theme='light']) .haloGlow,
+:global([data-theme='light']) .haloDrift {
+  opacity: 0.3;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tether,
   .tetherHot,
@@ -117,17 +135,13 @@
     animation: none;
   }
 
-  .tether,
-  .tetherHot {
-    opacity: 0.7;
-  }
-
   .haloGlow {
-    opacity: 0.18;
+    opacity: 0.6;
+    transform: none;
   }
 
   .haloDrift {
-    opacity: 0.16;
+    opacity: 0.55;
     transform: none;
   }
 

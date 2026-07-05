@@ -1,16 +1,54 @@
-/* Live-link motion for active edges (DL-33 amended / DL-37).
+/* Luminous edge rendering + live-link motion (DL-37 amended).
 
-   Flow: a very low-contrast dashed overlay whose stroke-dashoffset
-   drifts slowly — a current, not a marquee. Dash period is 14px
-   (3 dash + 11 gap); one -14px offset per cycle keeps the loop
-   seamless. Hover/selection brightens and quickens it slightly.
+   Edges: gradient hairlines (hub-white → identity color). Resting
+   opacity is subtle; hot edges brighten and thicken slightly. The light
+   "paper" theme uses slightly heavier, more opaque colored edges —
+   luminance does not read on white.
 
-   Packet: a brighter dot that leaves RA and travels the edge, then
-   rests dark for most of a long cycle (travel ≈ 2.9s of 21s). Delays
-   are staggered per active edge so ≈1 packet is visible at a time.
+   Flow: a very low-contrast dashed overlay drifting along the curve
+   (14px dash period, seamless -14px offset per cycle). Hover/selection
+   brightens and quickens it.
 
-   Reduced motion: flow and packets are simply absent — the resting
-   hairline graph is the composed static state in both themes. */
+   Packet: a brighter dot traveling the same bezier via CSS offset-path
+   (travel ≈ 2.9s of a 21s cycle; staggered per active edge so ≈1 is
+   visible at a time).
+
+   Reduced motion: flow rests as a static dashed overlay, packets are
+   absent — the resting gradient graph is the composed state. */
+
+.edge {
+  stroke-width: 1;
+  transition: opacity 150ms ease, stroke-width 150ms ease;
+}
+
+.edgeActive {
+  opacity: 0.55;
+}
+
+.edgeComing {
+  opacity: 0.3;
+}
+
+.edge[data-hot='true'] {
+  opacity: 1;
+  stroke-width: 1.6;
+}
+
+:global([data-theme='light']) .edge {
+  stroke-width: 1.4;
+}
+
+:global([data-theme='light']) .edgeActive {
+  opacity: 0.75;
+}
+
+:global([data-theme='light']) .edgeComing {
+  opacity: 0.45;
+}
+
+:global([data-theme='light']) .edge[data-hot='true'] {
+  stroke-width: 2;
+}
 
 @keyframes edgeFlow {
   from {
@@ -27,7 +65,6 @@
   stroke-dasharray: 3 11;
   stroke-linecap: round;
   animation: edgeFlow 2.6s linear infinite;
-  transition: opacity 150ms ease;
 }
 
 .flowHot {
@@ -35,9 +72,9 @@
   animation-duration: 1.6s;
 }
 
-@keyframes packetTravel {
+@keyframes packetAlong {
   0% {
-    transform: translate(0px, 0px);
+    offset-distance: 0%;
     opacity: 0;
   }
   2% {
@@ -47,11 +84,11 @@
     opacity: 0.9;
   }
   14% {
-    transform: translate(var(--sig-x), var(--sig-y));
+    offset-distance: 100%;
     opacity: 0;
   }
   100% {
-    transform: translate(var(--sig-x), var(--sig-y));
+    offset-distance: 100%;
     opacity: 0;
   }
 }
@@ -59,7 +96,8 @@
 .packet {
   fill: var(--graph-signal);
   opacity: 0;
-  animation: packetTravel 21s linear infinite;
+  offset-rotate: 0deg;
+  animation: packetAlong 21s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

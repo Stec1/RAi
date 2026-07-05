@@ -650,6 +650,11 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 > review rejected that direction: the starfield read as a dirty screen (especially
 > in the light theme) and violated the product's own anti-cosmic art direction.
 > The decision is rewritten below; the successor aesthetic is DL-37.
+>
+> **Amended again in PATCH-PIVOT-03:** the motion vocabulary below is extended by
+> DL-37 (Living Crystal Graph): luminance breathing on orbs and VERY slow drift of
+> the structural depth rings are now part of the allowed set. The starfield remains
+> forbidden.
 
 **Decision:** The Explore canvas has NO starfield and NO cosmic imagery. Its motion is a living-instrument language (DL-37): the RA heartbeat (warm pulse plus a single soft ripple every 12–16s), staggered breathing on active domain nodes, a very low-contrast flowing current along RA↔active-domain edges with an occasional brighter packet, and signature-driven pulses on observatory nodes. This remains a scoped exception to the "no looping animations on idle UI" rule; it applies to the Explore topology canvas only and must respect `prefers-reduced-motion` (static fallback must still look composed in both themes). All other UI keeps existing motion restrictions.
 
@@ -717,19 +722,80 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 
 ---
 
-## DL-37 — Living Intelligence Aesthetic
+## DL-37 — Living Crystal Graph Aesthetic (amended in PATCH-PIVOT-03)
 
-**Decision:** The Explore topology canvas is a "living intelligence instrument": calm, precise ambient life expressed through rhythm and data-flow — RA heartbeat with a rare expanding ripple, staggered breathing on active domains, low-contrast flowing currents with occasional packets on active edges, signature-driven observatory pulses, and focus-on-interaction (hover/registry hover brightens a node and its edge). This is a scoped exception to the `docs/visual-reference.md` prohibitions on sci-fi HUD / cosmic imagery, and applies to the Explore canvas ONLY. Restraint principles remain in force everywhere: typography discipline, no neon as primary, no clutter, ≤5 interactive elements per section.
+> **Amended:** the PATCH-PIVOT-02 version of this decision ("Living Intelligence
+> Aesthetic") prescribed a restrained, low-glow instrument and forbade all
+> rotating/orbiting elements. Founder review supplied a visual reference and a
+> stronger target; this amendment defines the canonical Explore look as the
+> **Living Crystal Graph**. Two stances change deliberately: (1) glow is now
+> embraced as luminance that encodes node identity and activity (within a
+> performance budget); (2) structural elliptical depth rings with VERY slow
+> orbital drift are now allowed — they cue depth and life. Spinning
+> targeting/radar elements remain forbidden.
 
-**Binding anti-cliché list (canvas must contain NONE of):** starfield / cosmic / space imagery; radar sweeps or scanning lines; rotating, orbiting, or spinning elements; targeting reticles, crosshairs, or bracket/corner "HUD frames" around nodes; hexagon grids, matrix-rain, scanlines, or circuit-board decoration; neon as a primary color; busy or constant motion. If it resembles a sci-fi movie HUD, it is wrong.
+**Decision:** The Explore topology canvas is the Living Crystal Graph: a luminous, depth-cued, data-bearing rendering. RA is a faceted warm-gold crystal hub with a soft inner light and bloom; domains are glowing identity-colored orbs (active larger and brighter, coming-soon dim and cool); observatories are smaller signature-driven glowing satellites; edges are thin, gently curved, luminous gradient strokes (hub-white toward node color); 1–2 faint elliptical orbit rings behind the graph cue depth and drift very slowly. Every luminous element is data-bearing — a real node, a real edge, or a structural depth cue. Richness scales with the real universe; nothing is fabricated to look denser.
+
+**Founder reference (described so the intent survives without images in-repo):** a luminous knowledge-graph instrument — a bright faceted glowing crystal at the center from which everything radiates; small glowing colored orbs (warm amber, magenta, violet, yellow, occasional blue) with soft bloom, sized by importance; very thin luminous white-to-color gradient edges fanning out densely like a dandelion; faint elliptical orbit rings and gently curved lines giving a slow-drifting spherical depth; near-black background; dark rounded pill controls along the canvas edge. The feeling: a living, luminous, self-aware relational instrument — dense, deep, calm. RAI adopts the LANGUAGE at its current scale; it does not copy the product, and RA stays warm-gold (never magenta).
+
+**Binding anti-cliché list (canvas must contain NONE of):** decorative background starfield or ambient dots unrelated to data; radar sweeps or scanning lines; targeting reticles, crosshairs, or bracket/corner "HUD frames" around nodes; hexagon grids, matrix-rain, scanlines, or circuit-board decoration; neon as a primary color; fake AI action controls ("Suggest Nodes", "Analyze Cluster" — nothing without a real backend); busy or constant fast motion. Changed from PATCH-PIVOT-02: slow orbital-ring drift is permitted; spinning targeting/radar elements remain forbidden. If it resembles a sci-fi movie HUD, it is wrong.
 
 **Why:**
-- The instrument metaphor (a quiet, self-aware terminal) matches DL-32; a screensaver or a movie cockpit does not.
-- Data-flow motion (edge currents, packets, heartbeat) communicates that the network is alive; decor (stars, sweeps, spinning rings) only communicates genre.
-- A hard anti-cliché list keeps future patches from drifting toward HUD kitsch one small ornament at a time.
+- The flat, sparse instrument read as unfinished rather than calm; luminance tied to identity and activity makes the graph feel alive without decoration.
+- Depth cues (rings, curvature, slow drift) give the universe a sense of space that a flat plane cannot.
+- Anchoring every glowing element to data keeps the richness honest — density arrives with real observatories, not ornaments.
 
-**Trade-off:** The canvas motion vocabulary is deliberately narrow; expressiveness must come from signatures and data, not new ornament types.
+**Trade-off:** More visual complexity per node (gradients, blooms, filters) requires an explicit performance budget: limited filtered elements, GPU-friendly animation properties only, and capped element counts so pan/zoom stays smooth.
 
-**Revisit:** Yes — alongside DL-36 when real data replaces the mocks.
+**Revisit:** Yes — alongside DL-38 when node density approaches what hand-tuned SVG can carry.
 
-**See also:** DL-29, DL-32, DL-33 (amended), DL-36.
+**See also:** DL-29, DL-32, DL-33 (amended), DL-36, DL-38.
+
+---
+
+## DL-38 — Topology Rendering Engine
+
+**Decision:** The Explore topology is rendered in SVG + CSS. The Living Crystal Graph (DL-37) is a stylized 2.5D interpretation — glowing orbs via radial gradients and SVG glow filters, luminous gradient-stroke curved edges, a faceted SVG crystal hub, elliptical depth rings, gentle CSS drift. A true-3D rendering engine (`react-force-graph-3d`, `three-globe`, or raw WebGL) is a deferred Level 2 decision, to be taken only when node density and product need justify it AND the dependency and performance trade-offs are explicitly accepted. No 3D engine, no canvas/WebGL, and no new dependencies in the current implementation.
+
+**Why:**
+- At the current scale (RA + 7 domains + a handful of observatories) SVG delivers the luminous language with zero dependency cost and full CSS-Modules/theme/token integration.
+- A 3D engine is a heavy, sticky dependency; adopting it for ~10 nodes would be spectacle-driven, which DL-30/DL-37 forbid.
+- Deferring keeps the graduation path honest: real density first, engine second.
+
+**Trade-off:** True volumetric depth, physical camera motion, and force layouts are out of reach until the engine decision is taken. Accepted — the 2.5D language carries the intent at MVP scale.
+
+**Revisit:** Yes — when real Observatory counts make the SVG budget (element count, filter cost) measurably strain pan/zoom smoothness.
+
+**See also:** DL-30, DL-37, docs/visual-reference.md Topology Rendering Levels.
+
+---
+
+## DL-39 — Virtual/Real World Lifecycle (recorded, not built)
+
+**Decision:** The universe is two halves of one lifecycle. A **virtual** observatory presents an idea before it exists in the world; a **real** observatory is tied to an existing place. An idea can graduate from virtual to real when it is realized. An observatory will carry a `world` field (`virtual` | `real`). Nothing is built now: the Explore virtual/real toggle and the real-world Earth map are future patches (World Mode track, DL-34), and the database `world` column is deferred until the Observatory model lands.
+
+**Why:**
+- The pivot's two-worlds framing (docs/concept-pivot.md §2) needs a data-model anchor so future patches converge on one vocabulary.
+- Graduation (virtual → real) is the product's most distinctive lifecycle moment; naming it early keeps Create/Explore/World Mode designs aligned.
+
+**Trade-off:** A recorded field that does not exist yet can drift from reality. Mitigated by deferring the column to the same patch that ships the Observatory model.
+
+**Revisit:** Yes — when the Observatory schema ships.
+
+**See also:** DL-31, DL-34, DL-40, docs/concept-pivot.md.
+
+---
+
+## DL-40 — Idea-to-Reality Funding (future direction — recorded, not built)
+
+**Decision:** A future, non-custodial, transparent funding path may let a community fund the realization of a published idea (a virtual observatory graduating to real — DL-39). Binding constraints recorded now: funds are NEVER routed to a founder's personal wallet; realization is controlled by protocol and happens transparently; the platform shows, coordinates, verifies, and settles — it never executes and never takes custody (DL-25). This is a direction only: it is NOT scoped, NOT designed, and NOT built here, and it carries open legal and technical questions (jurisdiction, escrow mechanics, verification of realization) to be resolved in its own track before any implementation.
+
+**Why:**
+- The lifecycle in DL-39 naturally raises "who pays for graduation"; recording the non-custodial constraint NOW prevents future designs from drifting toward custodial or founder-benefiting models.
+- DL-25 alignment must be structural, not aspirational — writing it into the earliest record makes it a hard requirement for any future funding design.
+
+**Trade-off:** Recording a direction this early risks implying a commitment. Mitigated by the explicit not-scoped/not-built status and the open-questions list.
+
+**Revisit:** Yes — in a dedicated track, only after the Observatory model and DL-39 lifecycle exist in product.
+
+**See also:** DL-03 (no Web3 in MVP — still in force), DL-25, DL-39.

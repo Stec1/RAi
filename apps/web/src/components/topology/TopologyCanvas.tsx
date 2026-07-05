@@ -13,20 +13,22 @@
 //     ~80ms of pointer motion; cancelled on next pointerdown / unmount.
 //   - Click-vs-drag distinction via CLICK_MOVE_THRESHOLD.
 //
-// PATCH-PIVOT-02 — central click dispatch (Phase 0 root-cause fix):
+// PATCH-PIVOT-02 — central click dispatch (preserved intact):
 // handlePointerDown calls setPointerCapture on the <svg>, and with
 // capture held, browsers dispatch the synthesized `click` at the capture
 // target — so per-node React onClick handlers NEVER fire from real
-// pointer input. The fix: the true pointerdown target (captured BEFORE
-// capture retargeting applies) is stored in the drag state, and the
-// pointerup click-vs-drag branch routes selection centrally from that
-// snapshot: domain / observatory / RA select, or background clear.
-// Node components keep only hover reporting and the keyboard path.
+// pointer input. The true pointerdown target (captured BEFORE capture
+// retargeting applies) is stored in the drag state, and the pointerup
+// click-vs-drag branch routes selection centrally from that snapshot.
 //
-// Also per DL-35/DL-36/DL-37: observatory nodes render with guarded
-// positions (fallback coordinates if their domain is missing or a
-// position is non-finite), and the canvas reports zoom changes and
-// accepts an external reset signal for the panel's zoom control.
+// PATCH-PIVOT-03 (DL-37 amended / DL-38) — visual layer only:
+//   - Structural elliptical depth rings render first inside the pan/zoom
+//     group (TopologyDepthRings).
+//   - `showActiveOnly` filters WHICH nodes/edges render (a real view
+//     control, DL-37: no fake actions); positions stay computed from the
+//     full set so angles never shift.
+//   - `viewCommand` executes real view actions: reset (identity), fit
+//     (frame all visible nodes), focus (center the hub).
 
 import {
   useCallback,
@@ -40,6 +42,7 @@ import {
 import { TopologyRA } from './TopologyRA';
 import { TopologyDomains } from './TopologyDomains';
 import { TopologyConnections } from './TopologyConnections';
+import { TopologyDepthRings } from './TopologyDepthRings';
 import {
   TopologyObservatories,
   type ObservatoryOnCanvas,
@@ -59,6 +62,13 @@ export type EntityRef =
   | { kind: 'ra' }
   | { kind: 'domain'; slug: string }
   | { kind: 'observatory'; slug: string };
+
+// Real view actions for the topology panel's pill controls (DL-37:
+// controls are real — no AI/data-mutation actions exist here).
+export type ViewCommand = {
+  action: 'reset' | 'fit' | 'focus';
+  token: number;
+};
 
 const OBSERVATORY_SLUG_PREFIX = 'observatory:';
 
@@ -81,10 +91,12 @@ interface Props {
   onHoverEntity: (ref: EntityRef | null) => void;
   onSelectEntity: (ref: EntityRef) => void;
   onClearSelect: () => void;
-  /** Reports the current zoom factor after wheel/pinch/reset changes. */
+  /** Reports the current zoom factor after wheel/pinch/command changes. */
   onViewChange?: (zoom: number) => void;
-  /** Increment to reset pan/zoom to the initial view. */
-  resetToken?: number;
+  /** Real view actions (reset / fit / focus); executed on token change. */
+  viewCommand?: ViewCommand;
+  /** Render filter: active domains (and their observatories) only. */
+  showActiveOnly?: boolean;
 }
 
 // Zoom range and step constants. Wheel deltas use a small exponential step
@@ -107,6 +119,10 @@ const VELOCITY_WINDOW_MS = 80;
 const INERTIA_DECAY = 0.92;
 const INERTIA_MIN_VELOCITY = 0.02; // viewBox units per ms
 const INERTIA_MIN_KICK = 0.4 / 16; // ~ 0.4 px/frame at 60Hz, in vb units/ms
+
+// Fit: padding around the node bounding box, in viewBox units — covers
+// node labels (which extend below and to the sides of each node).
+const FIT_PADDING = 80;
 
 type Pan = { x: number; y: number };
 
@@ -145,7 +161,8 @@ export function TopologyCanvas({
   onSelectEntity,
   onClearSelect,
   onViewChange,
-  resetToken,
+  viewCommand,
+  showActiveOnly = false,
 }: Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const innerGroupRef = useRef<SVGGElement | null>(null);
@@ -178,19 +195,34 @@ export function TopologyCanvas({
     return () => mq.removeEventListener('change', update);
   }, []);
 
+  // Positions are always computed from the FULL domain set so seed angles
+  // never shift when the render filter changes.
   const positions = useMemo(
     () =>
       computeDomainPositions(domains, isMobile ? MOBILE_RADII : DESKTOP_RADII),
     [domains, isMobile],
   );
 
+  // Render filter (DL-37 pill control): active domains and the
+  // observatories that belong to them.
+  const visibleDomains = useMemo(
+    () => (showActiveOnly ? domains.filter((d) => d.active) : domains),
+    [domains, showActiveOnly],
+  );
+  const visibleObservatories = useMemo(() => {
+    if (!showActiveOnly) return observatories;
+    const activeSlugs = new Set(
+      domains.filter((d) => d.active).map((d) => d.slug),
+    );
+    return observatories.filter((o) => activeSlugs.has(o.domainSlug));
+  }, [observatories, domains, showActiveOnly]);
+
   // Observatory nodes settle at a fixed offset from their domain. If the
   // domain is missing from the fetched payload, or any coordinate is
   // non-finite, the node falls back to its defined fixed coordinate —
-  // an observatory is never dropped and never lands on NaN (§ Phase 4
-  // position guards).
+  // an observatory is never dropped and never lands on NaN.
   const observatoryNodes = useMemo<ObservatoryOnCanvas[]>(() => {
-    return observatories.map((observatory) => {
+    return visibleObservatories.map((observatory) => {
       const rawDomain = positions[observatory.domainSlug] ?? null;
       const domainPosition =
         rawDomain &&
@@ -210,7 +242,7 @@ export function TopologyCanvas({
           : observatory.fallbackPosition;
       return { observatory, position, domainPosition };
     });
-  }, [observatories, positions]);
+  }, [visibleObservatories, positions]);
 
   const cancelInertia = useCallback(() => {
     if (inertiaFrameRef.current !== null) {
@@ -219,21 +251,57 @@ export function TopologyCanvas({
     }
   }, []);
 
-  // External reset (the topology panel's `reset` control). Skips the
-  // mount pass so the initial view isn't clobbered.
-  const firstResetRef = useRef(true);
+  // Real view commands from the panel's pill controls. Token-gated so the
+  // effect only acts on an actual dispatch, never on data changes.
+  const lastViewTokenRef = useRef(0);
   useEffect(() => {
-    if (firstResetRef.current) {
-      firstResetRef.current = false;
-      return;
-    }
+    if (!viewCommand || viewCommand.token === lastViewTokenRef.current) return;
+    lastViewTokenRef.current = viewCommand.token;
     cancelInertia();
-    zoomRef.current = 1;
-    panRef.current = { x: 0, y: 0 };
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-    onViewChangeRef.current?.(1);
-  }, [resetToken, cancelInertia]);
+
+    let nextZoom = 1;
+    let nextPan: Pan = { x: 0, y: 0 };
+
+    if (viewCommand.action === 'focus') {
+      // Center and scale to the hub.
+      nextZoom = 1.6;
+    } else if (viewCommand.action === 'fit') {
+      // Frame all visible nodes (hub + domains + observatories).
+      let minX = 0;
+      let maxX = 0;
+      let minY = 0;
+      let maxY = 0;
+      for (const d of visibleDomains) {
+        const pos = positions[d.slug];
+        if (!pos) continue;
+        minX = Math.min(minX, pos.x);
+        maxX = Math.max(maxX, pos.x);
+        minY = Math.min(minY, pos.y);
+        maxY = Math.max(maxY, pos.y);
+      }
+      for (const node of observatoryNodes) {
+        minX = Math.min(minX, node.position.x);
+        maxX = Math.max(maxX, node.position.x);
+        minY = Math.min(minY, node.position.y);
+        maxY = Math.max(maxY, node.position.y);
+      }
+      const width = maxX - minX + FIT_PADDING * 2;
+      const height = maxY - minY + FIT_PADDING * 2;
+      nextZoom = Math.max(
+        ZOOM_MIN,
+        Math.min(ZOOM_MAX, Math.min(1000 / width, 800 / height)),
+      );
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      nextPan = { x: -centerX * nextZoom, y: -centerY * nextZoom };
+    }
+
+    zoomRef.current = nextZoom;
+    panRef.current = nextPan;
+    setZoom(nextZoom);
+    setPan(nextPan);
+    onViewChangeRef.current?.(nextZoom);
+  }, [viewCommand, cancelInertia, visibleDomains, positions, observatoryNodes]);
 
   // Native wheel listener. React's onWheel is registered as passive in
   // some browsers, which means preventDefault() is a no-op there — letting
@@ -412,8 +480,8 @@ export function TopologyCanvas({
 
       if (moved < CLICK_MOVE_THRESHOLD) {
         // Treated as a click. Central dispatch from the pointerdown
-        // snapshot (Phase 0 fix): the pointerup/click targets are the
-        // capturing <svg>, so per-node handlers can't be trusted here.
+        // snapshot: the pointerup/click targets are the capturing <svg>,
+        // so per-node handlers can't be trusted here.
         if (drag.startSlug) {
           onSelectEntity(entityFromSlugAttr(drag.startSlug));
         } else {
@@ -501,14 +569,15 @@ export function TopologyCanvas({
         ref={innerGroupRef}
         transform={`translate(${pan.x} ${pan.y}) scale(${zoom})`}
       >
+        <TopologyDepthRings />
         <TopologyConnections
-          domains={domains}
+          domains={visibleDomains}
           positions={positions}
           hoveredSlug={hoveredDomainSlug}
           selectedSlug={selectedDomainSlug}
         />
         <TopologyDomains
-          domains={domains}
+          domains={visibleDomains}
           positions={positions}
           hoveredSlug={hoveredDomainSlug}
           selectedSlug={selectedDomainSlug}
