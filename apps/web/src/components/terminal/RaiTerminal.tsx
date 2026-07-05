@@ -28,7 +28,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { TopologyCanvas, type EntityRef } from '../topology/TopologyCanvas';
+import {
+  TopologyCanvas,
+  type EntityRef,
+  type ViewCommand,
+} from '../topology/TopologyCanvas';
 import { ExploreInfoPanel } from '../topology/ExploreInfoPanel';
 import type { AuthState } from '../topology/ExploreInfoPanel';
 import type { DomainSeed } from '../topology/topology-layout';
@@ -94,7 +98,12 @@ export function RaiTerminal() {
   const [signingOut, setSigningOut] = useState(false);
   const [activeTab, setActiveTab] = useState<SheetTab>('inspector');
   const [zoomPct, setZoomPct] = useState(100);
-  const [resetToken, setResetToken] = useState(0);
+  // Real view actions for the pill controls (DL-37: controls are real).
+  const [viewCommand, setViewCommand] = useState<ViewCommand>({
+    action: 'reset',
+    token: 0,
+  });
+  const [showActiveOnly, setShowActiveOnly] = useState(false);
 
   // Lock document-level scroll while the terminal is mounted. Styles are
   // set imperatively (not via a global class) because Next.js's CSS
@@ -215,6 +224,9 @@ export function RaiTerminal() {
     { id: 'activity', label: 'Activity' },
   ];
 
+  const dispatchView = (action: ViewCommand['action']) =>
+    setViewCommand((prev) => ({ action, token: prev.token + 1 }));
+
   return (
     <div className={styles.terminal}>
       <TerminalHeader
@@ -253,13 +265,6 @@ export function RaiTerminal() {
               <span className={styles.panelTitle}>Topology</span>
               <span className={styles.zoomControl}>
                 <span aria-live="off">{`zoom ${zoomPct}%`}</span>
-                <button
-                  type="button"
-                  className={styles.zoomReset}
-                  onClick={() => setResetToken((t) => t + 1)}
-                >
-                  reset
-                </button>
               </span>
             </div>
             <div className={styles.canvasHost}>
@@ -277,9 +282,50 @@ export function RaiTerminal() {
                   onSelectEntity={handleSelect}
                   onClearSelect={() => setSelected(null)}
                   onViewChange={(z) => setZoomPct(Math.round(z * 100))}
-                  resetToken={resetToken}
+                  viewCommand={viewCommand}
+                  showActiveOnly={showActiveOnly}
                 />
               )}
+              {/* View pill controls (DL-37: real actions only). Bottom-
+                  right, clear of the guest intro at bottom-left. */}
+              {domains ? (
+                <div
+                  className={styles.pillCluster}
+                  role="group"
+                  aria-label="View controls"
+                >
+                  <button
+                    type="button"
+                    className={styles.pill}
+                    onClick={() => dispatchView('reset')}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.pill}
+                    onClick={() => dispatchView('fit')}
+                  >
+                    Fit
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.pill}
+                    onClick={() => dispatchView('focus')}
+                  >
+                    Focus RA
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.pill}
+                    aria-pressed={showActiveOnly}
+                    data-active={showActiveOnly ? 'true' : undefined}
+                    onClick={() => setShowActiveOnly((v) => !v)}
+                  >
+                    Active only
+                  </button>
+                </div>
+              ) : null}
               {showIntro ? (
                 <GuestIntroPanel onDismiss={() => setIntroDismissed(true)} />
               ) : null}

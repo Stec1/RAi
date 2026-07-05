@@ -1,28 +1,63 @@
-/* Active-domain breathing (DL-33 amended / DL-37). The node body group
-   breathes opacity 0.86 ↔ 1 on a 7–9s cycle, staggered per node from
-   the render index so the field never pulses in unison. Opacity-only —
-   GPU-friendly, invisible to pan/zoom.
-   Reduced motion: animation off; the node rests at full presence. */
+/* Domain orb luminance (DL-37 amended).
+   Breathing lives on the bloom halo: opacity + slight scale, 7–9s,
+   staggered per node from the render index. Hot (hover / Registry row /
+   selection) intensifies the bloom. Light "paper" theme dampens blooms
+   to a soft color shadow — solid orbs carry the identity there.
+   Reduced motion: breathing off; blooms rest at a composed level. */
 
-@keyframes domainBreath {
+.bloom {
+  opacity: 0.7;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: opacity 150ms ease;
+}
+
+.bloom[data-hot='true'] {
+  opacity: 1;
+}
+
+@keyframes orbBreath {
   0% {
-    opacity: 0.86;
+    opacity: 0.55;
+    transform: scale(0.94);
   }
   50% {
-    opacity: 1;
+    opacity: 0.9;
+    transform: scale(1.04);
   }
   100% {
-    opacity: 0.86;
+    opacity: 0.55;
+    transform: scale(0.94);
   }
 }
 
-.breath {
-  animation: domainBreath 8s ease-in-out infinite;
+.bloomBreath {
+  animation: orbBreath 8s ease-in-out infinite;
+}
+
+.bloomBreath[data-hot='true'] {
+  animation: none;
+  opacity: 1;
+  transform: scale(1.04);
+}
+
+.orbCore {
+  /* Solid gradient core; nothing animated here — pan/zoom stays cheap. */
+}
+
+/* Light theme: blooms read as soft color shadows, not glow. */
+:global([data-theme='light']) .bloom {
+  opacity: 0.35;
+}
+
+:global([data-theme='light']) .bloom[data-hot='true'] {
+  opacity: 0.55;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .breath {
+  .bloomBreath {
     animation: none;
-    opacity: 1;
+    opacity: 0.7;
+    transform: none;
   }
 }

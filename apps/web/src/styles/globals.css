@@ -47,6 +47,11 @@
   --graph-flow: rgba(232, 237, 245, 0.16);
   --graph-signal: rgba(255, 244, 214, 0.9);
 
+  /* Living Crystal Graph (DL-37 amended / DL-38): structural depth
+     rings and the hub-side base of luminous edge gradients. */
+  --graph-depth-ring: rgba(232, 237, 245, 0.07);
+  --graph-edge-base: rgba(245, 240, 225, 0.55);
+
   /*
    * Domain identification tokens.
    * Values derived directly from the prose "color hints" in
@@ -132,6 +137,9 @@
   --graph-node-outline: rgba(18, 18, 30, 0.1);
   --graph-flow: rgba(18, 18, 30, 0.18);
   --graph-signal: rgba(52, 56, 74, 0.75);
+
+  --graph-depth-ring: rgba(18, 18, 30, 0.1);
+  --graph-edge-base: rgba(74, 66, 48, 0.6);
 
   color-scheme: light;
 }

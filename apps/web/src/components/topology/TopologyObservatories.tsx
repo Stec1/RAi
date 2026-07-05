@@ -1,20 +1,17 @@
-// TopologyObservatories — observatory nodes on the Explore topology
-// (DL-35: first-class entities). Visually distinct from domain nodes:
-// smaller, styled from each observatory's VisualSignature (primaryColor,
-// nodeStyle, ambientEffect), joined to their domain by a short live
-// tether (slow dash flow per DL-37).
+// TopologyObservatories — observatory satellites on the Living Crystal
+// Graph (DL-35 / DL-37 amended). Each renders from its VisualSignature:
+// a soft bloom halo + a luminous core in primaryColor, shaped by
+// nodeStyle (point / ring / pulse / cross), animated by ambientEffect
+// (glow / drift), and joined to its domain by a short curved luminous
+// gradient tether.
 //
-// Entry model (PATCH-PIVOT-02): a node click SELECTS the observatory in
-// the Inspector — it does not open the overlay. The Inspector's "Open
-// art-story" button is the single overlay entry. Mouse/touch selection
-// is dispatched centrally by TopologyCanvas from its pointerup hit-test
-// (pointer capture retargets click events to the <svg> root, so a
-// per-node onClick never fires with real input — Phase 0 diagnosis).
-// This component reports hover and handles the keyboard path.
-//
-// `hot` (hover from pointer, Registry row, or selection) reveals the
-// name + kind label and the focus ring — CSS :hover alone can't cover
-// Registry-driven highlighting.
+// Interaction is unchanged from PATCH-PIVOT-02: node click = select into
+// the Inspector (dispatched centrally by TopologyCanvas from its
+// pointerup hit-test — pointer capture retargets click events to the
+// <svg> root); the Inspector's "Open art-story" button is the single
+// overlay entry. This component reports hover and handles the keyboard
+// path. `hot` (pointer, Registry row, or selection) reveals the name +
+// kind label and the focus ring.
 //
 // Currently fed by MOCK data (src/data/mock-observatories.ts) — swap
 // the source, not this renderer, when real Observatory data lands.
@@ -22,6 +19,7 @@
 import type { KeyboardEvent } from 'react';
 import type { MockObservatory } from '../../data/mock-observatories';
 import type { Vec2 } from './topology-layout';
+import { curvedEdgePath, domainColor } from './topology-layout';
 import styles from './TopologyObservatories.module.css';
 
 export type ObservatoryOnCanvas = {
@@ -46,7 +44,8 @@ const KIND_LABEL: Record<MockObservatory['kind'], string> = {
 };
 
 function NodeGlyph({ observatory }: { observatory: MockObservatory }) {
-  const { nodeStyle, primaryColor, ambientEffect } = observatory.signature;
+  const { nodeStyle, ambientEffect } = observatory.signature;
+  const slug = observatory.slug;
 
   const haloClass =
     ambientEffect === 'glow'
@@ -55,29 +54,36 @@ function NodeGlyph({ observatory }: { observatory: MockObservatory }) {
         ? styles.haloDrift
         : styles.haloStatic;
 
+  const core = `url(#lcg-obs-orb-${slug})`;
+  const primary = observatory.signature.primaryColor;
+
   return (
     <>
-      <circle r={14} fill={primaryColor} className={haloClass} />
+      {/* Bloom halo — signature luminance. */}
+      <circle r={16} fill={`url(#lcg-obs-bloom-${slug})`} className={haloClass} />
       {nodeStyle === 'ring' && (
         <>
-          <circle r={8} fill="none" stroke={primaryColor} strokeWidth={1.5} />
-          <circle r={2.2} fill={primaryColor} />
+          <circle r={8} fill="none" stroke={primary} strokeWidth={1.5} />
+          <circle r={2.6} fill={core} />
         </>
       )}
       {nodeStyle === 'pulse' && (
         <>
-          <circle r={8} fill={primaryColor} className={styles.pulseRing} />
-          <circle r={4} fill={primaryColor} />
+          <circle r={8} fill={primary} className={styles.pulseRing} />
+          <circle r={4.5} fill={core} />
         </>
       )}
-      {nodeStyle === 'point' && <circle r={5} fill={primaryColor} />}
+      {nodeStyle === 'point' && <circle r={5.5} fill={core} />}
       {nodeStyle === 'cross' && (
-        <path
-          d="M -6 0 H 6 M 0 -6 V 6"
-          stroke={primaryColor}
-          strokeWidth={1.5}
-          fill="none"
-        />
+        <>
+          <path
+            d="M -6 0 H 6 M 0 -6 V 6"
+            stroke={primary}
+            strokeWidth={1.5}
+            fill="none"
+          />
+          <circle r={2} fill={core} />
+        </>
       )}
     </>
   );
@@ -92,7 +98,45 @@ export function TopologyObservatories({
 }: Props) {
   return (
     <g>
-      {nodes.map(({ observatory, position, domainPosition }) => {
+      {/* Per-observatory gradients (core, bloom, tether). */}
+      <defs>
+        {nodes.map(({ observatory, position, domainPosition }) => {
+          const { primaryColor, accentColor } = observatory.signature;
+          return (
+            <g key={`defs-${observatory.slug}`}>
+              <radialGradient id={`lcg-obs-orb-${observatory.slug}`}>
+                <stop offset="0%" stopColor={accentColor} stopOpacity="0.95" />
+                <stop offset="45%" stopColor={primaryColor} stopOpacity="1" />
+                <stop offset="100%" stopColor={primaryColor} stopOpacity="0.85" />
+              </radialGradient>
+              <radialGradient id={`lcg-obs-bloom-${observatory.slug}`}>
+                <stop offset="0%" stopColor={primaryColor} stopOpacity="0.45" />
+                <stop offset="60%" stopColor={primaryColor} stopOpacity="0.14" />
+                <stop offset="100%" stopColor={primaryColor} stopOpacity="0" />
+              </radialGradient>
+              {domainPosition ? (
+                <linearGradient
+                  id={`lcg-tether-${observatory.slug}`}
+                  gradientUnits="userSpaceOnUse"
+                  x1={domainPosition.x}
+                  y1={domainPosition.y}
+                  x2={position.x}
+                  y2={position.y}
+                >
+                  <stop
+                    offset="0%"
+                    stopColor={domainColor(observatory.domainSlug)}
+                    stopOpacity={0.45}
+                  />
+                  <stop offset="100%" stopColor={primaryColor} stopOpacity={0.8} />
+                </linearGradient>
+              ) : null}
+            </g>
+          );
+        })}
+      </defs>
+
+      {nodes.map(({ observatory, position, domainPosition }, index) => {
         const isHot =
           hoveredSlug === observatory.slug || selectedSlug === observatory.slug;
 
@@ -105,13 +149,12 @@ export function TopologyObservatories({
 
         return (
           <g key={observatory.slug}>
-            {/* Live tether back to the owning domain (DL-37). */}
+            {/* Curved luminous tether back to the owning domain. */}
             {domainPosition ? (
-              <line
-                x1={position.x}
-                y1={position.y}
-                x2={domainPosition.x}
-                y2={domainPosition.y}
+              <path
+                d={curvedEdgePath(domainPosition, position, index, 0.14)}
+                fill="none"
+                stroke={`url(#lcg-tether-${observatory.slug})`}
                 className={`${styles.tether} ${isHot ? styles.tetherHot : ''}`}
                 aria-hidden="true"
               />
@@ -131,8 +174,7 @@ export function TopologyObservatories({
               onBlur={() => onHover(null)}
               onKeyDown={handleKey}
             >
-              {/* Focus ring — driven by hot state (pointer, Registry
-                  row, or selection). */}
+              {/* Focus ring — pointer, Registry row, or selection. */}
               <circle
                 r={13}
                 fill="none"
@@ -142,7 +184,11 @@ export function TopologyObservatories({
               />
               <NodeGlyph observatory={observatory} />
               {/* Name + kind label — revealed on hot. */}
-              <g className={styles.label} data-hot={isHot ? 'true' : undefined} aria-hidden="true">
+              <g
+                className={styles.label}
+                data-hot={isHot ? 'true' : undefined}
+                aria-hidden="true"
+              >
                 <text
                   y={-26}
                   textAnchor="middle"

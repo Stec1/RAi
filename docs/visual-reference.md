@@ -78,6 +78,7 @@ UI text tone: short, specific, no marketing hyperbole. Not "Unleash your AI pote
 The intelligence topology (map view in Explore) is the visual representation of the platform's knowledge network. It must feel like an abstract data visualization — not a cosmic scene.
 
 > Superseded for the Explore terminal — see DL-36 / DL-37: the canvas is a "living intelligence instrument" with scoped ambient motion; cosmic imagery remains forbidden (DL-37 anti-cliché list).
+> PATCH-PIVOT-03: the canonical Explore canvas is the Living Crystal Graph — see DL-37 (amended): data-bearing luminance, elliptical depth rings, very slow orbital drift allowed; decorative cosmic imagery and starfields remain forbidden.
 
 **How it should feel:**
 - You are looking at an intelligence network — connections between ideas, Domains, and research spaces
@@ -186,6 +187,7 @@ The intelligence topology (map view in Explore) is the visual representation of 
 - Auto-rotating camera without user input
 - Looping animations on idle UI elements
   > Superseded for the Explore terminal canvas only — see DL-33 (amended) / DL-37: living-instrument ambient motion, reduced-motion safe. All other UI keeps this rule.
+  > PATCH-PIVOT-03: very slow orbital drift of the structural depth rings is additionally permitted on the Explore canvas — see DL-37 (amended). Spinning targeting/radar elements remain forbidden.
 
 ---
 
@@ -237,6 +239,8 @@ The intelligence topology (map view in Explore) is the visual representation of 
 
 ---
 ## Topology Rendering
+
+> Superseded for the Explore Living Crystal Graph — see DL-37 (amended) / DL-38: RA renders as a faceted warm-gold crystal hub with bloom; domains as luminous identity-colored orbs; observatories as signature-driven glowing satellites; edges as thin curved luminous gradients; 1–2 elliptical depth rings cue depth. Rendering stays SVG + CSS (DL-38); a 3D engine remains a deferred Level 2 decision.
 
 **RA:**
 - Central hub node with warm glow

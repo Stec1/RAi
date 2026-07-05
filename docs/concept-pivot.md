@@ -21,6 +21,8 @@ RAI has two modes of presence. One ships now; one is deferred.
 
 **World Mode (deferred).** An interactive real-world map where observatories are pinned to actual coordinates — a castle on its hill, a restaurant on its street. "World Mode" is a working placeholder name; the final name is undecided. No part of World Mode ships in this patch: no map surface, no mode switcher. It arrives as a dedicated future patch (DL-34).
 
+**The lifecycle between the worlds (future scope — DL-39).** The two worlds are two halves of one lifecycle: a virtual observatory presents an idea before it exists; a real observatory is tied to an existing place; an idea can graduate from virtual to real when it is realized. Observatories will carry a `world` field (`virtual` | `real`). The Explore virtual/real toggle, the Earth map, and the database column are all future patches — recorded now so designs converge on one vocabulary.
+
 ---
 
 ## 3. Observatory, redefined
@@ -45,6 +47,8 @@ The community layer is future scope. It appears in documentation only and never 
 
 DL-25 governs all of it: RAI shows stories, coordinates community verification, settles reputation — and never executes anything itself.
 
+**Idea-to-reality funding (future direction — DL-40, recorded only).** A future, non-custodial, transparent funding path may let a community fund the realization of a published idea, controlled by protocol such that funds are never routed to a founder's personal wallet. DL-25-aligned by construction; not scoped, not designed, not built — open legal and technical questions live in their own track.
+
 ---
 
 ## 5. What is explicitly NOT changing
@@ -61,5 +65,6 @@ DL-25 governs all of it: RAI shows stories, coordinates community verification, 
 
 1. **PATCH-PIVOT-01:** the pivot documented; the RAI Terminal on `/` and `/explore`; the living universe (motion, dual theme); two mock observatories with full-screen art-story overlays; all screen copy rewritten to the new concept.
 2. **PATCH-PIVOT-02:** Explore as a living terminal — Registry rail, framed Topology panel, docked Inspector, activity strip; Observatories first-class on the topology (DL-35/DL-36); living-instrument motion replaces the starfield (DL-33 amended, DL-37).
-3. **World Mode:** the real-world map and the mode switcher, as a dedicated patch.
-4. **Community mechanics:** comments, contestation, community verification, ambassador monetization — in their own sequence, after the universe holds real observatories.
+3. **PATCH-PIVOT-03:** the Living Crystal Graph — luminous topology overhaul: faceted warm-gold crystal hub, glowing identity orbs, curved gradient edges, depth rings, real pill view-controls (DL-37 amended, DL-38).
+4. **World Mode:** the real-world map and the mode switcher, as a dedicated patch (with the virtual/real lifecycle, DL-39).
+5. **Community mechanics:** comments, contestation, community verification, ambassador monetization — in their own sequence, after the universe holds real observatories.
