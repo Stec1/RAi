@@ -1,0 +1,113 @@
+/* Premium glass primitives (DL-29/DL-42). Dark = smoked transparent
+   glass: thin luminous border, subtle inner reflection, restrained glow.
+   Light "paper" = frosted paper with a soft shadow instead of glow.
+   One blur depth here (16px); floating overlays may use the second
+   (24px) — never more than two per screen. */
+
+.card,
+.panel {
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-panel);
+  /* Inner reflection (top hairline) + soft restrained glow. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 32px rgba(74, 125, 191, 0.06);
+}
+
+.card {
+  padding: var(--space-6);
+}
+
+.panel {
+  padding: var(--space-8);
+}
+
+:global([data-theme='light']) .card,
+:global([data-theme='light']) .panel {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 10px 30px rgba(18, 18, 30, 0.08);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-inline);
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--text-primary);
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+.button:hover:not(:disabled) {
+  border-color: var(--accent-cold);
+  color: var(--accent-cold);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buttonPrimary {
+  background: var(--text-primary);
+  color: var(--surface-base);
+  border-color: var(--text-primary);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.buttonPrimary:hover:not(:disabled) {
+  background: var(--accent-cold);
+  border-color: var(--accent-cold);
+  color: var(--surface-base);
+}
+
+.shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface-canvas);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.shellInner {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-16);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+@media (max-width: 768px) {
+  .shellInner {
+    padding: var(--space-4) var(--space-3) var(--space-12);
+  }
+
+  .card {
+    padding: var(--space-4);
+  }
+
+  .panel {
+    padding: var(--space-6);
+  }
+}

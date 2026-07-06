@@ -3,6 +3,7 @@
 // Scopes:
 //   auth         — 5 req / 60s per IP (applied to /api/auth/*)
 //   observatory  — 30 req / 60s per IP (applied per-route via preHandler)
+//   obs-create   — 10 req / 60s per IP (POST /api/v1/observatories; DL-41)
 // On exceed:   429 { error, retryAfter }
 //
 // Fail-open: if Redis is unreachable (no REDIS_URL on the deploy environment,
@@ -19,6 +20,7 @@ import { redis } from '../lib/redis.js';
 const WINDOW_SECONDS = 60;
 const AUTH_MAX = 5;
 const OBSERVATORY_MAX = 30;
+const OBSERVATORY_CREATE_MAX = 10;
 
 interface RateLimitDecision {
   allowed: boolean;
@@ -109,6 +111,22 @@ async function rateLimitPlugin(server: FastifyInstance) {
     },
   );
 
+  server.decorate(
+    'observatoryCreateRateLimit',
+    async function observatoryCreateRateLimit(request: FastifyRequest, reply: FastifyReply) {
+      const { allowed, retryAfter } = await safeCheckRateLimit(
+        server,
+        'obs-create',
+        request.ip,
+        OBSERVATORY_CREATE_MAX,
+      );
+      if (!allowed) {
+        reply.header('Retry-After', String(retryAfter));
+        reply.status(429).send({ error: 'Too many requests', retryAfter });
+      }
+    },
+  );
+
   // Apply as onRequest hook only for auth routes (path starts with /api/auth/)
   server.addHook('onRequest', async (request, reply) => {
     if (request.url.startsWith('/api/auth/')) {
@@ -121,6 +139,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     authRateLimit: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     observatoryRateLimit: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    observatoryCreateRateLimit: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 

@@ -799,3 +799,37 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 **Revisit:** Yes — in a dedicated track, only after the Observatory model and DL-39 lifecycle exist in product.
 
 **See also:** DL-03 (no Web3 in MVP — still in force), DL-25, DL-39.
+
+---
+
+## DL-41 — Observatory Create Endpoint (`POST /api/v1/observatories`)
+
+**Decision:** The apps/api freeze is lifted for ONE dedicated endpoint: `POST /api/v1/observatories` (auth required) creates the base observatory for the logged-in user. It persists base fields only — name, displayName, type, publicMode, domainIds, bio, socialLinks, visualSignature. NO schema migration: every persisted column pre-exists (ISSUE-03). One-per-user is enforced twice: a handler guard (existing observatory → 409) and the `Observatory.userId @unique` DB backstop (Prisma P2002 → 409). Name uniqueness likewise: shared validation + re-check + P2002 on `name` → 409. No credit cost (CreditTransaction/creditsBalance untouched). Board/media persistence, the `world` column (DL-39), and file/object storage remain deferred to a future full-stack issue, which must choose a storage provider before it can land.
+
+**Why:**
+- The create→dashboard loop is the first real write of the pivot; deferring it further would make the Studio a mock.
+- All columns already exist, so persistence costs one route — no migration risk.
+- Reusing the `/api/me` auth context and the ISSUE-05 shared naming utilities keeps validation single-sourced.
+
+**Trade-off:** The API freeze is softened by precedent. Bounded: the endpoint is additive, touches no other route, and the freeze re-applies after this patch.
+
+**Revisit:** Yes — when the board/media content model and storage provider are decided.
+
+**See also:** DL-25, DL-39, ISSUE-05, docs/architecture.md.
+
+---
+
+## DL-42 — Observatory Studio + Premium Glass Primitives (DL-29 rollout)
+
+**Decision:** `/create` is the Observatory Studio: a multi-step creation environment (World → Identity → Board → Signature + Preview → Finish) with a persistent live preview that renders the draft both as a public observatory view (in the spirit of the two mock art-stories) and as a Living Crystal Graph node (DL-37). The glass primitive set — `GlassCard`, `GlassPanel`, `GlassButton`, `PageShell` — lands here as the first DL-29 test surface, theme-aware (smoked glass on dark, frosted paper on light, ≤2 blur depths). The Studio's `world` selection implements the Virtual/Real World Lifecycle (DL-39) in the LOCAL draft only; the board/room blocks and photos live in `localStorage` (photos session-only — no storage provider exists) and will attach to the observatory when board publishing ships. The visual signature is chosen manually — no AI generation.
+
+**Why:**
+- The Studio is where the pivot becomes participatory; it must feel like the terminal, not a form.
+- DL-29 prescribed `/create` as the first glass rollout surface; primitives built here are reused product-wide later.
+- Local-first board keeps the deferred content-model decision honest instead of inventing a throwaway schema.
+
+**Trade-off:** Board and photos do not survive account/device changes yet. Stated honestly in the UI.
+
+**Revisit:** Yes — when board publishing ships.
+
+**See also:** DL-29, DL-37, DL-39, DL-41.

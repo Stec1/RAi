@@ -66,5 +66,6 @@ DL-25 governs all of it: RAI shows stories, coordinates community verification, 
 1. **PATCH-PIVOT-01:** the pivot documented; the RAI Terminal on `/` and `/explore`; the living universe (motion, dual theme); two mock observatories with full-screen art-story overlays; all screen copy rewritten to the new concept.
 2. **PATCH-PIVOT-02:** Explore as a living terminal — Registry rail, framed Topology panel, docked Inspector, activity strip; Observatories first-class on the topology (DL-35/DL-36); living-instrument motion replaces the starfield (DL-33 amended, DL-37).
 3. **PATCH-PIVOT-03:** the Living Crystal Graph — luminous topology overhaul: faceted warm-gold crystal hub, glowing identity orbs, curved gradient edges, depth rings, real pill view-controls (DL-37 amended, DL-38).
-4. **World Mode:** the real-world map and the mode switcher, as a dedicated patch (with the virtual/real lifecycle, DL-39).
-5. **Community mechanics:** comments, contestation, community verification, ambassador monetization — in their own sequence, after the universe holds real observatories.
+4. **PATCH-PIVOT-04:** the Observatory Studio — `/create` becomes a multi-step creation environment with live previews; `POST /api/v1/observatories` persists the base observatory (DL-41/DL-42); board, photos, and the `world` choice stay local until the content model and storage land.
+5. **World Mode:** the real-world map and the mode switcher, as a dedicated patch (with the virtual/real lifecycle, DL-39).
+6. **Community mechanics:** comments, contestation, community verification, ambassador monetization — in their own sequence, after the universe holds real observatories.

@@ -130,7 +130,7 @@ apps/api/
 │   ├── index.ts
 │   ├── routes/
 │   │   ├── auth.ts
-│   │   ├── observatories.ts
+│   │   ├── observatories.ts    # GET check/:name; POST / — create (base fields only, no schema change; DL-41)
 │   │   ├── domains.ts
 │   │   ├── systems.ts
 │   │   ├── publications.ts
