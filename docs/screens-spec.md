@@ -209,6 +209,8 @@ The main discovery and topology surface. Three views for finding Observatories, 
 **Purpose:**
 3-step flow for creating an Observatory after the user has explored topology context in `/explore`. This is the first target screen for Premium Dark Glass UI foundation rollout (DL-29).
 
+> **PATCH-PIVOT-04 (DL-41/DL-42):** the flow is the Observatory Studio — World → Identity → Board → Signature + Preview → Finish. Base fields persist via `POST /api/v1/observatories`; the board, photos, and the `world` choice are saved locally for now (no content model / storage provider yet); AI-generation steps are deferred — the visual signature is chosen manually.
+
 ### Step 1 — Identity
 - Observatory name input (permanent, unique) with real-time availability check
 - Live address preview: `rai.app/@name`
