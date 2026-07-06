@@ -15,7 +15,7 @@
 import Link from 'next/link';
 import type { DomainSeed } from './topology-layout';
 import { domainColor } from './topology-layout';
-import type { EntityRef } from './TopologyCanvas';
+import type { EntityRef } from '../../lib/topology-types';
 import type { MockObservatory } from '../../data/mock-observatories';
 import styles from './ExploreInfoPanel.module.css';
 

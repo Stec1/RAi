@@ -73,7 +73,7 @@ apps/web/
 │   │   ├── (auth)/             # login, signup
 │   │   ├── about/
 │   │   ├── create/             # Create Observatory flow
-│   │   ├── explore/            # Explore: feed, observatories, map
+│   │   ├── explore/            # Explore terminal; topology = WebGL 3D graph (react-force-graph-3d, next/dynamic ssr:false — DL-43)
 │   │   ├── dashboard/          # Control Panel
 │   │   │   ├── systems/        # Systems management
 │   │   │   ├── publications/   # Publications management

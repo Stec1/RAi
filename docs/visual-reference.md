@@ -224,6 +224,7 @@ The intelligence topology (map view in Explore) is the visual representation of 
 ## Topology Rendering Levels
 
 ### Level 1 — Current `/explore`
+> Superseded by DL-43 — Explore renders a WebGL 3D graph (react-force-graph-3d + Three.js).
 - SVG topology only
 - Scope: RA → Domains
 - RA at center + 7 Domain nodes
@@ -241,6 +242,7 @@ The intelligence topology (map view in Explore) is the visual representation of 
 ## Topology Rendering
 
 > Superseded for the Explore Living Crystal Graph — see DL-37 (amended) / DL-38: RA renders as a faceted warm-gold crystal hub with bloom; domains as luminous identity-colored orbs; observatories as signature-driven glowing satellites; edges as thin curved luminous gradients; 1–2 elliptical depth rings cue depth. Rendering stays SVG + CSS (DL-38); a 3D engine remains a deferred Level 2 decision.
+> Superseded by DL-43 (PATCH-PIVOT-05) — Explore uses a WebGL 3D graph (`react-force-graph-3d` + Three.js, lazy client-only): RA as a 3D faceted gold crystal, all 7 domains as glowing orbs (DL-44), observatories in parent-domain color (DL-45).
 
 **RA:**
 - Central hub node with warm glow

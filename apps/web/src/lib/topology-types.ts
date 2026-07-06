@@ -16,3 +16,17 @@ export interface DomainDTO {
   active: boolean;
   createdAt: string;
 }
+
+// A reference to any selectable entity on the Explore topology. Shared
+// by the 3D graph renderer, the Registry rail, and the Inspector
+// (moved here from the retired SVG TopologyCanvas in PATCH-PIVOT-05).
+export type EntityRef =
+  | { kind: 'ra' }
+  | { kind: 'domain'; slug: string }
+  | { kind: 'observatory'; slug: string };
+
+// Real view actions for the topology panel's pill controls (DL-37/DL-43).
+export type ViewCommand = {
+  action: 'reset' | 'fit' | 'focus';
+  token: number;
+};
