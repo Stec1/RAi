@@ -7,7 +7,7 @@
 
 import type { DomainSeed } from '../topology/topology-layout';
 import { domainColor } from '../topology/topology-layout';
-import type { EntityRef } from '../topology/TopologyCanvas';
+import type { EntityRef } from '../../lib/topology-types';
 import type { MockObservatory } from '../../data/mock-observatories';
 import styles from './RegistryRail.module.css';
 

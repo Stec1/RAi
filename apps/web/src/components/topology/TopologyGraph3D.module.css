@@ -1,0 +1,44 @@
+/* TopologyGraph3D host (DL-43). The WebGL canvas fills the panel's
+   canvas host; the fallback renders when WebGL is unavailable.
+   Motion note: the 3D scene's idle auto-rotate and edge-flow particles
+   are disabled in JS via the prefers-reduced-motion media query (see
+   TopologyGraph3D.tsx); the block below keeps the CSS-side contract
+   explicit for the fallback fade. */
+
+.host {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8);
+  margin: 0;
+  color: var(--text-secondary);
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-15);
+  line-height: 1.6;
+  animation: fallbackIn var(--duration-reveal) var(--ease-standard);
+}
+
+@keyframes fallbackIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fallback {
+    animation: none;
+  }
+}

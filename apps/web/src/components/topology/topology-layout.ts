@@ -62,29 +62,6 @@ export function domainColor(slug: string): string {
   return DOMAIN_COLOR[slug] ?? 'var(--text-secondary)';
 }
 
-/**
- * Gently curved edge path between two points (Living Crystal Graph,
- * DL-37 amended): a quadratic bezier whose control point sits on the
- * chord's perpendicular, alternating side by `index` so the fan reads
- * organic. `bend` scales the curvature (fraction of chord length).
- */
-export function curvedEdgePath(
-  from: Vec2,
-  to: Vec2,
-  index: number,
-  bend = 0.09,
-): string {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const len = Math.hypot(dx, dy) || 1;
-  const mx = from.x + dx / 2;
-  const my = from.y + dy / 2;
-  const nx = -dy / len;
-  const ny = dx / len;
-  const k = (index % 2 === 0 ? 1 : -1) * len * bend;
-  return `M ${from.x} ${from.y} Q ${mx + nx * k} ${my + ny * k} ${to.x} ${to.y}`;
-}
-
 // Two-ring radii. Desktop gives the topology room to breathe; mobile
 // pulls the rings inward so labels stay legible on a 375px-wide canvas.
 export const DESKTOP_RADII = { activeRadius: 220, comingRadius: 310 };

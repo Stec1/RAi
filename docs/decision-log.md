@@ -833,3 +833,50 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 **Revisit:** Yes — when board publishing ships.
 
 **See also:** DL-29, DL-37, DL-39, DL-41.
+
+---
+
+## DL-43 — Explore Topology Renderer: WebGL 3D (`react-force-graph-3d` + Three.js)
+
+**Decision:** The Explore topology renderer is a real WebGL 3D graph built on `react-force-graph-3d` (Three.js-based), lazy-loaded client-only (`next/dynamic`, `ssr: false`) and code-split to the Explore surface. This SUPERSEDES, for the Explore topology renderer only: DL-38 (SVG + CSS rendering), the DL-37 Living Crystal Graph SVG implementation (its visual INTENT — luminous hub, identity orbs, depth, calm life — carries over into 3D), the DL-30 Level-1 no-Three.js clause, and the historical DL-10 framing. New dependencies are permitted scoped to this surface: `react-force-graph-3d` (pinned 1.29.1) reusing the pre-existing `three`; nothing else. Post-processing bloom via the library composer + UnrealBloomPass is allowed. WebGL-unavailable environments get a composed fallback message. The 3D orbit/zoom controls replace the SVG CTM pan/zoom internals (ISSUE-08R.2), which are removed with the SVG renderer.
+
+**Founder target (recorded so intent survives):** a luminous 3D relational graph — a bright faceted crystal hub (RA, warm gold emissive, visually dominant), 7 glowing identity-colored domain orbs arranged in depth, smaller observatory orbs tethered near their domains, thin luminous radiating edges with subtle animated flow, true perspective depth, soft bloom, slow idle auto-rotate, user orbit/zoom/pan, near-black space background. Living, deep, calm, premium — luminous, not flat-neon.
+
+**Why:**
+- The SVG interpretation did not achieve the depth-lit rotatable target; founder review requires real 3D.
+- `react-force-graph-3d` matches the target shape (hub + radiating colored glowing nodes + orbit controls) at minimal integration cost.
+- Lazy client-only loading keeps the dependency off every other route and out of SSR.
+
+**Trade-off:** A heavy dependency enters the web bundle (code-split); the battle-tested SVG pan/zoom hardening is retired in favor of library orbit controls. Accepted deliberately.
+
+**Revisit:** Yes — if bundle or mobile performance costs outweigh the visual value.
+
+**See also:** DL-10, DL-30, DL-37, DL-38 (all superseded in part), DL-44, DL-45.
+
+---
+
+## DL-44 — All 7 Domains Are Full Graph Nodes; `active` Is a Visual State
+
+**Decision:** The Explore graph renders all 7 domains as full 3D nodes with labels, regardless of `active`. Inactive domains are dimmer and cooler (lower emissive, muted color) but never hidden. The panel Filter control defaults to dimming, not removal. At MVP launch the seed activates 3; activation changes visual state only — never graph shape.
+
+**Why:** the universe must look complete and correct with all 7 rendered; hiding nodes made the graph read as sparse and broken, and activation should not restructure the space.
+
+**Trade-off:** Inactive domains are visible before they have content. Accepted — "coming" is part of the story.
+
+**Revisit:** No — this is the graph contract.
+
+**See also:** DL-43, DL-45.
+
+---
+
+## DL-45 — Observatories Inherit Their Parent Domain Color
+
+**Decision:** An observatory node base color = its parent domain identity color (Wawel → vorda, Signal Garden → draxis), with the observatory VisualSignature accent used only for secondary emphasis (ring/glow accent). Each observatory is tethered to its domain by an edge.
+
+**Why:** color = belonging; the graph must read as domains with satellites, not a confetti of unrelated hues. The signature still individualizes without breaking the color grammar.
+
+**Trade-off:** Signature primary colors no longer drive node color on the graph (they still drive the art-story hero and studio previews).
+
+**Revisit:** Yes — when real observatories arrive in volume and need finer differentiation.
+
+**See also:** DL-37, DL-43, DL-44.

@@ -28,11 +28,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  TopologyCanvas,
-  type EntityRef,
-  type ViewCommand,
-} from '../topology/TopologyCanvas';
+import dynamic from 'next/dynamic';
+import type { EntityRef, ViewCommand } from '../../lib/topology-types';
 import { ExploreInfoPanel } from '../topology/ExploreInfoPanel';
 import type { AuthState } from '../topology/ExploreInfoPanel';
 import type { DomainSeed } from '../topology/topology-layout';
@@ -45,6 +42,13 @@ import { GuestIntroPanel } from './GuestIntroPanel';
 import { RegistryRail } from './RegistryRail';
 import { ActivityStrip, ActivityList } from './ActivityStrip';
 import styles from './RaiTerminal.module.css';
+
+// The WebGL 3D graph (DL-43) is client-only and code-split: it must
+// never run during SSR and must not weigh on non-Explore routes.
+const TopologyGraph3D = dynamic(() => import('../topology/TopologyGraph3D'), {
+  ssr: false,
+  loading: () => <p className={styles.status}>Preparing the universe…</p>,
+});
 
 interface DomainsResponse {
   domains: DomainDTO[];
@@ -97,7 +101,7 @@ export function RaiTerminal() {
   const [introDismissed, setIntroDismissed] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [activeTab, setActiveTab] = useState<SheetTab>('inspector');
-  const [zoomPct, setZoomPct] = useState(100);
+  const [autoRotate, setAutoRotate] = useState(true);
   // Real view actions for the pill controls (DL-37: controls are real).
   const [viewCommand, setViewCommand] = useState<ViewCommand>({
     action: 'reset',
@@ -264,7 +268,7 @@ export function RaiTerminal() {
             <div className={styles.panelHeader}>
               <span className={styles.panelTitle}>Topology</span>
               <span className={styles.zoomControl}>
-                <span aria-live="off">{`zoom ${zoomPct}%`}</span>
+                <span>3D</span>
               </span>
             </div>
             <div className={styles.canvasHost}>
@@ -273,7 +277,7 @@ export function RaiTerminal() {
               ) : !domains ? (
                 <p className={styles.status}>Loading…</p>
               ) : (
-                <TopologyCanvas
+                <TopologyGraph3D
                   domains={domains}
                   observatories={MOCK_OBSERVATORIES}
                   hovered={hovered}
@@ -281,9 +285,9 @@ export function RaiTerminal() {
                   onHoverEntity={setHovered}
                   onSelectEntity={handleSelect}
                   onClearSelect={() => setSelected(null)}
-                  onViewChange={(z) => setZoomPct(Math.round(z * 100))}
                   viewCommand={viewCommand}
                   showActiveOnly={showActiveOnly}
+                  autoRotate={autoRotate}
                 />
               )}
               {/* View pill controls (DL-37: real actions only). Bottom-
@@ -323,6 +327,15 @@ export function RaiTerminal() {
                     onClick={() => setShowActiveOnly((v) => !v)}
                   >
                     Active only
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.pill}
+                    aria-pressed={autoRotate}
+                    data-active={autoRotate ? 'true' : undefined}
+                    onClick={() => setAutoRotate((v) => !v)}
+                  >
+                    Rotate
                   </button>
                 </div>
               ) : null}
