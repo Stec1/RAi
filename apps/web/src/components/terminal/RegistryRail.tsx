@@ -62,7 +62,7 @@ export function RegistryRail({
       >
         {marker}
         <span className={styles.rowName}>{name}</span>
-        <span className={styles.rowMeta}>{meta}</span>
+        {meta ? <span className={styles.rowMeta}>{meta}</span> : null}
       </button>
     );
   };
@@ -91,17 +91,19 @@ export function RegistryRail({
 
       <p className={styles.sectionLabel}>Observatories</p>
       <div className={styles.section}>
+        {/* PP-07 §3: observatories list by name only — no world/kind tag.
+            The dot is the parent-domain color (DL-45). */}
         {observatories.map((o) =>
           row(
             { kind: 'observatory', slug: o.slug },
             `obs-${o.slug}`,
             <span
               className={styles.marker}
-              style={{ borderColor: o.signature.primaryColor }}
+              style={{ borderColor: domainColor(o.domainSlug) }}
               aria-hidden="true"
             />,
             o.title,
-            o.kind === 'real-place' ? 'place' : o.kind === 'virtual-world' ? 'world' : 'obs',
+            '',
             false,
           ),
         )}

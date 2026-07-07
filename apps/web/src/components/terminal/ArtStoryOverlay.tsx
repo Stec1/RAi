@@ -31,11 +31,8 @@ interface Props {
   onClose: () => void;
 }
 
-const KIND_LABEL: Record<MockObservatory['kind'], string> = {
-  'real-place': 'Real place',
-  'virtual-world': 'Virtual world',
-  observatory: 'Observatory',
-};
+// PP-07 §3: no world/kind framing in the overlay — the eyebrow shows the
+// parent domain (or a neutral label), never "real place" / "virtual world".
 
 export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
@@ -88,9 +85,7 @@ export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
   }, []);
 
   const { signature } = observatory;
-  const eyebrow = domainName
-    ? `${KIND_LABEL[observatory.kind]} · ${domainName}`
-    : KIND_LABEL[observatory.kind];
+  const eyebrow = domainName ? `Observatory · ${domainName}` : 'Observatory';
 
   const ambientClass =
     signature.ambientEffect === 'glow'

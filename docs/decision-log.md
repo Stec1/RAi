@@ -914,3 +914,24 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 **Revisit:** Yes — when the board/media content model and the dashboard sub-screens ship.
 
 **See also:** DL-29, DL-41, DL-42, DL-46.
+
+---
+
+## DL-48 — Single-World UI Until World Mode Ships
+
+**Decision:** The virtual/real distinction is hidden from the current UI. Every observatory presents simply as an "observatory" living in the single existing (virtual) universe: the world/kind tags (`place` / `world` / `obs`) are removed from the Registry rail, the Inspector, and the art-story overlay; the two demo observatories no longer present as two different worlds; and copy that implied a real-world anchor is softened to neutral universe language. The `world` field (DL-39) and the `ObservatoryKind` `real-place`/`virtual-world` values are RETAINED in the data model/types/studio draft as forward-looking flags — they are simply not shown or implied until World mode (the Earth map + virtual↔real toggle) ships.
+
+Two related graph changes ship in the same patch, amending the PP-05/PP-06 topology entries:
+- **Scene background follows the theme literally** (amends DL-43 / PP-06 A1): the 3D scene reads the panel's `--surface-canvas` token at runtime and reacts to `data-theme`, so it is a literal near-black in dark and a literal paper/off-white in light — superseding the PP-06 "deep neutral scene in both themes" choice. Light-theme bloom is lowered so bright nodes read on the light scene; node base colors carry identity regardless.
+- **Persistent in-scene node labels removed** (amends PP-06 A4): the graph shows only glowing orbs + edges; identity appears on hover/selection in the Inspector and as the named Registry list. Hover still highlights the node (scale/emissive) so it reads as interactive.
+
+**Why:**
+- Showing virtual vs real implies World mode exists; it does not yet. An honest UI presents one universe until the second mode ships.
+- Floating 3D labels cluttered the scene and fought the bloom; the Inspector + Registry already carry identity clearly.
+- A theme-literal scene (black in dark, light in light) is what founder review wanted; the "deep neutral in both" compromise read as a lilac/grey wash.
+
+**Trade-off:** Observatory nodes carry no in-scene name — discovery leans on hover/click + the Registry. Accepted: the terminal already pairs the graph with a named list and a docked Inspector. The studio `/create` "World" step still lets a creator tag a local draft `world` (the DL-39 forward flag, never sent to the API or shown on the graph) — left as-is under this patch's Explore-only scope; revisit when World mode ships.
+
+**Revisit:** Yes — when World mode ships, restore the virtual/real distinction (map, toggle, tags) intentionally.
+
+**See also:** DL-34, DL-39, DL-43, DL-45, DL-46.

@@ -76,7 +76,9 @@ export const MOCK_OBSERVATORIES: MockObservatory[] = [
     isDemo: true,
     title: "Wawel: The Dragon's Hill",
     domainSlug: 'vorda',
-    kind: 'real-place',
+    // PP-07 §3: no world/kind distinction in the current UI (World mode
+    // not built). Demo observatories read as plain observatories.
+    kind: 'observatory',
     tagline:
       'A limestone hill, a thousand years of Kraków, and the fire underneath.',
     signature: {
@@ -117,7 +119,7 @@ export const MOCK_OBSERVATORIES: MockObservatory[] = [
     isDemo: true,
     title: 'Signal Garden',
     domainSlug: 'draxis',
-    kind: 'virtual-world',
+    kind: 'observatory',
     tagline: 'A generative garden that grows from the signals visitors leave behind.',
     signature: {
       primaryColor: '#6a4da8',
