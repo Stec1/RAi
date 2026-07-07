@@ -86,38 +86,73 @@ type GLink = {
 const DEFAULT_CAMERA_Z = 640;
 // Deterministic depth offsets so the ring reads as a 3D constellation.
 const DOMAIN_Z = [-70, 30, 90, -40, 60, -90, 45];
+// RA hub base emissive (A2) — brightest node but shows its gold, not a
+// white core. The vibration loop (A3) modulates around this.
+const RA_BASE_EMISSIVE = 0.7;
+// Deep scene backgrounds (A1). The 3D scene stays deep in BOTH themes —
+// a luminous instrument reads on a dark ground; a white 3D void does
+// not. Dark uses the app's true deepest surface (--surface-base) so the
+// panel interior matches the surrounding dark UI; light uses a deep
+// neutral graphite while the surrounding chrome stays fully light.
+const SCENE_BG_DARK = '#030307';
+const SCENE_BG_LIGHT = '#101018';
+// Hover/selection emissive multiplier — brighten without blowing out.
+const HOT_EMISSIVE = 1.7;
 
 function refId(ref: EntityRef): string {
   return ref.kind === 'ra' ? 'ra' : `${ref.kind}:${ref.slug}`;
 }
 
+// Billboard label (PATCH-PIVOT-06 A4). THREE.Sprite always faces the
+// camera, so labels track their node and stay readable from any orbit
+// angle. depthTest:false + a high renderOrder means a label is never
+// occluded by geometry behind or in front — every node keeps a legible
+// label from any rotation. A translucent dark pill behind light text
+// keeps it readable on the deep scene in BOTH themes (the 3D scene
+// background stays deep regardless of theme).
 function makeLabelSprite(
   text: string,
   track: (d: { dispose: () => void }) => void,
 ): THREE.Sprite {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d')!;
-  const font = '500 30px Inter, sans-serif';
+  const scale = 2; // supersample for crisp text
+  const font = `500 ${15 * scale}px Inter, sans-serif`;
   ctx.font = font;
-  const w = Math.ceil(ctx.measureText(text).width) + 16;
-  const h = 40;
+  const padX = 10 * scale;
+  const textW = ctx.measureText(text).width;
+  const w = Math.ceil(textW + padX * 2);
+  const h = 24 * scale;
   canvas.width = w;
   canvas.height = h;
+  // Rounded translucent pill for legibility against bright nodes/bloom.
+  ctx.fillStyle = 'rgba(6, 6, 14, 0.55)';
+  const r = 8 * scale;
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.arcTo(w, 0, w, h, r);
+  ctx.arcTo(w, h, 0, h, r);
+  ctx.arcTo(0, h, 0, 0, r);
+  ctx.arcTo(0, 0, w, 0, r);
+  ctx.closePath();
+  ctx.fill();
   ctx.font = font;
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(232, 237, 245, 0.92)';
-  ctx.fillText(text, 8, h / 2);
+  ctx.fillStyle = 'rgba(236, 240, 248, 0.96)';
+  ctx.fillText(text, padX, h / 2 + scale);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const material = new THREE.SpriteMaterial({
     map: texture,
     transparent: true,
+    depthTest: false,
     depthWrite: false,
   });
   track(texture);
   track(material);
   const sprite = new THREE.Sprite(material);
-  sprite.scale.set(w / 5, h / 5, 1);
+  sprite.renderOrder = 10;
+  sprite.scale.set(w / (5 * scale), h / (5 * scale), 1);
   return sprite;
 }
 
@@ -140,6 +175,11 @@ export default function TopologyGraph3D({
     Map<string, { mesh: THREE.Mesh | THREE.Group; materials: THREE.MeshStandardMaterial[]; base: number[] }>
   >(new Map());
   const bloomRef = useRef<UnrealBloomPass | null>(null);
+  // RA vibration (A3): refs to the hub mesh + material so a rAF loop can
+  // modulate its scale/emissive; raHotRef mirrors hover/selection state.
+  const raMeshRef = useRef<THREE.Object3D | null>(null);
+  const raMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
+  const raHotRef = useRef(false);
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   const [reducedMotion, setReducedMotion] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -232,7 +272,11 @@ export default function TopologyGraph3D({
       const dz = DOMAIN_Z[(di >= 0 ? di : i) % DOMAIN_Z.length]!;
       // Observatory color = PARENT DOMAIN color (DL-45); signature
       // accent is secondary emphasis (the ring), applied in the mesh.
-      const color = domainColor(o.domainSlug);
+      // Guard: real observatories may have an unresolved domain, where
+      // domainColor returns a CSS var — fall back to their signature
+      // primary so THREE always gets a valid hex.
+      const rawColor = domainColor(o.domainSlug);
+      const color = rawColor.startsWith('#') ? rawColor : o.signature.primaryColor;
       nodes.push({
         id: `observatory:${o.slug}`,
         ref: { kind: 'observatory', slug: o.slug },
@@ -266,21 +310,28 @@ export default function TopologyGraph3D({
       const materials: THREE.MeshStandardMaterial[] = [];
       const base: number[] = [];
 
+      // Glow dialed back (A2): emissive intensities are modest so each
+      // node reads as a saturated colored orb with a soft halo, not a
+      // white blowout. The bloom pass (below) is also gentler.
       if (node.kind === 'ra') {
         const geo = new THREE.IcosahedronGeometry(16, 0);
         const mat = new THREE.MeshStandardMaterial({
-          color: '#f5d68a',
+          color: '#e9c169',
           emissive: new THREE.Color('#ffcf66'),
-          emissiveIntensity: 1.35,
-          metalness: 0.35,
-          roughness: 0.25,
+          emissiveIntensity: RA_BASE_EMISSIVE,
+          metalness: 0.4,
+          roughness: 0.3,
           flatShading: true,
         });
         track(geo);
         track(mat);
         materials.push(mat);
-        base.push(1.35);
-        group.add(new THREE.Mesh(geo, mat));
+        base.push(RA_BASE_EMISSIVE);
+        const mesh = new THREE.Mesh(geo, mat);
+        group.add(mesh);
+        // Capture for the vibration loop (A3).
+        raMeshRef.current = group;
+        raMatRef.current = mat;
         const label = makeLabelSprite('RA', track);
         label.position.set(0, -26, 0);
         group.add(label);
@@ -288,19 +339,20 @@ export default function TopologyGraph3D({
         const r = node.active ? 7.5 : 6;
         const geo = new THREE.SphereGeometry(r, 24, 24);
         const color = new THREE.Color(node.color);
-        if (!node.active) color.lerp(new THREE.Color('#6a6f80'), 0.45);
+        if (!node.active) color.lerp(new THREE.Color('#6a6f80'), 0.5);
+        const emissive = node.active ? 0.5 : 0.16;
         const mat = new THREE.MeshStandardMaterial({
           color,
           emissive: color,
-          emissiveIntensity: node.active ? 0.95 : 0.22,
-          roughness: 0.4,
+          emissiveIntensity: emissive,
+          roughness: 0.45,
           transparent: true,
           opacity: 1,
         });
         track(geo);
         track(mat);
         materials.push(mat);
-        base.push(node.active ? 0.95 : 0.22);
+        base.push(emissive);
         group.add(new THREE.Mesh(geo, mat));
         const label = makeLabelSprite(node.label, track);
         label.position.set(0, -(r + 10), 0);
@@ -310,14 +362,14 @@ export default function TopologyGraph3D({
         const mat = new THREE.MeshStandardMaterial({
           color: node.color,
           emissive: new THREE.Color(node.color),
-          emissiveIntensity: 0.85,
-          roughness: 0.4,
+          emissiveIntensity: 0.48,
+          roughness: 0.45,
           transparent: true,
         });
         track(geo);
         track(mat);
         materials.push(mat);
-        base.push(0.85);
+        base.push(0.48);
         group.add(new THREE.Mesh(geo, mat));
         // VisualSignature accent as secondary emphasis (DL-45).
         if (node.accent) {
@@ -325,13 +377,13 @@ export default function TopologyGraph3D({
           const ringMat = new THREE.MeshStandardMaterial({
             color: node.accent,
             emissive: new THREE.Color(node.accent),
-            emissiveIntensity: 0.55,
+            emissiveIntensity: 0.38,
             transparent: true,
           });
           track(ringGeo);
           track(ringMat);
           materials.push(ringMat);
-          base.push(0.55);
+          base.push(0.38);
           const ring = new THREE.Mesh(ringGeo, ringMat);
           ring.rotation.x = Math.PI / 2.4;
           group.add(ring);
@@ -348,22 +400,56 @@ export default function TopologyGraph3D({
   );
 
   // Hover / selection / filter → emissive + opacity updates in place.
+  // RA is owned by the vibration loop (A3) when motion is allowed; there
+  // we only record its hot state and let the loop apply scale/emissive.
+  // Under reduced motion the loop is off, so RA is updated here too.
   useEffect(() => {
     const hotIds = new Set<string>();
     if (hovered) hotIds.add(refId(hovered));
     if (selected) hotIds.add(refId(selected));
+    raHotRef.current = hotIds.has('ra');
     for (const node of graphData.nodes) {
       const entry = meshesRef.current.get(node.id);
       if (!entry) continue;
       const hot = hotIds.has(node.id);
+      if (node.kind === 'ra' && !reducedMotion) continue;
       const ghost = showActiveOnly && node.kind === 'domain' && !node.active;
       entry.materials.forEach((m, i) => {
-        m.emissiveIntensity = (entry.base[i] ?? 0.5) * (hot ? 1.9 : 1);
+        m.emissiveIntensity = (entry.base[i] ?? 0.5) * (hot ? HOT_EMISSIVE : 1);
         m.opacity = ghost ? 0.16 : 1;
       });
       entry.mesh.scale.setScalar(hot ? 1.18 : 1);
     }
-  }, [hovered, selected, showActiveOnly, graphData]);
+  }, [hovered, selected, showActiveOnly, graphData, reducedMotion]);
+
+  // RA vibration pulse (A3) — a gentle continuous breathing so the hub
+  // feels alive as a heartbeat. Small amplitude, calm cadence. Disabled
+  // under prefers-reduced-motion (RA rests static, still hover-reactive
+  // via the effect above). The rAF is cancelled on unmount.
+  useEffect(() => {
+    if (reducedMotion) {
+      // Rest RA at its base state.
+      if (raMeshRef.current) raMeshRef.current.scale.setScalar(1);
+      if (raMatRef.current) raMatRef.current.emissiveIntensity = RA_BASE_EMISSIVE;
+      return;
+    }
+    let raf = 0;
+    const tick = () => {
+      const t = performance.now() / 1000;
+      const pulse = Math.sin(t * 1.7); // ~0.27 Hz, calm
+      const hot = raHotRef.current;
+      if (raMeshRef.current) {
+        raMeshRef.current.scale.setScalar((1 + 0.035 * pulse) * (hot ? 1.15 : 1));
+      }
+      if (raMatRef.current) {
+        raMatRef.current.emissiveIntensity =
+          RA_BASE_EMISSIVE * (1 + 0.18 * pulse) * (hot ? HOT_EMISSIVE : 1);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [reducedMotion]);
 
   // One-time renderer config once the instance exists: pixel-ratio cap
   // and the bloom pass (the panel's only post-processing).
@@ -373,11 +459,14 @@ export default function TopologyGraph3D({
     const fg = fgRef.current;
     if (!fg) return;
     fg.renderer().setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    // Gentler bloom (A2): lower strength + smaller radius + higher
+    // threshold so only the brightest cores bloom — soft halos, no
+    // white blowout, and the deep background stops washing to grey.
     const pass = new UnrealBloomPass(
       new THREE.Vector2(size.w || 800, size.h || 600),
-      theme === 'dark' ? 1.05 : 0.4,
-      0.55,
-      0.12,
+      theme === 'dark' ? 0.55 : 0.32,
+      0.4,
+      0.3,
     );
     fg.postProcessingComposer().addPass(pass);
     bloomRef.current = pass;
@@ -390,12 +479,11 @@ export default function TopologyGraph3D({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
-  // Theme → scene background + bloom strength. The light "paper" theme
-  // uses a deep soft graphite (#23232b) rather than a white void — a
-  // white 3D space reads poorly; the surrounding chrome stays themed.
+  // Theme → bloom strength. The scene background stays deep in both
+  // themes (A1, see SCENE_BG_*); only bloom strength varies slightly.
   useEffect(() => {
     if (bloomRef.current) {
-      bloomRef.current.strength = theme === 'dark' ? 1.05 : 0.4;
+      bloomRef.current.strength = theme === 'dark' ? 0.55 : 0.32;
     }
   }, [theme]);
 
@@ -473,7 +561,7 @@ export default function TopologyGraph3D({
           width={size.w}
           height={size.h}
           graphData={graphData}
-          backgroundColor={theme === 'dark' ? '#050509' : '#23232b'}
+          backgroundColor={theme === 'dark' ? SCENE_BG_DARK : SCENE_BG_LIGHT}
           showNavInfo={false}
           enableNodeDrag={false}
           cooldownTicks={0}

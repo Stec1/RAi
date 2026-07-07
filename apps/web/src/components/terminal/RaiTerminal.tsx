@@ -26,7 +26,7 @@
 //      terminal (header, Inspector CTA, guest intro).
 //   3. Document-level scroll stays locked while mounted (one-pager).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { EntityRef, ViewCommand } from '../../lib/topology-types';
@@ -35,6 +35,11 @@ import type { AuthState } from '../topology/ExploreInfoPanel';
 import type { DomainSeed } from '../topology/topology-layout';
 import type { DomainDTO } from '../../lib/topology-types';
 import { MOCK_OBSERVATORIES } from '../../data/mock-observatories';
+import {
+  mergeObservatories,
+  realToObservatory,
+  type ObservatoryDTO,
+} from '../../lib/universe-observatories';
 import { useAuth } from '../../hooks/useAuth';
 import { TerminalHeader, type HeaderVariant } from './TerminalHeader';
 import { ArtStoryOverlay } from './ArtStoryOverlay';
@@ -93,6 +98,12 @@ export function RaiTerminal() {
   const { user, isLoading: authLoading, signOut } = useAuth();
 
   const [domains, setDomains] = useState<DomainSeed[] | null>(null);
+  // Raw domain DTOs (with ids) kept so observatory domainIds resolve to
+  // slugs for color/placement (DL-46).
+  const [domainDtos, setDomainDtos] = useState<DomainDTO[]>([]);
+  // Real observatories from GET /api/v1/observatories; null = not loaded
+  // or failed → fall back to demo mocks only.
+  const [realObs, setRealObs] = useState<ObservatoryDTO[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hovered, setHovered] = useState<EntityRef | null>(null);
   const [selected, setSelected] = useState<EntityRef | null>(null);
@@ -143,7 +154,10 @@ export function RaiTerminal() {
         }
         return json.domains;
       })
-      .then((list) => setDomains(toSeeds(list)))
+      .then((list) => {
+        setDomainDtos(list);
+        setDomains(toSeeds(list));
+      })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         if (process.env.NODE_ENV !== 'production') {
@@ -154,6 +168,34 @@ export function RaiTerminal() {
       });
     return () => controller.abort();
   }, []);
+
+  // Fetch real observatories for discovery (DL-46). Failure is silent —
+  // the merge falls back to the demo mocks so the universe never empties.
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/v1/observatories', {
+      credentials: 'include',
+      signal: controller.signal,
+    })
+      .then(async (res) => (res.ok ? res.json() : null))
+      .then((json: { observatories?: ObservatoryDTO[] } | null) => {
+        if (json && Array.isArray(json.observatories)) {
+          setRealObs(json.observatories);
+        }
+      })
+      .catch(() => {
+        /* keep mocks */
+      });
+    return () => controller.abort();
+  }, []);
+
+  // Merged universe: real observatories mapped into the graph shape,
+  // then the demo mocks the real set doesn't already cover (DL-46).
+  const observatories = useMemo(() => {
+    const idToSlug = new Map(domainDtos.map((d) => [d.id, d.slug]));
+    const real = (realObs ?? []).map((dto) => realToObservatory(dto, idToSlug));
+    return mergeObservatories(real, MOCK_OBSERVATORIES);
+  }, [realObs, domainDtos]);
 
   // Resolve auth state. While the session is loading, we keep 'unknown'
   // so every consumer renders the safe-default (guest) variant. Any
@@ -212,14 +254,14 @@ export function RaiTerminal() {
   const showIntro = authState === 'guest' && !introDismissed;
 
   const openStory = openStorySlug
-    ? MOCK_OBSERVATORIES.find((o) => o.slug === openStorySlug) ?? null
+    ? observatories.find((o) => o.slug === openStorySlug) ?? null
     : null;
   const openStoryDomainName = openStory
     ? domains?.find((d) => d.slug === openStory.domainSlug)?.name
     : undefined;
 
   const readouts = domains
-    ? `${domains.length} domains · ${domains.filter((d) => d.active).length} active · ${MOCK_OBSERVATORIES.length} observatories`
+    ? `${domains.length} domains · ${domains.filter((d) => d.active).length} active · ${observatories.length} observatories`
     : null;
 
   const tabs: Array<{ id: SheetTab; label: string }> = [
@@ -246,7 +288,7 @@ export function RaiTerminal() {
           {domains ? (
             <RegistryRail
               domains={domains}
-              observatories={MOCK_OBSERVATORIES}
+              observatories={observatories}
               hovered={hovered}
               selected={selected}
               onHover={setHovered}
@@ -279,7 +321,7 @@ export function RaiTerminal() {
               ) : (
                 <TopologyGraph3D
                   domains={domains}
-                  observatories={MOCK_OBSERVATORIES}
+                  observatories={observatories}
                   hovered={hovered}
                   selected={selected}
                   onHoverEntity={setHovered}
@@ -351,7 +393,7 @@ export function RaiTerminal() {
             <ExploreInfoPanel
               focus={focus}
               domains={domains}
-              observatories={MOCK_OBSERVATORIES}
+              observatories={observatories}
               authState={authState}
               onOpenStory={setOpenStorySlug}
               onSelectObservatory={(slug) =>

@@ -43,7 +43,12 @@ const RA_BODY =
 const KIND_LABEL: Record<MockObservatory['kind'], string> = {
   'real-place': 'Real place',
   'virtual-world': 'Virtual world',
+  observatory: 'Observatory',
 };
+
+function kindShort(kind: MockObservatory['kind']): string {
+  return kind === 'real-place' ? 'place' : kind === 'virtual-world' ? 'world' : 'obs';
+}
 
 export function ExploreInfoPanel({
   focus,
@@ -176,9 +181,7 @@ function DomainView({
                 aria-hidden="true"
               />
               <span className={styles.miniListName}>{o.title}</span>
-              <span className={styles.miniListKind}>
-                {o.kind === 'real-place' ? 'place' : 'world'}
-              </span>
+              <span className={styles.miniListKind}>{kindShort(o.kind)}</span>
             </button>
           ))
         )}
@@ -197,8 +200,8 @@ function ObservatoryView({
   onOpenStory: (slug: string) => void;
 }) {
   const domainName =
-    domains.find((d) => d.slug === observatory.domainSlug)?.name ??
-    observatory.domainSlug;
+    domains.find((d) => d.slug === observatory.domainSlug)?.name ||
+    (observatory.domainSlug ? observatory.domainSlug : 'No domain yet');
   return (
     <>
       <p className={styles.eyebrow}>{KIND_LABEL[observatory.kind]}</p>
@@ -211,7 +214,10 @@ function ObservatoryView({
         />
         {domainName}
       </p>
-      <p className={styles.body}>{observatory.tagline}</p>
+      <p className={styles.body}>
+        {observatory.tagline ||
+          'A new observatory in the RAI universe. Open its art-story to look inside.'}
+      </p>
       <button
         type="button"
         className={styles.openStory}

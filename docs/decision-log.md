@@ -880,3 +880,37 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 **Revisit:** Yes — when real observatories arrive in volume and need finer differentiation.
 
 **See also:** DL-37, DL-43, DL-44.
+
+---
+
+## DL-46 — Real Observatories in Discovery; Mocks Become Demo-Seed
+
+**Decision:** A public list endpoint `GET /api/v1/observatories` (no auth; `publicMode: true` only; base fields: id, name, displayName, type, domainIds, visualSignature, reputationScore, publicationsCount; limit 500) feeds the Explore 3D graph. The graph renders real observatories as nodes colored by their parent domain (first of `domainIds`) with the VisualSignature accent as secondary emphasis, tethered to that domain — the same language as DL-45. The two hand-written observatories (Wawel, Signal Garden) become **demo-seed**: the client renders real observatories PLUS the mocks, de-duplicated by `name` (a real observatory replaces a same-named mock), and falls back to the mocks if the endpoint fails so the universe is never empty. This further supersedes the DL-30 clause that omitted observatory nodes at Explore Level 1 (already partly superseded by DL-35/DL-43). No schema change: all columns pre-exist.
+
+**Why:**
+- The pivot is a universe of observatories; a user's created observatory must actually appear in the universe.
+- Keeping the mocks as demo-seed avoids an empty graph in early days while real content accrues.
+- A public discovery endpoint is the minimum surface for the graph and future feed/search — base fields only, no new infra.
+
+**Trade-off:** Real observatories with no board yet open to an empty-state art-story (board persistence is deferred, DL-42). Node placement for real observatories is a deterministic hash of the name until a real layout system exists.
+
+**Revisit:** Yes — remove the demo-seed mocks once enough real observatories exist; add a proper layout/placement system as density grows.
+
+**See also:** DL-30 (superseded clause), DL-35, DL-42, DL-43, DL-45, DL-47.
+
+---
+
+## DL-47 — Dashboard Baseline + `me/observatory` Read/Update
+
+**Decision:** `/dashboard` becomes the owner's real screen (auth-gated; no-observatory → `/create`), built from the DL-29 glass primitives: an identity card, an "as a node" preview (a static SVG orb in the graph language — no second heavy 3D mount), an editable identity form, and a read-only local board-draft section (honest "board publishing is coming" copy). Two auth-required endpoints back it, reusing the `/api/me` auth context and the create-route validators: `GET /api/v1/me/observatory` returns the caller's full observatory (base fields) or 404; `PATCH /api/v1/me/observatory` updates base fields (displayName, bio, domainIds [0–2 active], socialLinks, publicMode, visualSignature, type). **`name` is immutable after creation** — attempts to change it are rejected. No schema change, no migration.
+
+**Why:**
+- Owners need to see and edit their observatory; the create flow was write-once with no follow-up surface.
+- Reusing the POST validators keeps create and update in lockstep.
+- Immutable `name` protects the permanent public address (`rai.app/@name`).
+
+**Trade-off:** The dashboard is intentionally minimal — no Systems/Publications/Settings sub-screens, and the board is still local-only (DL-42) until a storage decision lands.
+
+**Revisit:** Yes — when the board/media content model and the dashboard sub-screens ship.
+
+**See also:** DL-29, DL-41, DL-42, DL-46.

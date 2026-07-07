@@ -101,7 +101,7 @@ export function RegistryRail({
               aria-hidden="true"
             />,
             o.title,
-            o.kind === 'real-place' ? 'place' : 'world',
+            o.kind === 'real-place' ? 'place' : o.kind === 'virtual-world' ? 'world' : 'obs',
             false,
           ),
         )}

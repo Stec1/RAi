@@ -246,6 +246,8 @@ The main discovery and topology surface. Three views for finding Observatories, 
 **Purpose:**
 The owner's management interface for their Observatory. Central hub for all management actions.
 
+> **PATCH-PIVOT-06 (DL-47):** Dashboard baseline is now implemented — identity card (name/address/type/publicMode/bio/domain pills/reputation+publications), an "as a node" preview in the graph language, an editable identity form (PATCHes base fields via `PATCH /api/v1/me/observatory`; `name` is read-only/immutable), and a read-only local board-draft section (board publishing is deferred, DL-42). Systems/Publications/Settings/Visual-Signature-AI sub-screens remain out of scope. No-observatory users are redirected to `/create`.
+
 **Primary components:**
 - Observatory card: name, address, type badge, Domain badges, Visual Signature visual, reputation score
 - Metrics: Total Visitors, Publication Views, Total Upvotes

@@ -1,11 +1,7 @@
-// Observatory name availability check.
-// Public endpoint — no auth required. Rate limited to 30 req/min per IP.
-//
-// GET /api/v1/observatories/check/:name
-//   200 { available: true }
-//   400 { available: false, reason: 'invalid_length' | 'invalid_format' | 'reserved' }
-//   409 { available: false, reason: 'taken' }
-//   429 { error, retryAfter }    (from rate-limit plugin)
+// Observatory routes (mounted at /api/v1/observatories).
+//   GET  /check/:name  — public name availability (ISSUE-05)
+//   GET  /             — public list for discovery (PATCH-PIVOT-06, DL-46)
+//   POST /             — create the caller's observatory (PP-04, DL-41)
 
 import type { FastifyInstance } from 'fastify';
 import {
@@ -15,8 +11,30 @@ import {
 } from '@rai/shared';
 import { prisma } from '../lib/prisma.js';
 import type { Prisma } from '../../prisma/generated/prisma/client/client.js';
+import {
+  OBSERVATORY_TYPES,
+  type ObservatoryTypeInput,
+  isPrismaUniqueViolation,
+  validateSocialLinks,
+  validateVisualSignature,
+} from '../lib/observatory-validation.js';
+
+// Base public fields for discovery — never leaks private columns.
+const PUBLIC_LIST_SELECT = {
+  id: true,
+  name: true,
+  displayName: true,
+  type: true,
+  domainIds: true,
+  visualSignature: true,
+  reputationScore: true,
+  publicationsCount: true,
+} as const;
+
+const PUBLIC_LIST_LIMIT = 500;
 
 export default async function observatoriesRoutes(server: FastifyInstance) {
+  // GET /check/:name — availability.
   server.get<{ Params: { name: string } }>(
     '/check/:name',
     { preHandler: server.observatoryRateLimit },
@@ -50,8 +68,25 @@ export default async function observatoriesRoutes(server: FastifyInstance) {
     },
   );
 
+  // GET / — public list for the Explore graph (PATCH-PIVOT-06, DL-46).
+  // No auth: public discovery. Only publicMode observatories, base fields
+  // only, capped. Rate-limited via the existing observatory limiter.
+  server.get(
+    '/',
+    { preHandler: server.observatoryRateLimit },
+    async () => {
+      const observatories = await prisma.observatory.findMany({
+        where: { publicMode: true },
+        select: PUBLIC_LIST_SELECT,
+        orderBy: [{ reputationScore: 'desc' }, { createdAt: 'asc' }],
+        take: PUBLIC_LIST_LIMIT,
+      });
+      return { observatories };
+    },
+  );
+
   // POST / — create (PATCH-PIVOT-04, DL-41). Defined below; function
-  // declarations hoist, so the same registered plugin wires both.
+  // declarations hoist, so the same registered plugin wires all routes.
   await observatoryCreateRoutes(server);
 }
 
@@ -73,17 +108,6 @@ export default async function observatoriesRoutes(server: FastifyInstance) {
 // `Observatory.userId @unique` DB backstop (P2002 → 409). No credit cost.
 // ---------------------------------------------------------------------------
 
-const OBSERVATORY_TYPES = ['individual', 'studio', 'product'] as const;
-type ObservatoryTypeInput = (typeof OBSERVATORY_TYPES)[number];
-
-const SOCIAL_KEYS = ['github', 'x', 'telegram', 'linkedin', 'email', 'website'] as const;
-
-const AMBIENT_EFFECTS = ['glow', 'pulse', 'static', 'drift'];
-const SURFACE_STYLES = ['smooth', 'grain', 'mesh', 'void'];
-const NODE_STYLES = ['point', 'ring', 'pulse', 'cross'];
-const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 interface CreateObservatoryBody {
   name?: unknown;
   displayName?: unknown;
@@ -93,62 +117,6 @@ interface CreateObservatoryBody {
   socialLinks?: unknown;
   visualSignature?: unknown;
   publicMode?: unknown;
-}
-
-function isValidHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
-
-// Validates the VisualSignature shape (mirrors @rai/shared
-// types/visual-signature.ts). Returns an error string or null.
-function validateVisualSignature(value: unknown): string | null {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return 'visualSignature must be an object';
-  }
-  const sig = value as Record<string, unknown>;
-  for (const key of ['primaryColor', 'secondaryColor', 'accentColor']) {
-    if (typeof sig[key] !== 'string' || !HEX_COLOR.test(sig[key] as string)) {
-      return `visualSignature.${key} must be a hex color`;
-    }
-  }
-  const angle = sig.gradientAngle;
-  if (typeof angle !== 'number' || !Number.isFinite(angle) || angle < 0 || angle > 360) {
-    return 'visualSignature.gradientAngle must be a number between 0 and 360';
-  }
-  const intensity = sig.effectIntensity;
-  if (
-    typeof intensity !== 'number' ||
-    !Number.isFinite(intensity) ||
-    intensity < 0 ||
-    intensity > 1
-  ) {
-    return 'visualSignature.effectIntensity must be a number between 0 and 1';
-  }
-  if (typeof sig.ambientEffect !== 'string' || !AMBIENT_EFFECTS.includes(sig.ambientEffect)) {
-    return 'visualSignature.ambientEffect is invalid';
-  }
-  if (typeof sig.surfaceStyle !== 'string' || !SURFACE_STYLES.includes(sig.surfaceStyle)) {
-    return 'visualSignature.surfaceStyle is invalid';
-  }
-  if (typeof sig.nodeStyle !== 'string' || !NODE_STYLES.includes(sig.nodeStyle)) {
-    return 'visualSignature.nodeStyle is invalid';
-  }
-  return null;
-}
-
-function isPrismaUniqueViolation(err: unknown): { target: string } | null {
-  if (typeof err !== 'object' || err === null) return null;
-  const maybe = err as { code?: unknown; meta?: { target?: unknown } };
-  if (maybe.code !== 'P2002') return null;
-  const target = maybe.meta?.target;
-  if (Array.isArray(target)) return { target: target.join(',') };
-  if (typeof target === 'string') return { target };
-  return { target: '' };
 }
 
 export async function observatoryCreateRoutes(server: FastifyInstance) {
@@ -274,37 +242,12 @@ export async function observatoryCreateRoutes(server: FastifyInstance) {
       // socialLinks (optional, known keys only, url/email shape)
       let socialLinks: Record<string, string> | null = null;
       if (body.socialLinks !== undefined && body.socialLinks !== null) {
-        if (typeof body.socialLinks !== 'object' || Array.isArray(body.socialLinks)) {
-          reply
-            .status(400)
-            .send({ error: 'socialLinks must be an object', field: 'socialLinks' });
+        const result = validateSocialLinks(body.socialLinks);
+        if ('error' in result) {
+          reply.status(400).send({ error: result.error, field: 'socialLinks' });
           return;
         }
-        const links: Record<string, string> = {};
-        for (const [key, value] of Object.entries(body.socialLinks as Record<string, unknown>)) {
-          if (!(SOCIAL_KEYS as readonly string[]).includes(key)) {
-            reply
-              .status(400)
-              .send({ error: `Unknown social link: ${key}`, field: 'socialLinks' });
-            return;
-          }
-          if (typeof value !== 'string' || value.length === 0) continue;
-          if (key === 'email') {
-            if (!EMAIL_SHAPE.test(value)) {
-              reply
-                .status(400)
-                .send({ error: 'socialLinks.email must be an email', field: 'socialLinks' });
-              return;
-            }
-          } else if (!isValidHttpUrl(value)) {
-            reply
-              .status(400)
-              .send({ error: `socialLinks.${key} must be a URL`, field: 'socialLinks' });
-            return;
-          }
-          links[key] = value;
-        }
-        socialLinks = Object.keys(links).length > 0 ? links : null;
+        socialLinks = Object.keys(result.links).length > 0 ? result.links : null;
       }
 
       // visualSignature (optional)
