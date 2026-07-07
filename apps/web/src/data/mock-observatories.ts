@@ -1,8 +1,12 @@
-// MOCK DATA — PATCH-PIVOT-01.
+// DEMO-SEED DATA — PATCH-PIVOT-01, demoted to demo-seed in PATCH-PIVOT-06.
 //
-// Two hand-written observatories so the universe has life before the real
-// Observatory model lands. REMOVE this module when real, API-backed
-// Observatory data replaces it.
+// Two hand-written observatories so the universe is never empty. Per DL-46
+// the Explore graph now renders REAL observatories from
+// `GET /api/v1/observatories` PLUS these mocks, de-duplicated by `name`
+// (a real observatory replaces a same-named mock). REMOVE this module once
+// enough real observatories exist. The normalized universe type used by
+// the graph/registry/inspector is `MockObservatory` (both demo and real
+// observatories are mapped into it; see `lib/universe-observatories.ts`).
 //
 // `VisualSignature` mirrors `packages/shared/src/types/visual-signature.ts`
 // (`@rai/shared`). Per the repo convention in `apps/web/src/lib/
@@ -25,7 +29,10 @@ export type VisualSignature = {
   nodeStyle: NodeStyle;
 };
 
-export type ObservatoryKind = 'real-place' | 'virtual-world';
+// 'observatory' is the neutral kind for real API observatories — their
+// world (real|virtual) is deferred (DL-39), so they are not yet a place
+// or a world, just an observatory.
+export type ObservatoryKind = 'real-place' | 'virtual-world' | 'observatory';
 
 export type StorySection = {
   heading: string;
@@ -34,14 +41,20 @@ export type StorySection = {
 
 export type MockObservatory = {
   slug: string;
+  /** De-dup key across demo + real (defaults to slug for demos). */
+  name?: string;
   title: string;
   domainSlug: string;
   kind: ObservatoryKind;
   tagline: string;
   signature: VisualSignature;
   sections: StorySection[];
-  /** Label for the disabled mock CTA at the end of the art-story. */
-  cta: string;
+  /** Disabled CTA label for a demo art-story; null for real observatories. */
+  cta: string | null;
+  /** True for demo-seed; false/absent for real API observatories. */
+  isDemo?: boolean;
+  reputationScore?: number;
+  publicationsCount?: number;
   /**
    * Fixed offset from the domain node, in viewBox units. ISSUE-09
    * positioning helpers (`nameHash`) do not exist yet; when they land,
@@ -59,6 +72,8 @@ export type MockObservatory = {
 export const MOCK_OBSERVATORIES: MockObservatory[] = [
   {
     slug: 'wawel-dragons-hill',
+    name: 'wawel-dragons-hill',
+    isDemo: true,
     title: "Wawel: The Dragon's Hill",
     domainSlug: 'vorda',
     kind: 'real-place',
@@ -98,6 +113,8 @@ export const MOCK_OBSERVATORIES: MockObservatory[] = [
   },
   {
     slug: 'signal-garden',
+    name: 'signal-garden',
+    isDemo: true,
     title: 'Signal Garden',
     domainSlug: 'draxis',
     kind: 'virtual-world',

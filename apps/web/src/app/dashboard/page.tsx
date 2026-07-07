@@ -1,67 +1,81 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { AuthShell } from '../../components/auth/AuthShell';
-import { AuthCard, authCardStyles } from '../../components/auth/AuthCard';
-import { useAuth } from '../../hooks/useAuth';
-import styles from './page.module.css';
+// /dashboard — the owner's real screen (PATCH-PIVOT-06, DL-47).
+//
+// Auth-gated (unauthenticated → /login, unchanged). Fetches the caller's
+// observatory via GET /api/v1/me/observatory: 404 → redirect to /create
+// (matching the existing one-per-user routing), otherwise render the
+// Dashboard. Active domains are fetched for the identity pills and the
+// "as a node" preview color.
 
-// Placeholder for the authenticated user's dashboard.
-//
-// Background: prior to this hotfix, /dashboard did not exist. The
-// post-auth redirect resolver routes returning users with an
-// Observatory here, so without this page they'd 404 on log-in. The
-// real dashboard ships in a later issue.
-//
-// Auth-guarded — unauthenticated visitors are pushed to /login. The
-// session is read via Better Auth's `useSession`
-// (`/api/auth/get-session`), independent of any `/api/me` call.
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { PageShell } from '../../components/ui/PageShell';
+import { DashboardScreen } from '../../components/dashboard/DashboardScreen';
+import type { OwnerObservatory } from '../../components/dashboard/DashboardScreen';
+import type { DomainDTO } from '../../lib/topology-types';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isLoading } = useAuth();
-  const [redirectingToLogin, setRedirectingToLogin] = useState(false);
+  const [gate, setGate] = useState<'checking' | 'ok'>('checking');
+  const [observatory, setObservatory] = useState<OwnerObservatory | null>(null);
+  const [domains, setDomains] = useState<DomainDTO[]>([]);
 
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      setRedirectingToLogin(true);
       router.replace('/login');
+      return;
     }
+    const controller = new AbortController();
+    fetch('/api/v1/me/observatory', {
+      credentials: 'include',
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (res.status === 404) {
+          router.replace('/create');
+          return null;
+        }
+        if (res.status === 401) {
+          router.replace('/login');
+          return null;
+        }
+        return res.ok ? res.json() : null;
+      })
+      .then((data: { observatory: OwnerObservatory } | null) => {
+        if (data?.observatory) {
+          setObservatory(data.observatory);
+          setGate('ok');
+        }
+      })
+      .catch(() => {
+        /* leave in checking; a transient failure keeps the busy state */
+      });
+    return () => controller.abort();
   }, [isLoading, user, router]);
 
-  if (isLoading || redirectingToLogin || !user) {
+  // Active domains for the identity pills + node-preview color.
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/v1/domains', { credentials: 'include', signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j: { domains?: DomainDTO[] } | null) => {
+        if (j?.domains) setDomains(j.domains.filter((d) => d.active));
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+
+  if (isLoading || !user || gate !== 'ok' || !observatory) {
     return <main aria-busy="true" />;
   }
 
   return (
-    <AuthShell>
-      <AuthCard
-        tagline="Welcome back"
-        title="Your RAI Dashboard"
-        footer={
-          <p>
-            Looking for the public side?{' '}
-            <Link href="/explore" className={authCardStyles.footerLink}>
-              Explore the universe
-            </Link>
-          </p>
-        }
-      >
-        <div className={styles.body}>
-          <p className={styles.lede}>
-            Your dashboard is the quiet side of your observatory — where
-            you will shape its story, publish new sections, and follow how
-            the community receives them.
-          </p>
-          <p className={styles.note}>
-            You&rsquo;re signed in. The full dashboard is on the way and
-            will appear here as soon as it ships.
-          </p>
-        </div>
-      </AuthCard>
-    </AuthShell>
+    <PageShell>
+      <DashboardScreen initial={observatory} domains={domains} />
+    </PageShell>
   );
 }

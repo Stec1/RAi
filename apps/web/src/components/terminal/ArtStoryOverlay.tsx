@@ -34,6 +34,7 @@ interface Props {
 const KIND_LABEL: Record<MockObservatory['kind'], string> = {
   'real-place': 'Real place',
   'virtual-world': 'Virtual world',
+  observatory: 'Observatory',
 };
 
 export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
@@ -152,17 +153,32 @@ export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
       </section>
 
       <div className={styles.body}>
-        {observatory.sections.map((section) => (
-          <section key={section.heading} className={styles.section}>
-            <h3 className={styles.sectionHeading}>{section.heading}</h3>
-            <p className={styles.sectionBody}>{section.body}</p>
+        {observatory.sections.length > 0 ? (
+          observatory.sections.map((section) => (
+            <section key={section.heading} className={styles.section}>
+              <h3 className={styles.sectionHeading}>{section.heading}</h3>
+              <p className={styles.sectionBody}>{section.body}</p>
+            </section>
+          ))
+        ) : (
+          // Real observatories have no board content yet — board
+          // publishing is deferred (DL-42/DL-46). Honest empty state.
+          <section className={styles.section}>
+            <h3 className={styles.sectionHeading}>Just getting started</h3>
+            <p className={styles.sectionBody}>
+              This observatory is just getting started. Its board — the
+              rooms, notes, and images that make up its story — is being
+              built and will appear here when board publishing ships.
+            </p>
           </section>
-        ))}
-        <div className={styles.ctaRow}>
-          <button type="button" className={styles.cta} disabled>
-            {observatory.cta}
-          </button>
-        </div>
+        )}
+        {observatory.cta ? (
+          <div className={styles.ctaRow}>
+            <button type="button" className={styles.cta} disabled>
+              {observatory.cta}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>,
     document.body,
