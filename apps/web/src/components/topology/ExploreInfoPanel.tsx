@@ -40,15 +40,10 @@ const DEFAULT_BODY =
 const RA_BODY =
   'RA is the coordinating core of the universe. It shows stories, coordinates their verification, and settles reputation — it never executes anything itself.';
 
-const KIND_LABEL: Record<MockObservatory['kind'], string> = {
-  'real-place': 'Real place',
-  'virtual-world': 'Virtual world',
-  observatory: 'Observatory',
-};
-
-function kindShort(kind: MockObservatory['kind']): string {
-  return kind === 'real-place' ? 'place' : kind === 'virtual-world' ? 'world' : 'obs';
-}
+// PP-07 §3: the virtual/real split is hidden from the UI until World mode
+// ships. Every observatory reads simply as an "Observatory" — no
+// place/world/kind tag anywhere.
+const OBSERVATORY_EYEBROW = 'Observatory';
 
 export function ExploreInfoPanel({
   focus,
@@ -68,7 +63,7 @@ export function ExploreInfoPanel({
       : null;
 
   const liveText = observatory
-    ? `${observatory.title} — ${KIND_LABEL[observatory.kind]}`
+    ? observatory.title
     : domain
       ? `${domain.name} — ${domain.active ? 'Active' : 'Coming Soon'}`
       : focus?.kind === 'ra'
@@ -181,7 +176,6 @@ function DomainView({
                 aria-hidden="true"
               />
               <span className={styles.miniListName}>{o.title}</span>
-              <span className={styles.miniListKind}>{kindShort(o.kind)}</span>
             </button>
           ))
         )}
@@ -204,7 +198,7 @@ function ObservatoryView({
     (observatory.domainSlug ? observatory.domainSlug : 'No domain yet');
   return (
     <>
-      <p className={styles.eyebrow}>{KIND_LABEL[observatory.kind]}</p>
+      <p className={styles.eyebrow}>{OBSERVATORY_EYEBROW}</p>
       <h2 className={styles.heading}>{observatory.title}</h2>
       <p className={styles.theme}>
         <span
