@@ -8,18 +8,22 @@
 // three/react-force-graph footprint never runs on the server and stays
 // code-split to the Explore surface.
 //
-// Scene contract:
-//   • RA — faceted icosahedron crystal, warm gold emissive, dominant.
-//   • All 7 domains — glowing identity-colored orbs; inactive ones are
-//     dimmer/cooler but FULL nodes (DL-44), never hidden.
-//   • Observatories — smaller orbs in their PARENT DOMAIN color with a
-//     VisualSignature-accent ring (DL-45), tethered to their domain.
-//   • Edges — thin lines in the far node's color with slow directional
-//     particles as flow; hover/selection brightens node + edge.
+// Scene contract (PATCH-PIVOT-09 — a BOUNDED SPHERE, DL-50):
+//   • RA — faceted gold crystal at the sphere's CENTER (origin).
+//   • All 7 domains — glowing identity-colored orbs on a MIDDLE shell
+//     (Fibonacci-sphere); inactive dimmer but full nodes (DL-44).
+//   • Observatories — smaller orbs on the OUTER shell (the sphere
+//     surface), name-hash placed in a cone biased to their parent
+//     domain (DL-45 color) so many fan out instead of piling up.
+//   • A visible lat/long sphere shell marks the boundary (PP-09 §3).
+//   • Edges — RA→domain spokes + domain→observatory tethers, thin and
+//     luminous; hover/selection brightens node + edge.
 //   • No persistent in-scene labels (PP-07 §2) — identity via Inspector
-//     + Registry; the scene background follows the theme (PP-07 §1).
-//   • Positions are pinned (fx/fy/fz) from the deterministic seed
-//     layout, 3D-ified with per-index depth — no force jitter.
+//     + Registry. Dark scene background is TRUE BLACK (PP-09 §5).
+//   • Positions are DETERMINISTIC and pinned (fx/fy/fz); the force sim is
+//     frozen (cooldownTicks/warmupTicks = 0) — same data → same layout.
+//   • Camera uses OrbitControls with a clamped dolly so the viewer can
+//     zoom INSIDE the shell and look outward (PP-09 §4).
 //
 // Selection model preserved from PP-02: node click → onSelectEntity;
 // background click → onClearSelect; hover → onHoverEntity; the Registry
@@ -43,11 +47,7 @@ import ForceGraph3D, { type ForceGraphMethods } from 'react-force-graph-3d';
 import * as THREE from 'three';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { DomainSeed } from './topology-layout';
-import {
-  DESKTOP_RADII,
-  computeDomainPositions,
-  domainColor,
-} from './topology-layout';
+import { domainColor } from './topology-layout';
 import type { MockObservatory } from '../../data/mock-observatories';
 import type { EntityRef, ViewCommand } from '../../lib/topology-types';
 import styles from './TopologyGraph3D.module.css';
@@ -85,25 +85,135 @@ type GLink = {
   active: boolean;
 };
 
-const DEFAULT_CAMERA_Z = 640;
-// Deterministic depth offsets so the ring reads as a 3D constellation.
-const DOMAIN_Z = [-70, 30, 90, -40, 60, -90, 45];
+// ── Bounded spherical universe (PATCH-PIVOT-09, DL-50) ──
+// RA at the origin; domains on a MIDDLE shell; observatories on the OUTER
+// shell (the sphere surface). Positions are deterministic (golden-spiral),
+// pinned via fx/fy/fz with the force sim frozen — same data → same layout.
+const R_DOMAIN = 150; // middle shell (domains around RA)
+const R_SHELL = 300; // outer shell (observatories + the visible boundary)
+const DEFAULT_CAM = 720; // frames the whole sphere from outside
+const MIN_DIST = 24; // dolly clamp: can go INSIDE the shell, never past RA
+const MAX_DIST = 1200; // dolly clamp: never fly infinitely away
+const FOCUS_CAM = 120; // Focus RA — near the center, looking out
+const SHELL_SPREAD = 0.62; // cone half-angle biasing an observatory to its domain
+
 // RA hub base emissive (A2) — brightest node but shows its gold, not a
 // white core. The vibration loop (A3) modulates around this.
 const RA_BASE_EMISSIVE = 0.7;
 // Hover/selection emissive multiplier — brighten without blowing out.
 const HOT_EMISSIVE = 1.7;
 
-// Scene background follows the ACTIVE theme literally (PATCH-PIVOT-07 §1,
-// superseding PP-06's "deep neutral in both themes"): the scene reads the
-// panel's own canvas token so it flips black (dark) ↔ paper (light) with
-// the chrome and blends seamlessly with the panel frame.
-function readSceneBg(): string {
-  if (typeof window === 'undefined') return '#050509';
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+// Fibonacci-sphere unit direction for index i of n — spreads points evenly
+// over the sphere (not on a flat ring), deterministic by index.
+function fibDir(i: number, n: number): THREE.Vector3 {
+  const y = n <= 1 ? 0 : 1 - (i / (n - 1)) * 2;
+  const r = Math.sqrt(Math.max(0, 1 - y * y));
+  const theta = GOLDEN_ANGLE * i;
+  return new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r);
+}
+
+// Deterministic [0,1) pair from a string (FNV-1a) — stable across reloads.
+function hash01(seed: string): [number, number] {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const u = ((h >>> 0) % 100000) / 100000;
+  h = Math.imul(h ^ (h >>> 13), 16777619);
+  const v = ((h >>> 0) % 100000) / 100000;
+  return [u, v];
+}
+
+// A unit direction inside a cone of half-angle `spread` around `axis`,
+// derived from (u, v). Biases an observatory to its parent domain's
+// direction while spreading names around the shell region (the scaling
+// fix: many observatories fan out instead of piling onto the domain node).
+function coneDir(axis: THREE.Vector3, spread: number, u: number, v: number): THREE.Vector3 {
+  const a = axis.clone().normalize();
+  const ref = Math.abs(a.y) < 0.99 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+  const t1 = new THREE.Vector3().crossVectors(a, ref).normalize();
+  const t2 = new THREE.Vector3().crossVectors(a, t1).normalize();
+  const alpha = spread * Math.sqrt(v); // polar offset (sqrt → even area)
+  const phi = 2 * Math.PI * u; // around the axis
+  return a
+    .clone()
+    .multiplyScalar(Math.cos(alpha))
+    .add(t1.multiplyScalar(Math.sin(alpha) * Math.cos(phi)))
+    .add(t2.multiplyScalar(Math.sin(alpha) * Math.sin(phi)))
+    .normalize();
+}
+
+// The visible sphere boundary (PP-09 §3) — a clean lat/long globe of thin
+// lines (no triangle diagonals), added directly to the scene. Subtle, so
+// nodes dominate; theme-colored via the returned material.
+function buildSphereShell(radius: number): {
+  group: THREE.Group;
+  material: THREE.LineBasicMaterial;
+  dispose: () => void;
+} {
+  const group = new THREE.Group();
+  const material = new THREE.LineBasicMaterial({
+    color: 0x38507a,
+    transparent: true,
+    opacity: 0.2,
+  });
+  const geometries: THREE.BufferGeometry[] = [];
+  const SEG = 96;
+  for (const latDeg of [-60, -35, -12, 12, 35, 60]) {
+    const lat = (latDeg * Math.PI) / 180;
+    const y = radius * Math.sin(lat);
+    const rr = radius * Math.cos(lat);
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= SEG; i += 1) {
+      const t = (i / SEG) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(t) * rr, y, Math.sin(t) * rr));
+    }
+    const g = new THREE.BufferGeometry().setFromPoints(pts);
+    geometries.push(g);
+    group.add(new THREE.Line(g, material));
+  }
+  const MER = 8;
+  for (let m = 0; m < MER; m += 1) {
+    const rot = (m / MER) * Math.PI;
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= SEG; i += 1) {
+      const t = (i / SEG) * Math.PI * 2;
+      pts.push(
+        new THREE.Vector3(
+          Math.sin(t) * Math.cos(rot) * radius,
+          Math.cos(t) * radius,
+          Math.sin(t) * Math.sin(rot) * radius,
+        ),
+      );
+    }
+    const g = new THREE.BufferGeometry().setFromPoints(pts);
+    geometries.push(g);
+    group.add(new THREE.Line(g, material));
+  }
+  return {
+    group,
+    material,
+    dispose: () => {
+      geometries.forEach((g) => g.dispose());
+      material.dispose();
+    },
+  };
+}
+
+// Scene background follows the ACTIVE theme (PP-09 §5, superseding the
+// PP-07 token-only rule): dark is TRUE BLACK — the prior --surface-canvas
+// (#050509) carried a faint blue tint that read as lilac under bloom. Light
+// reads the paper canvas token. Reacts to data-theme without reload.
+function readSceneBg(theme: 'dark' | 'light'): string {
+  if (theme === 'dark') return '#000000';
+  if (typeof window === 'undefined') return '#efeee9';
   const v = getComputedStyle(document.documentElement)
     .getPropertyValue('--surface-canvas')
     .trim();
-  return v || '#050509';
+  return v || '#efeee9';
 }
 
 function refId(ref: EntityRef): string {
@@ -146,9 +256,11 @@ export default function TopologyGraph3D({
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   const [reducedMotion, setReducedMotion] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  // Scene clear color read from the panel's canvas token (PP-07 §1) so it
-  // flips black (dark) ↔ paper (light) with the theme.
-  const [sceneBg, setSceneBg] = useState<string>('#050509');
+  // Scene clear color (PP-09 §5): true black in dark, paper in light.
+  const [sceneBg, setSceneBg] = useState<string>('#000000');
+  // Sphere shell refs (PP-09 §3) — added to the scene, disposed on unmount.
+  const shellRef = useRef<THREE.Group | null>(null);
+  const shellMatRef = useRef<THREE.LineBasicMaterial | null>(null);
 
   // WebGL availability guard — composed fallback instead of a crash.
   const [webglOk] = useState<boolean>(() => {
@@ -194,8 +306,9 @@ export default function TopologyGraph3D({
   useEffect(() => {
     const root = document.documentElement;
     const update = () => {
-      setTheme(root.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
-      setSceneBg(readSceneBg());
+      const t = root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+      setTheme(t);
+      setSceneBg(readSceneBg(t));
     };
     update();
     const mo = new MutationObserver(update);
@@ -203,9 +316,15 @@ export default function TopologyGraph3D({
     return () => mo.disconnect();
   }, []);
 
-  // Graph data — pinned deterministic 3D layout from the seed angles.
+  // Graph data — DETERMINISTIC spherical layout (PP-09 §2). RA at origin;
+  // domains on the middle shell via Fibonacci-sphere; observatories on the
+  // outer shell via a name-hash cone biased to their parent domain. All
+  // positions are pinned (fx/fy/fz) and the force sim is frozen
+  // (cooldownTicks/warmupTicks = 0), so the same data lays out identically
+  // every load.
   const graphData = useMemo(() => {
-    const positions = computeDomainPositions(domains, DESKTOP_RADII);
+    const n = domains.length || 1;
+    const domainDir: Record<string, THREE.Vector3> = {};
     const nodes: GNode[] = [
       {
         id: 'ra',
@@ -222,8 +341,9 @@ export default function TopologyGraph3D({
     const links: GLink[] = [];
 
     domains.forEach((d, i) => {
-      const pos = positions[d.slug];
-      if (!pos) return;
+      const dir = fibDir(i, n);
+      domainDir[d.slug] = dir;
+      const p = dir.clone().multiplyScalar(R_DOMAIN);
       const color = domainColor(d.slug);
       nodes.push({
         id: `domain:${d.slug}`,
@@ -232,23 +352,22 @@ export default function TopologyGraph3D({
         color,
         kind: 'domain',
         active: d.active,
-        fx: pos.x,
-        fy: -pos.y, // SVG y-down → 3D y-up
-        fz: DOMAIN_Z[i % DOMAIN_Z.length]!,
+        fx: p.x,
+        fy: p.y,
+        fz: p.z,
       });
       links.push({ source: 'ra', target: `domain:${d.slug}`, color, active: d.active });
     });
 
     observatories.forEach((o, i) => {
-      const dpos = positions[o.domainSlug];
-      const base = dpos ?? { x: o.fallbackPosition.x, y: o.fallbackPosition.y };
-      const di = domains.findIndex((d) => d.slug === o.domainSlug);
-      const dz = DOMAIN_Z[(di >= 0 ? di : i) % DOMAIN_Z.length]!;
-      // Observatory color = PARENT DOMAIN color (DL-45); signature
-      // accent is secondary emphasis (the ring), applied in the mesh.
-      // Guard: real observatories may have an unresolved domain, where
-      // domainColor returns a CSS var — fall back to their signature
-      // primary so THREE always gets a valid hex.
+      const [u, v] = hash01(o.name ?? o.slug);
+      // Bias to the parent domain's direction; unresolved domain → a
+      // stable hash-picked direction so the node still lands on the shell.
+      const axis = domainDir[o.domainSlug] ?? fibDir(i % n, n);
+      const p = coneDir(axis, SHELL_SPREAD, u, v).multiplyScalar(R_SHELL);
+      // Observatory color = PARENT DOMAIN color (DL-45); signature accent
+      // is secondary emphasis (the ring). Guard: unresolved domain →
+      // domainColor returns a CSS var, so fall back to the signature hex.
       const rawColor = domainColor(o.domainSlug);
       const color = rawColor.startsWith('#') ? rawColor : o.signature.primaryColor;
       nodes.push({
@@ -259,11 +378,11 @@ export default function TopologyGraph3D({
         accent: o.signature.accentColor,
         kind: 'observatory',
         active: true,
-        fx: base.x + o.offset.x,
-        fy: -(base.y + o.offset.y),
-        fz: dz + (i % 2 === 0 ? 34 : -30),
+        fx: p.x,
+        fy: p.y,
+        fz: p.z,
       });
-      if (dpos) {
+      if (domainDir[o.domainSlug]) {
         links.push({
           source: `domain:${o.domainSlug}`,
           target: `observatory:${o.slug}`,
@@ -457,7 +576,75 @@ export default function TopologyGraph3D({
     }
   }, [theme]);
 
-  // Auto-rotate (idle life). Off under reduced motion, always.
+  // Sphere shell (PP-09 §3) + camera framing/clamp. Once the graph is
+  // ready: add the lat/long globe to the scene, frame the whole sphere
+  // from outside, and clamp OrbitControls so the viewer can dolly INSIDE
+  // the shell (down to MIN_DIST, never past RA) but not fly away past
+  // MAX_DIST. The shell + its geometries/material are disposed on cleanup.
+  useEffect(() => {
+    if (!ready) return;
+    const fg = fgRef.current;
+    if (!fg) return;
+
+    const shell = buildSphereShell(R_SHELL);
+    shellRef.current = shell.group;
+    shellMatRef.current = shell.material;
+    fg.scene().add(shell.group);
+
+    fg.cameraPosition({ x: 0, y: 0, z: DEFAULT_CAM }, { x: 0, y: 0, z: 0 }, 0);
+    const controls = fg.controls() as
+      | { minDistance?: number; maxDistance?: number }
+      | undefined;
+    if (controls) {
+      controls.minDistance = MIN_DIST;
+      controls.maxDistance = MAX_DIST;
+    }
+
+    return () => {
+      try {
+        fg.scene().remove(shell.group);
+      } catch {
+        /* scene already gone */
+      }
+      shell.dispose();
+      shellRef.current = null;
+      shellMatRef.current = null;
+    };
+  }, [ready]);
+
+  // Scene background must update LIVE on theme flip (PP-09 §5). The
+  // library's backgroundColor prop only applies at mount, so set the
+  // scene background + renderer clear color imperatively whenever the
+  // theme-derived color changes (and once on ready).
+  useEffect(() => {
+    if (!ready) return;
+    const fg = fgRef.current;
+    if (!fg) return;
+    const col = new THREE.Color(sceneBg);
+    fg.scene().background = col;
+    try {
+      fg.renderer().setClearColor(col, 1);
+    } catch {
+      /* renderer not ready */
+    }
+  }, [ready, sceneBg]);
+
+  // Shell color follows the theme — luminous cool line on the black scene,
+  // soft ink on paper.
+  useEffect(() => {
+    const mat = shellMatRef.current;
+    if (!mat) return;
+    if (theme === 'dark') {
+      mat.color.set('#3a4f7a');
+      mat.opacity = 0.22;
+    } else {
+      mat.color.set('#5a5f70');
+      mat.opacity = 0.16;
+    }
+  }, [theme, ready]);
+
+  // Auto-rotate (idle life). Off under reduced motion, always. OrbitControls
+  // owns autoRotate; the library's render loop calls controls.update().
   useEffect(() => {
     if (!ready) return;
     const controls = fgRef.current?.controls() as
@@ -465,7 +652,7 @@ export default function TopologyGraph3D({
       | undefined;
     if (!controls) return;
     controls.autoRotate = autoRotate && !reducedMotion;
-    controls.autoRotateSpeed = 0.55;
+    controls.autoRotateSpeed = 0.45;
   }, [ready, autoRotate, reducedMotion]);
 
   // Real view commands (token-gated).
@@ -476,11 +663,13 @@ export default function TopologyGraph3D({
     const fg = fgRef.current;
     if (!fg) return;
     if (viewCommand.action === 'reset') {
-      fg.cameraPosition({ x: 0, y: 0, z: DEFAULT_CAMERA_Z }, { x: 0, y: 0, z: 0 }, 800);
+      // Default outside framing of the whole sphere.
+      fg.cameraPosition({ x: 0, y: 0, z: DEFAULT_CAM }, { x: 0, y: 0, z: 0 }, 800);
     } else if (viewCommand.action === 'fit') {
-      fg.zoomToFit(700, 70);
+      fg.zoomToFit(700, 60);
     } else {
-      fg.cameraPosition({ x: 0, y: -30, z: 240 }, { x: 0, y: 0, z: 0 }, 900);
+      // Focus RA — fly to just outside the center, looking out.
+      fg.cameraPosition({ x: 0, y: 0, z: FOCUS_CAM }, { x: 0, y: 0, z: 0 }, 900);
     }
   }, [viewCommand]);
 
@@ -536,6 +725,9 @@ export default function TopologyGraph3D({
           enableNodeDrag={false}
           cooldownTicks={0}
           warmupTicks={0}
+          // OrbitControls give a clamped dolly (min/max distance → zoom
+          // INSIDE the shell but never past RA), orbit, pan, and autoRotate.
+          controlType="orbit"
           nodeThreeObject={nodeThreeObject as never}
           nodeLabel={() => ''}
           linkColor={(l: GLink) => l.color}
