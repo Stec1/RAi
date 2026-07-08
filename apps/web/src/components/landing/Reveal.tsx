@@ -1,20 +1,25 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import styles from './Reveal.module.css';
 
 // Lightweight Intersection Observer fade-up reveal.
 // Allowed per the motion contract. Falls back to immediately-visible
 // when reduced motion is requested or IO is unavailable.
+//
+// `style` is optional and additive (e.g. a per-item transition-delay for
+// staggered reveals); it is spread onto the wrapper element.
 
 export function Reveal({
   children,
   as: Tag = 'div',
   className,
+  style,
 }: {
   children: ReactNode;
   as?: 'div' | 'section';
   className?: string;
+  style?: CSSProperties;
 }) {
   const ref = useRef<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
@@ -53,7 +58,7 @@ export function Reveal({
     .join(' ');
 
   return (
-    <Tag ref={ref as never} className={classes}>
+    <Tag ref={ref as never} className={classes} style={style}>
       {children}
     </Tag>
   );

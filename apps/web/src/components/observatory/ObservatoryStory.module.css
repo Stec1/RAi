@@ -1,0 +1,380 @@
+/* ObservatoryStory (PATCH-PIVOT-08, DL-49) — the directed art-story.
+   Signature colors flow through --story-primary/-secondary/-accent set on
+   the root. Hero ink sits on the signature gradient (theme-invariant);
+   the body uses the theme surface with readability-first reading text
+   (signature tints accents/rules/cards, never the reading contrast). */
+
+.story {
+  --story-primary: #4a7dbf;
+  --story-secondary: #22304a;
+  --story-accent: #bcd8ff;
+  display: block;
+  background: var(--surface-base);
+  color: var(--text-primary);
+}
+
+/* ───────── Hero ───────── */
+
+.hero {
+  position: relative;
+  min-height: 46vh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  color: rgba(245, 242, 236, 0.96);
+}
+
+.ambient {
+  position: absolute;
+  inset: -25%;
+  pointer-events: none;
+}
+
+.ambientStatic {
+  background: radial-gradient(circle at 30% 34%, rgba(255, 255, 255, 0.18), transparent 60%);
+}
+
+@keyframes storyGlow {
+  0% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.06); }
+  100% { opacity: 0.5; transform: scale(1); }
+}
+
+.ambientGlow {
+  background: radial-gradient(circle at 32% 36%, rgba(255, 255, 255, 0.24), transparent 58%);
+  animation: storyGlow 9s ease-in-out infinite;
+}
+
+@keyframes storyDrift {
+  0% { transform: translate3d(-3%, 0, 0); }
+  50% { transform: translate3d(3%, 2%, 0); }
+  100% { transform: translate3d(-3%, 0, 0); }
+}
+
+.ambientDrift {
+  background:
+    radial-gradient(ellipse 42% 34% at 26% 38%, rgba(255, 255, 255, 0.2), transparent 70%),
+    radial-gradient(ellipse 36% 30% at 72% 62%, rgba(255, 255, 255, 0.14), transparent 70%);
+  animation: storyDrift 16s ease-in-out infinite;
+}
+
+/* Living presence — a soft glow that breathes, echoing the RA heartbeat. */
+@keyframes heroBreath {
+  0% { opacity: 0.28; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.04); }
+  100% { opacity: 0.28; transform: scale(1); }
+}
+
+.heroBreath {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 78%, rgba(255, 255, 255, 0.22), transparent 55%);
+  animation: heroBreath 7.4s ease-in-out infinite;
+}
+
+.heroScrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(6, 6, 12, 0.58), transparent 55%);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-6) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-56);
+  line-height: 1.04;
+  letter-spacing: var(--tracking-display);
+  color: inherit;
+  max-width: 18ch;
+}
+
+.metadata {
+  margin: 0;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.lede {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-18);
+  line-height: 1.6;
+  max-width: 48ch;
+  opacity: 0.95;
+}
+
+/* ───────── Body ───────── */
+
+.body {
+  max-width: calc(var(--measure-prose) + var(--space-16));
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-6) var(--space-24);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.revealItem {
+  /* reveal transition comes from Reveal.module.css; per-item delay is
+     passed inline for a gentle stagger. */
+}
+
+.blockWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* heading → section divider with signature accent rule + rhythm. */
+.divider {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+
+.dividerRule {
+  width: 48px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--story-accent);
+}
+
+.dividerHeading {
+  margin: 0;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-24);
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+}
+
+/* text → readable editorial column. */
+.text {
+  margin: 0;
+  font-size: var(--font-size-18);
+  line-height: 1.75;
+  color: var(--text-primary);
+  max-width: var(--measure-prose);
+}
+
+/* note / quote → oversized voice, accent-lit. */
+.quote {
+  margin: 0;
+  padding-left: var(--space-6);
+  border-left: 2px solid var(--story-accent);
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-36);
+  line-height: 1.25;
+  letter-spacing: var(--tracking-display);
+  color: var(--text-primary);
+}
+
+/* fact → big number + small caption. */
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.factValue {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-56);
+  line-height: 1;
+  letter-spacing: var(--tracking-display);
+  color: var(--story-accent);
+}
+
+.factCaption {
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* image → editorial band; optional full-bleed. */
+.imageBand {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.imageFull {
+  /* Break out of the prose column to the story edges. */
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+.image {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-panel);
+  display: block;
+}
+
+.imageFull .image {
+  border-radius: 0;
+}
+
+.imagePlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  border: 1px dashed var(--border-hairline);
+  border-radius: var(--radius-panel);
+  color: var(--text-secondary);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-11);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  background: color-mix(in srgb, var(--story-primary) 8%, transparent);
+}
+
+.imageCaption,
+.caption {
+  margin: 0;
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.imageFull .imageCaption {
+  max-width: var(--measure-prose);
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+/* link → tasteful outbound card. */
+.linkCard {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 52px;
+  padding: 0 var(--space-6);
+  border: 1px solid var(--story-accent);
+  border-radius: var(--radius-inline);
+  background: color-mix(in srgb, var(--story-primary) 10%, transparent);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: border-color var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-fast) var(--ease-standard);
+}
+
+a.linkCard:hover,
+a.linkCard:focus-visible {
+  background: color-mix(in srgb, var(--story-primary) 18%, transparent);
+  border-color: var(--story-primary);
+}
+
+.linkCardInert {
+  opacity: 0.75;
+}
+
+.linkLabel {
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-15);
+}
+
+.linkArrow {
+  color: var(--story-accent);
+}
+
+.emptyLine {
+  margin: 0;
+  font-size: var(--font-size-18);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+.ctaRow {
+  margin-top: var(--space-4);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-6);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-inline);
+  font-family: var(--font-inter), sans-serif;
+  font-size: var(--font-size-13);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* Living presence stops under reduced motion — composed & static. */
+@media (prefers-reduced-motion: reduce) {
+  .ambientGlow,
+  .ambientDrift,
+  .heroBreath {
+    animation: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    min-height: 40vh;
+  }
+
+  .title {
+    font-size: var(--font-size-36);
+  }
+
+  .quote {
+    font-size: var(--font-size-24);
+  }
+
+  .factValue {
+    font-size: var(--font-size-36);
+  }
+
+  .heroContent {
+    padding: var(--space-8) var(--space-4) var(--space-6);
+  }
+
+  .body {
+    padding: var(--space-8) var(--space-4) var(--space-16);
+    gap: var(--space-6);
+  }
+}

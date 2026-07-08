@@ -24,6 +24,10 @@ import { GlassButton } from '../ui/GlassButton';
 import type { DomainDTO } from '../../lib/topology-types';
 import type { VisualSignature } from '../../data/mock-observatories';
 import { NodePreview } from './NodePreview';
+import {
+  ObservatoryStory,
+  type StoryBlock,
+} from '../observatory/ObservatoryStory';
 import styles from './ObservatoryStudio.module.css';
 
 const DRAFT_KEY = 'rai-observatory-draft';
@@ -37,6 +41,13 @@ type Block = {
   url?: string;
   /** Session-only object URL — never persisted, never sent to the API. */
   objectUrl?: string;
+  /**
+   * OPTIONAL presentational hints (PATCH-PIVOT-08, DL-49) — additive,
+   * defaulted, ignored when absent so old drafts render unchanged. Set
+   * only via future authoring; the builder does not expose them yet.
+   */
+  variant?: string;
+  fullBleed?: boolean;
 };
 
 type Draft = {
@@ -719,43 +730,30 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
             </p>
           </GlassCard>
           <p className={styles.label}>Observatory view</p>
+          {/* The SAME shared renderer the Explore overlay uses (DL-49), so
+              the studio preview can never diverge from the public story.
+              Board blocks (with local image previews) map to StoryBlocks. */}
           <div className={styles.storyPreview}>
-            <div
-              className={styles.storyHero}
-              style={{
-                background: `linear-gradient(${draft.signature.gradientAngle}deg, ${draft.signature.primaryColor}, ${draft.signature.secondaryColor})`,
-              }}
-            >
-              <p className={styles.storyEyebrow}>
-                {draft.world === 'real' ? 'Real place' : 'Virtual world'}
-              </p>
-              <h3 className={styles.storyTitle}>{draft.displayName || 'Your observatory'}</h3>
-              {draft.bio ? <p className={styles.storyTagline}>{draft.bio}</p> : null}
-            </div>
-            <div className={styles.storyBody}>
-              {draft.board.length === 0 ? (
-                <p className={styles.empty}>Board blocks appear here as the interior.</p>
-              ) : (
-                draft.board.map((b) => (
-                  <div key={b.id} className={styles.storyBlock} data-type={b.type}>
-                    {b.type === 'heading' && <h4>{b.content || '…'}</h4>}
-                    {b.type === 'text' && <p>{b.content || '…'}</p>}
-                    {b.type === 'note' && <blockquote>{b.content || '…'}</blockquote>}
-                    {b.type === 'link' && (
-                      <p className={styles.storyLink}>{b.content || b.url || 'link'}</p>
-                    )}
-                    {b.type === 'image' &&
-                      (b.objectUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={b.objectUrl} alt={b.caption || 'Board image'} />
-                      ) : (
-                        <div className={styles.imgPlaceholder}>photo</div>
-                      ))}
-                    {b.caption ? <p className={styles.storyCaption}>{b.caption}</p> : null}
-                  </div>
-                ))
+            <ObservatoryStory
+              title={draft.displayName || 'Your observatory'}
+              eyebrow={`Observatory${activePreviewDomain ? ` · ${activePreviewDomain.name}` : ''}`}
+              metadata={draft.type}
+              lede={draft.bio}
+              signature={draft.signature}
+              blocks={draft.board.map(
+                (b): StoryBlock => ({
+                  id: b.id,
+                  type: b.type,
+                  content: b.content,
+                  caption: b.caption,
+                  url: b.url,
+                  imageUrl: b.objectUrl,
+                  variant: b.variant,
+                  fullBleed: b.fullBleed,
+                }),
               )}
-            </div>
+              emptyMessage="Board blocks appear here as the interior."
+            />
           </div>
         </aside>
       </div>

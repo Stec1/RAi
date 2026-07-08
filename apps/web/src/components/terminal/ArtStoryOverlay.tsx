@@ -22,6 +22,10 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { MockObservatory } from '../../data/mock-observatories';
+import {
+  ObservatoryStory,
+  type StoryBlock,
+} from '../observatory/ObservatoryStory';
 import styles from './ArtStoryOverlay.module.css';
 
 interface Props {
@@ -84,17 +88,16 @@ export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
     };
   }, []);
 
-  const { signature } = observatory;
   const eyebrow = domainName ? `Observatory · ${domainName}` : 'Observatory';
 
-  const ambientClass =
-    signature.ambientEffect === 'glow'
-      ? styles.ambientGlow
-      : signature.ambientEffect === 'drift'
-        ? styles.ambientDrift
-        : signature.ambientEffect === 'pulse'
-          ? styles.ambientGlow
-          : styles.ambientStatic;
+  // The demo observatories author their story as {heading, body} sections;
+  // flatten to the shared block model (each section → a heading divider +
+  // an editorial text column). Real observatories have no board yet → the
+  // renderer shows the hero + a calm empty state (DL-42/DL-46).
+  const blocks: StoryBlock[] = observatory.sections.flatMap((section, i) => [
+    { id: `sec-h-${i}`, type: 'heading', content: section.heading },
+    { id: `sec-t-${i}`, type: 'text', content: section.body },
+  ]);
 
   return createPortal(
     <div
@@ -122,59 +125,18 @@ export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
         </svg>
       </button>
 
-      <section
-        className={styles.hero}
-        style={{
-          background: `linear-gradient(${signature.gradientAngle}deg, ${signature.primaryColor}, ${signature.secondaryColor})`,
-        }}
-      >
-        {/* Ambient layer — wrapper carries effectIntensity so the
-            keyframed inner opacity composes with it. */}
-        <div
-          className={styles.ambientWrap}
-          style={{ opacity: signature.effectIntensity }}
-          aria-hidden="true"
-        >
-          <div className={ambientClass} />
-        </div>
-        <div className={styles.heroScrim} aria-hidden="true" />
-        <div className={styles.heroContent}>
-          <p className={styles.eyebrow}>{eyebrow}</p>
-          <h2 id="art-story-title" className={styles.title}>
-            {observatory.title}
-          </h2>
-          <p className={styles.tagline}>{observatory.tagline}</p>
-        </div>
-      </section>
-
-      <div className={styles.body}>
-        {observatory.sections.length > 0 ? (
-          observatory.sections.map((section) => (
-            <section key={section.heading} className={styles.section}>
-              <h3 className={styles.sectionHeading}>{section.heading}</h3>
-              <p className={styles.sectionBody}>{section.body}</p>
-            </section>
-          ))
-        ) : (
-          // Real observatories have no board content yet — board
-          // publishing is deferred (DL-42/DL-46). Honest empty state.
-          <section className={styles.section}>
-            <h3 className={styles.sectionHeading}>Just getting started</h3>
-            <p className={styles.sectionBody}>
-              This observatory is just getting started. Its board — the
-              rooms, notes, and images that make up its story — is being
-              built and will appear here when board publishing ships.
-            </p>
-          </section>
-        )}
-        {observatory.cta ? (
-          <div className={styles.ctaRow}>
-            <button type="button" className={styles.cta} disabled>
-              {observatory.cta}
-            </button>
-          </div>
-        ) : null}
-      </div>
+      {/* Inner content is the SHARED renderer (DL-49); the overlay only
+          provides the portal + focus-trap/Esc/restore shell. */}
+      <ObservatoryStory
+        titleId="art-story-title"
+        title={observatory.title}
+        eyebrow={eyebrow}
+        lede={observatory.tagline}
+        signature={observatory.signature}
+        blocks={blocks}
+        footerCta={observatory.cta}
+        emptyMessage="This observatory is just getting started. Its board — the rooms, notes, and images that make up its story — is being built and will appear here when board publishing ships."
+      />
     </div>,
     document.body,
   );
