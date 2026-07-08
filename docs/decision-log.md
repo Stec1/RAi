@@ -935,3 +935,22 @@ Two related graph changes ship in the same patch, amending the PP-05/PP-06 topol
 **Revisit:** Yes — when World mode ships, restore the virtual/real distinction (map, toggle, tags) intentionally.
 
 **See also:** DL-34, DL-39, DL-43, DL-45, DL-46.
+
+---
+
+## DL-49 — Observatory Board Presented as a Directed Art-Story (Shared Renderer)
+
+**Decision:** An observatory's board is PRESENTED as a directed art-story, not a flat block list, through a single shared renderer `components/observatory/ObservatoryStory`. The same ordered blocks (heading / text / image / note / link + caption) gain hierarchy and drama: a `VisualSignature`-driven hero (gradient + gentle ambient + a breathing glow that echoes the RA node's heartbeat), per-type block "moods" (image band, oversized quote for notes, editorial text column, accent-ruled section divider, tasteful link card), signature colors permeating accents/rules/cards via CSS custom properties, and IntersectionObserver scroll-reveal for tempo. BOTH render sites — the Explore art-story overlay and the `/create` studio live preview — render through this one component so they can never diverge; the overlay keeps its portal / focus-trap / Esc / focus-restore shell and only its inner content becomes `<ObservatoryStory/>`.
+
+This changes PRESENTATION only. The board BUILDER (add/edit/reorder/delete, image local previews, per-block caption), the local draft model + key (`localStorage['rai-observatory-draft']`), the API/storage, and the block DATA model are all unchanged, except an ADDITIVE optional `variant?` (e.g. `'quote'` / `'fact'`) and `fullBleed?` hint on blocks — optional, defaulted, and ignored when absent, so old drafts and un-hinted blocks render great by type-based defaults. The builder does not expose a hint picker (kept untouched, §0); the renderer honors the hints if present.
+
+**Why:**
+- The flat, equal-weight list undersold the observatories; a directed hero-plus-moods reading makes each observatory feel like its own world, tied to its luminous node in the universe.
+- One shared renderer guarantees the studio preview shows exactly the public result — the builder feels like directing a real page.
+- Additive-only hints keep the data model and old drafts safe while allowing richer authoring later.
+
+**Trade-off:** Two content shapes flow through one renderer (the demo mocks author `{heading, body}` sections, adapted to heading+text blocks; the studio authors typed blocks). Accepted via thin adapters at each call site.
+
+**Revisit:** When board publishing to the server ships (a storage decision, DL-42), the same renderer serves the public observatory page.
+
+**See also:** DL-31 (art-story overlay), DL-42 (studio + local board), DL-45/DL-46 (observatory nodes), amends the PP-01/PP-04 art-story/overlay behavior.
