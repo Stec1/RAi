@@ -954,3 +954,21 @@ This changes PRESENTATION only. The board BUILDER (add/edit/reorder/delete, imag
 **Revisit:** When board publishing to the server ships (a storage decision, DL-42), the same renderer serves the public observatory page.
 
 **See also:** DL-31 (art-story overlay), DL-42 (studio + local board), DL-45/DL-46 (observatory nodes), amends the PP-01/PP-04 art-story/overlay behavior.
+
+---
+
+## DL-50 — Spherical Universe Layout
+
+**Decision:** The Explore topology is a bounded sphere, superseding the PP-05/PP-06 force-directed layout and the PP-07 dark-background choice. RA is the center (origin). The 7 domains sit on a MIDDLE shell (`R_DOMAIN = 150`) distributed by a Fibonacci-sphere (golden-spiral) so they are well spaced in 3D, not on a flat ring. Observatories sit on the OUTER shell (`R_SHELL = 300`), each placed deterministically from a hash of its name inside a cone (`SHELL_SPREAD ≈ 0.62 rad`) biased to its parent domain's direction — so an observatory reads as belonging to its domain while many observatories on one domain FAN OUT across the shell region instead of piling onto the domain node (the scaling fix). A visible lat/long sphere shell marks the boundary. Positions are deterministic and pinned (`fx/fy/fz`) with the force simulation frozen (`cooldownTicks`/`warmupTicks = 0`), so the same data lays out identically every load. The camera uses OrbitControls with a clamped dolly (`minDistance`/`maxDistance`) so the viewer can zoom INSIDE the shell and look outward, but never past RA or infinitely away. The dark scene background is now TRUE BLACK (`#000000`) — the prior `--surface-canvas` (#050509) carried a faint blue tint that read as lilac under bloom; light keeps the paper canvas token.
+
+**Why:**
+- Force-directed layout scattered observatories and did not scale: many observatories on one domain overlapped the domain node. A deterministic spherical shell fans them out predictably.
+- A bounded, contained orb matches the founder reference (a universe you can look into) far better than an open, unbounded graph.
+- Determinism removes cross-session jitter; frozen physics keeps the layout stable and cheap.
+- True black finally removes the recurring purple/lilac background regression.
+
+**Trade-off:** Placement is geometric, not force-relaxed, so it does not auto-avoid every overlap at very high density; the cone bias + hash spread handle MVP scale. Node identity still comes only from the Inspector/Registry (no in-scene labels, PP-07).
+
+**Revisit:** When observatory density per domain grows enough to need collision-aware placement or level-of-detail on the shell.
+
+**See also:** DL-43/DL-44/DL-45 (3D graph, superseded layout parts), DL-46 (real observatories), PP-07 background (superseded).
