@@ -1,10 +1,16 @@
 # RAi — Screens Specification
 
-> **PIVOT NOTE (PATCH-PIVOT-01):** RAI is now a universe of observatories — art-stories
+> **PIVOT NOTE (PATCH-PIVOT-01 … 09):** RAI is a universe of observatories — art-stories
 > about real places and virtual worlds. `/` and `/explore` both render the one-page
-> RAI Terminal hosting the living universe. See `docs/concept-pivot.md` and DL-31…DL-34.
-> Concept-level statements below are superseded where they conflict; routes, auth rules,
-> and post-auth routing remain canonical.
+> RAI Terminal hosting the living universe (now a WebGL 3D sphere). See
+> [`concept-pivot.md`](concept-pivot.md) and DL-31…DL-50.
+>
+> **This spec has been reconciled to the built product (DOC-SYNC-01).** Several screens in
+> the original MVP map are **not built** and are marked so below — they describe the earlier
+> AI-research plan (Systems, Publications, Publish, Visual-Signature AI, the public
+> `/observatory/:name` and `/publication/:id` pages, and Settings). Routes, auth rules, and
+> post-auth routing remain canonical. For the exact built reality see
+> [`_reconciliation/PP-01-09-reconciliation.md`](_reconciliation/PP-01-09-reconciliation.md).
 
 > Short spec for every MVP screen.
 > Describes purpose, primary components, and key user actions.
@@ -14,50 +20,54 @@
 
 ## Screen List
 
-| # | Screen | Route | Auth required |
-|---|---|---|---|
-| 1 | Start Page | `/` | No |
-| 2 | About | `/about` | No |
-| 3 | Login | `/login` | No |
-| 4 | Get Started | `/signup` | No |
-| 5 | Explore | `/explore` | No (browse), Yes (upvote) |
-| 6 | Create Observatory | `/create` | Yes |
-| 7 | Control Panel | `/dashboard` | Yes |
-| 8 | Systems Management | `/dashboard/systems` | Yes |
-| 9 | Publications Management | `/dashboard/publications` | Yes |
-| 10 | Publish | `/dashboard/publish` | Yes |
-| 11 | Visual Signature | `/dashboard/visual` | Yes |
-| 12 | Observatory Public Page | `/observatory/:name` | No |
-| 13 | Publication Page | `/publication/:id` | No |
-| 14 | Settings | `/dashboard/settings` | Yes |
-| 15 | Privacy Policy | `/privacy` | No |
-| 16 | Terms of Service | `/terms` | No |
+| # | Screen | Route | Auth required | Status |
+|---|---|---|---|---|
+| 1 | Start Page (RAI Terminal) | `/` | No | ✅ Built |
+| 2 | About | `/about` | No | ✅ Built |
+| 3 | Login | `/login` | No | ✅ Built |
+| 4 | Get Started | `/signup` | No | ✅ Built |
+| 5 | Explore (RAI Terminal) | `/explore` | No (browse) | ✅ Built |
+| 6 | Create Observatory (Studio) | `/create` | Yes | ✅ Built |
+| 7 | Dashboard (owner) | `/dashboard` | Yes | ✅ Built (baseline) |
+| 8 | Systems Management | `/dashboard/systems` | Yes | ⛔ Not built (deferred) |
+| 9 | Publications Management | `/dashboard/publications` | Yes | ⛔ Not built (deferred) |
+| 10 | Publish | `/dashboard/publish` | Yes | ⛔ Not built (deferred) |
+| 11 | Visual Signature (AI) | `/dashboard/visual` | Yes | ⛔ Not built (deferred) |
+| 12 | Observatory Public Page | `/observatory/:name` | No | ⛔ Not built (deferred) |
+| 13 | Publication Page | `/publication/:id` | No | ⛔ Not built (deferred) |
+| 14 | Settings | `/dashboard/settings` | Yes | ⛔ Not built (deferred) |
+| 15 | Privacy Policy | `/privacy` | No | ✅ Built |
+| 16 | Terms of Service | `/terms` | No | ✅ Built |
+
+> **Note on "upvote".** Screen 5 historically said "Yes (upvote)" for auth. There is no upvote
+> or publication surface in the built product; browsing `/explore` needs no auth, and there is
+> nothing to upvote. The auth column above reflects the built reality.
+
+> **Note on the public observatory page.** An observatory's art-story is currently presented
+> *inside the Terminal* as a full-screen overlay (DL-31/DL-49), not at a public `/observatory/:name`
+> route. That standalone public route is deferred until board publishing + storage land (DL-42/DL-49).
 
 ---
 
-## Screen 1 — Start Page
+## Screen 1 — Start Page (RAI Terminal)
 
 **Route:** `/`
 **Auth required:** No
 
 **Purpose:**
-First public contact with RAi. Communicates what RAi is within seconds. Premium dark editorial landing page that drives users toward registration.
+First public contact with RAi. `/` renders the one-page **RAI Terminal** — the living universe — for every visitor (DL-31/DL-32). The old scroll-narrative marketing landing was retired in PATCH-PIVOT-01; its narrative copy lives in `/about`. Authenticated users are never redirected away from `/`.
 
 **Primary components:**
-- Transparent top bar (DL-28): RAi logo → `/`, About, Log in, Get Started
-- Full-screen premium dark editorial background
-- Scrollable narrative sections:
-  - What is RAi
-  - How it works (publish → prove → get discovered)
-  - Domain showcase: deferred (DL-27). Start Page narrative ends with CTA → /signup.
-  - CTA to create Observatory
-- Footer with links (About, Privacy Policy, Terms)
+- Terminal header (DL-28 roles preserved): RAi logo → `/`, auth-aware nav, theme toggle (dark ⇄ light paper, DL-32).
+- The universe canvas: a WebGL 3D spherical topology (RA at center, 7 domains, observatories on the shell — DL-43/DL-50).
+- Registry rail (domains + observatories), a docked Inspector for the selected entity (with the auth-aware CTA and `Open art-story`), and an Activity strip (DL-36).
+- Status line / live readouts computed from fetched data.
 
 **Key actions:**
-- Click "Get Started" → `/signup`
-- Click "Log in" → `/login`
-- Click "RAi" in nav → `/` (DL-28)
-- Scroll → reveals content sections progressively
+- Select a node or a Registry item → Inspector updates.
+- `Open art-story` on an observatory → full-screen story overlay (DL-49).
+- Click "Get Started" → `/signup`; "Log in" → `/login`; RAi logo → `/` (DL-28).
+- Toggle theme (dark ⇄ light).
 
 ---
 
@@ -71,10 +81,9 @@ Full readable description of the RAi platform. Informational space for users who
 
 **Primary components:**
 - Top bar follows DL-28 (logo → `/`).
-- Full description of RAi: Domains, Observatories, publications, reputation
-- Platform structure overview
-- Product vision and narrative
-- Back navigation to Start Page
+- Full description of RAi as a universe of observatories: what an observatory is (an art-story about a real place or a virtual world), the 7 Domains, and how the universe is discovered
+- Product vision and narrative (the concept lives in [`concept-pivot.md`](concept-pivot.md))
+- Back navigation to the Start Page (the Terminal)
 
 **Key actions:**
 - Read
@@ -94,7 +103,6 @@ Authentication screen for returning users.
 - Premium dark editorial background
 - Centered card:
   - RAi logo
-  - Tagline: "Don't describe your AI. Prove it."
   - Email + password fields
   - "Log in" button
   - Google OAuth button
@@ -137,66 +145,32 @@ New user registration. After successful registration, redirect by Observatory pr
 - Successful login/signup without Observatory → `/explore`
 - Authenticated users without Observatory use `/explore` CTA to enter `/create`
 
-## Screen 5 — Explore
+## Screen 5 — Explore (RAI Terminal)
 
 **Route:** `/explore`
-**Auth required:** No for browsing, Yes for upvoting
+**Auth required:** No (browsing)
 
 **Purpose:**
-The main discovery and topology surface. Three views for finding Observatories, publications, and understanding the platform topology.
+The discovery surface. `/explore` renders the **same RAI Terminal** as `/` (both routes are kept so redirects and TopBar links keep working). It is an information terminal, not a full-bleed canvas (DL-36).
 
-**Primary components:**
+**Primary components (DL-36):**
+- **Command strip / header:** wordmark, context label, live readouts from fetched data, theme toggle (dark ⇄ light paper, DL-32), DL-28 auth-aware nav. The primary CTA lives in the Inspector, not the header (DL-28).
+- **Registry rail:** a named list of the 7 domains and the observatories, each selectable into the Inspector. Identity lives here and in the Inspector — there are **no persistent labels in the 3D scene** (DL-48).
+- **Topology panel:** the WebGL 3D graph — a bounded **sphere** with RA at the origin, 7 domain nodes on a middle shell, observatories on the outer shell (DL-43/DL-44/DL-45/DL-50). All 7 domains always render; `active` is a visual state (DL-44). Quiet pill view-controls (Reset / Fit / Focus RA / dim-inactive filter). Orbit + pan + a clamped inside-the-sphere dolly.
+- **Inspector (docked):** details for the selected entity (RA / domain / observatory), the auth-aware CTA, and the `Open art-story` entry for observatories.
+- **Activity strip:** mock events until a real feed exists.
+- Below ~1024px the Registry / Inspector / Activity collapse into a tabbed bottom sheet under the topology panel.
 
-**Top navigation bar:**
-- Top bar follows DL-28: navigation only. Primary CTA "Create Observatory" lives in ExploreInfoPanel, not the top bar.
-
-**View switcher:**
-- Feed (default) / Observatories / Map
-
-**Feed view:**
-- Vertical stream of publication cards
-- Each card: title, Observatory name, System name, date, summary, upvote count
-- Domain filter pills (active Domains only)
-- Sort toggles: trending / newest / top
-- Pagination (infinite scroll or page numbers)
-
-**Observatories view:**
-- Ranked list of Observatories by reputation
-- Each card: name, type badge, Domain badges, reputation score, publication count
-- Domain filter pills
-- Sort toggles: reputation / newest / most publications
-
-**Map view (intelligence topology):**
-- Full-screen abstract network visualization
-- SVG topology with RA at center
-- 7 Domains at fixed positions (3 active, 4 Coming Soon — visually distinct)
-- Current MVP Level 1 scope: RA → Domains only
-- No Observatories as current `/explore` graph nodes
-- No Three.js/R3F for current `/explore` topology
-- Mini-map deferred for MVP (revisit when future graph density justifies it)
-
-**Slide-in info panels (triggered by nav clicks or map object clicks):**
-- RA panel: About RAi text, platform stats
-- Domains panel: list of active Domains with themes and counts
-- Domain detail panel: Domain name, description, associated Observatories
-- Observatories panel: ranked list + "Create Observatory" CTA
-- Observatory preview panel: name, type, reputation, "View Observatory →"
-
-**Search:**
-- Full-text search across Observatory names, bios, systems, publication titles
-- Search bar in top nav area
+**Data:**
+- Domains from `GET /api/v1/domains`; public observatories from `GET /api/v1/observatories` (DL-46), merged with two demo-seed mocks (**Wawel: The Dragon's Hill**, **Signal Garden**) — a real observatory replaces a same-named mock, and the mocks are the fallback so the universe is never empty.
 
 **Key actions:**
-- Switch views: Feed / Observatories / Map
-- Filter by Domain
-- Sort by trending / newest / top
-- Search
-- Click publication card → `/publication/:id`
-- Click Observatory card → `/observatory/:name`
-- Upvote publication (if authed)
-- Click "Create Observatory" (authenticated, no Observatory) → `/create`
-- Unauthenticated CTA path → `/signup` or `/login`
-- Hover/click map objects → info panels
+- Select a node or a Registry item → Inspector updates (selection stays in sync both ways).
+- `Open art-story` on an observatory → full-screen `ObservatoryStory` overlay (DL-49); Esc / close restores focus.
+- Orbit / pan / zoom the sphere.
+- Toggle theme; use the CTA (authenticated without an observatory → `/create`; unauthenticated → `/signup` or `/login`).
+
+**Not built (deferred):** the publication feed, the ranked-observatory list view, full-text search, upvoting, and a separate "Map" view. These belong to the earlier AI-research plan and to future patches; the single terminal replaced the Feed/Observatories/Map view-switcher.
 
 ---
 
@@ -211,30 +185,31 @@ The main discovery and topology surface. Three views for finding Observatories, 
 
 > **PATCH-PIVOT-04 (DL-41/DL-42):** the flow is the Observatory Studio — World → Identity → Board → Signature + Preview → Finish. Base fields persist via `POST /api/v1/observatories`; the board, photos, and the `world` choice are saved locally for now (no content model / storage provider yet); AI-generation steps are deferred — the visual signature is chosen manually.
 
-### Step 1 — Identity
-- Observatory name input (permanent, unique) with real-time availability check
+Real flow (code: `STEPS = ['World','Identity','Board','Signature','Finish']`) with a persistent live preview aside throughout.
+
+### Step 1 — World
+- Choose the draft's `world` (virtual / real) in the LOCAL draft only (DL-39/DL-42). A forward-looking flag: **not sent to the API** and **not shown on the graph** (single-world UI, DL-48).
+
+### Step 2 — Identity
+- Observatory name (permanent, unique) with real-time availability check (`GET /api/v1/observatories/check/:name`)
 - Live address preview: `rai.app/@name`
-- Display name input (pre-filled from account, changeable later)
-- Bio field (max 160 chars, character counter)
-- Domain association: pill selector for 1–2 active Domains (optional)
-- Social links (GitHub, X, Telegram, LinkedIn, email, website)
-- Observatory type selector: individual / studio / product
+- Display name (pre-filled from account, changeable later)
+- Bio (max 160 chars, counter)
+- Domain association: pill selector for 0–2 active Domains (optional)
+- Social links (known keys only)
+- Observatory type: individual / studio / product
 
-### Step 2 — First Publication
-- "Paste your agent's latest output. RAi will format it."
-- Raw content textarea
-- System selection (optional — can skip, no systems registered yet)
-- RAi AI formats content: title, summary, key findings, formatted body
-- Creator reviews and edits all fields
-- Domain and tags selection
-- Publish (1 credit) or save as draft
+### Step 3 — Board
+- Board builder: add / edit / reorder / delete blocks (heading / text / image / note / link + caption); optional `variant?` / `fullBleed?` hints (DL-49). Image previews are local.
+- The board, blocks, and photos live in `localStorage['rai-observatory-draft']` only (photos session-only). **Not persisted to the API** — board publishing + storage are deferred (DL-42).
 
-### Step 3 — Visual Signature (optional)
-- "Make your Observatory visually unique."
-- AI prompt textarea
-- Generate button → Visual Signature preview
-- Can be skipped — default Visual Signature assigned based on Domain
-- Post-creation redirect: `/dashboard`
+### Step 4 — Signature
+- The visual signature is chosen **manually** (presets + parameter controls) — **no AI generation** (DL-42). Drives the live preview and the graph node accent.
+
+### Step 5 — Finish
+- The persistent live preview renders the draft as a public observatory story via the shared `ObservatoryStory` renderer (DL-49) and as a node in the graph language.
+- On finish, `POST /api/v1/observatories` persists **base fields only** — name, displayName, type, publicMode, domainIds, bio, socialLinks, visualSignature (DL-41). One observatory per user; board / photos / `world` stay in the local draft.
+- Post-creation redirect: `/dashboard`.
 
 ---
 
@@ -248,177 +223,35 @@ The owner's management interface for their Observatory. Central hub for all mana
 
 > **PATCH-PIVOT-06 (DL-47):** Dashboard baseline is now implemented — identity card (name/address/type/publicMode/bio/domain pills/reputation+publications), an "as a node" preview in the graph language, an editable identity form (PATCHes base fields via `PATCH /api/v1/me/observatory`; `name` is read-only/immutable), and a read-only local board-draft section (board publishing is deferred, DL-42). Systems/Publications/Settings/Visual-Signature-AI sub-screens remain out of scope. No-observatory users are redirected to `/create`.
 
-**Primary components:**
-- Observatory card: name, address, type badge, Domain badges, Visual Signature visual, reputation score
-- Metrics: Total Visitors, Publication Views, Total Upvotes
-- Plan badge: Free / Pro
-- Credits section: current balance + "Top up →" link
-- Quick actions:
-  - Edit Identity (name, bio, social links, Domain association)
-  - Manage Systems → `/dashboard/systems`
-  - New Publication → `/dashboard/publish`
-  - Visual Signature → `/dashboard/visual`
-  - Settings → `/dashboard/settings`
+**Primary components (DL-47 baseline):**
+- **Identity card:** name, address (`rai.app/@name`), type, publicMode, bio, domain pills, reputationScore + publicationsCount — from `GET /api/v1/me/observatory`.
+- **"As a node" preview:** a static SVG orb in the graph language (no second heavy 3D mount).
+- **Editable identity form:** PATCHes base fields via `PATCH /api/v1/me/observatory` (displayName, bio, domainIds [0–2 active], socialLinks, publicMode, visualSignature, type). **`name` is read-only / immutable** after creation.
+- **Local board-draft section:** read-only, with honest "board publishing is coming" copy (DL-42).
+
+**Not built (deferred):** metrics (visitors / views / upvotes), credits / plan management, and the Systems / Publications / Publish / Visual-Signature / Settings sub-screens. No-observatory users are redirected to `/create`.
 
 ---
 
-## Screen 8 — Systems Management
+## Screens 8–14 — Not built (deferred)
 
-**Route:** `/dashboard/systems`
-**Auth required:** Yes
+The following screens were specified for the earlier AI-research MVP and are **not built**.
+They are retained here as historical intent, not as current reality — do not describe them as
+done. Each depends on a product surface the pivot has not shipped (a Systems model surface, a
+Publication engine, AI generation, board publishing + storage, or account settings).
 
-**Purpose:**
-Register and manage AI systems associated with the Observatory.
+| # | Screen | Route | Why deferred |
+|---|---|---|---|
+| 8 | Systems Management | `/dashboard/systems` | No Systems surface in the pivot; the `System` model is unused schema scaffolding (DL-16 superseded). |
+| 9 | Publications Management | `/dashboard/publications` | No publication engine (DL-15 superseded). |
+| 10 | Publish | `/dashboard/publish` | No AI-formatting / BullMQ / SSE pipeline is built. |
+| 11 | Visual Signature (AI) | `/dashboard/visual` | The signature is chosen **manually** in the Studio; no AI generation (DL-42). |
+| 12 | Observatory Public Page | `/observatory/:name` | The art-story is presented as an in-Terminal overlay (DL-49); a standalone public page waits on board publishing + storage (DL-42). |
+| 13 | Publication Page | `/publication/:id` | No publications exist. |
+| 14 | Settings | `/dashboard/settings` | No account-settings surface is built; public/private is toggled via the Dashboard identity form (`publicMode`). |
 
-**Primary components:**
-- List of registered Systems as structured proof cards
-- Each card: name, type badge, status dot, capabilities pills, external URL link
-- "Register System" button → form modal or inline form
-- System form: name, type (agent/workflow/tool/service), description, capabilities tags, status (active/demo/concept), external URL
-- Edit and delete actions per system
-- Free tier limit indicator (3 systems max)
-
-**Key actions:**
-- Register new System
-- Edit existing System
-- Delete System (with confirmation)
-
----
-
-## Screen 9 — Publications Management
-
-**Route:** `/dashboard/publications`
-**Auth required:** Yes
-
-**Purpose:**
-View and manage all publications (published and drafts).
-
-**Primary components:**
-- List of publications sorted by date
-- Each card: title, status badge (published/draft), date, System attribution, upvote count
-- Filter: all / published / drafts
-- Click card → edit view
-- "New Publication" button → `/dashboard/publish`
-
-**Key actions:**
-- View publication list
-- Edit existing publication
-- Navigate to create new publication
-
----
-
-## Screen 10 — Publish
-
-**Route:** `/dashboard/publish`
-**Auth required:** Yes
-
-**Purpose:**
-Create and format a new publication.
-
-**Primary components:**
-- System selector (optional — select from registered systems)
-- Raw content textarea: "Paste your agent's output here"
-- "Format with AI" button → BullMQ job → SSE progress
-- Preview of formatted output: title, summary, key findings, body
-- All fields editable by creator
-- Domain selector
-- Tags input
-- Capabilities demonstrated (auto-suggested from system capabilities)
-- Credit check indicator
-- "Publish" button (costs 1 credit) / "Save as Draft" button
-
-**Key actions:**
-- Paste raw content
-- Format with AI
-- Edit formatted fields
-- Publish or save as draft
-
----
-
-## Screen 11 — Visual Signature
-
-**Route:** `/dashboard/visual`
-**Auth required:** Yes
-
-**Purpose:**
-Generate and manage the Observatory's Visual Signature.
-
-**Primary components:**
-- Current Visual Signature preview
-- AI prompt textarea
-- "Generate" button → BullMQ job → SSE progress → preview update
-- Credits required indicator (2 credits per generation)
-- Rollback: list of up to 3 previous Visual Signatures with "Restore" button (1 credit)
-- Rate limit indicator (10 generations/hour)
-
-**Key actions:**
-- Write prompt → generate Visual Signature
-- Rollback to previous version
-- Preview current Visual Signature
-
----
-
-## Screen 12 — Observatory Public Page
-
-**Route:** `/observatory/:name`
-**Auth required:** No
-
-**Purpose:**
-Public page for any Observatory. What visitors see when following a shared link. The premium research identity.
-
-**Primary components:**
-- Hero zone: Visual Signature ambient field, Observatory name (large typography), type badge, reputation metrics, social links
-- Systems section: structured proof cards on elevated surface
-- Publications section: vertical stack of publication cards (title, date, System, summary, upvote count)
-- Footer: social links, contact CTA
-- Share button → copy link + toast
-
-**OG image:** Generated via `@vercel/og` at `/api/og?name=[name]`, 1200×630, Observatory name + Visual Signature colors + type.
-
----
-
-## Screen 13 — Publication Page
-
-**Route:** `/publication/:id`
-**Auth required:** No (viewing), Yes (upvoting)
-
-**Purpose:**
-Standalone page for a single publication. Full formatted presentation of the work.
-
-**Primary components:**
-- Publication title (large typography)
-- Observatory attribution: name, link to Observatory page
-- System attribution: name, type badge (if linked)
-- Published date
-- Domain badge and tags
-- Summary
-- Key findings (structured list)
-- Methodology (if provided)
-- Full formatted body
-- Capabilities demonstrated pills
-- Upvote button with count
-- Share button → copy link + toast
-- "View Observatory →" link
-
-**OG image:** Generated via `@vercel/og`, 1200×630, publication title + Observatory name.
-
----
-
-## Screen 14 — Settings
-
-**Route:** `/dashboard/settings`
-**Auth required:** Yes
-
-**Purpose:**
-User account settings. Separate from Observatory settings (which live in Control Panel).
-
-**Primary components:**
-- Email change
-- Password change
-- Notification preferences
-- Toggle Observatory Public / Private
-- Plan management link → Stripe Customer Portal
-- Account deletion (with confirmation)
+When any of these ships, restore a full spec here and record the decision in
+[`decision-log.md`](decision-log.md).
 
 ---
 

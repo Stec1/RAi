@@ -4,7 +4,7 @@
 > Agent reads this document before every prompt.
 > Architecture changes are recorded here — not invented during issue execution.
 
-**Last updated:** [date after each significant merge]
+**Last updated:** 2026-07-09 — reconciled to the post-PATCH-PIVOT-09 reality (DOC-SYNC-01). For the built-vs-planned map see [`_reconciliation/PP-01-09-reconciliation.md`](_reconciliation/PP-01-09-reconciliation.md).
 
 ---
 
@@ -21,8 +21,8 @@
 | Auth | Better Auth | 1.x | Session cookies — no JWT |
 | AI | OpenAI GPT-4o | latest | Structured output |
 | Payments | Stripe | latest | Test mode until launch |
-| Visualization (current `/explore`) | SVG | — | Level 1 topology: RA → Domains with typographic precision |
-| Visualization (future Level 2 graph surfaces) | `react-force-graph-3d` / `three` / `3d-force-graph` / `d3-force-3d` | — | Evaluate only when high-density cockpit requirements are proven |
+| Visualization (`/explore` topology) | `react-force-graph-3d` + `three` | `1.29.1` (pinned) on existing `three` | WebGL 3D graph, lazy `next/dynamic` `ssr:false`; deterministic spherical layout + UnrealBloom (DL-43/DL-50) |
+| AI (OpenAI, BullMQ, SSE) | — | — | **Not built.** Listed rows above (OpenAI/Stripe/Resend/PostHog/Sentry/BullMQ) are the earlier plan; no such code is wired in the API today |
 | Email | Resend | latest | Transactional only |
 | File Storage | Cloudflare R2 | — | No local file storage |
 | Analytics | PostHog | latest | Event-based |
@@ -36,7 +36,7 @@
 ---
 
 
-> **DL-30 note:** Current `/explore` is Level 1 SVG topology (RA → Domains). Three.js/R3F is not required for current `/explore`. Future Level 2 graph/cockpit surfaces may evaluate 3D-force stack only when product complexity requires it. No WebSocket/real-time graph architecture is introduced at MVP level.
+> **Topology note (superseded):** the DL-30 "current `/explore` is SVG, no Three.js" stance is superseded by **DL-43** (PATCH-PIVOT-05) and **DL-50** (PATCH-PIVOT-09). `/explore` renders a real WebGL 3D graph (`react-force-graph-3d` + Three.js) with a deterministic spherical layout, lazy client-only (`ssr:false`). No WebSocket/real-time graph architecture is introduced.
 
 ## Repo Structure
 ```
@@ -69,53 +69,34 @@ rai/
 ```
 apps/web/
 ├── src/
-│   ├── app/
-│   │   ├── (auth)/             # login, signup
-│   │   ├── about/
-│   │   ├── create/             # Create Observatory flow
-│   │   ├── explore/            # Explore terminal; topology = WebGL 3D graph (react-force-graph-3d, next/dynamic ssr:false — DL-43)
-│   │   ├── dashboard/          # Control Panel
-│   │   │   ├── systems/        # Systems management
-│   │   │   ├── publications/   # Publications management
-│   │   │   ├── publish/        # Create new publication
-│   │   │   ├── visual/         # Visual Signature generator
-│   │   │   └── settings/       # Account settings
-│   │   ├── observatory/
-│   │   │   └── [name]/         # Observatory Public Page
-│   │   ├── publication/
-│   │   │   └── [id]/           # Publication standalone page
-│   │   ├── privacy/
-│   │   ├── terms/
-│   │   ├── api/
-│   │   │   └── og/             # OG image generation
+│   ├── app/                    # App Router routes (FLAT — no route groups)
+│   │   ├── page.tsx            # `/`         → <RaiTerminal/> (the universe)
+│   │   ├── explore/            # `/explore`  → the SAME <RaiTerminal/>
+│   │   ├── create/             # `/create`   → Observatory Studio (DL-42)
+│   │   ├── dashboard/          # `/dashboard`→ owner Dashboard (DL-47)
+│   │   ├── about/  login/  signup/  privacy/  terms/
 │   │   └── layout.tsx
 │   ├── components/
-│   │   ├── topology/           # Intelligence topology components
-│   │   │   ├── TopologyCanvas.tsx   # Main visualization canvas
-│   │   │   ├── TopologyRA.tsx
-│   │   │   ├── TopologyDomains.tsx
-│   │   │   ├── TopologyObservatories.tsx
-│   │   │   └── MiniMap.tsx
-│   │   ├── panels/             # Slide-in info panels
-│   │   ├── creation/           # 3-step creation flow components
-│   │   ├── publications/       # Publication card, formatting preview
-│   │   ├── ui/                 # Reusable UI primitives
-│   │   │   ├── tokens/         # Design tokens (planned Glass UI foundation)
-│   │   │   ├── GlassCard.tsx   # Planned shared primitive
-│   │   │   ├── GlassPanel.tsx  # Planned shared primitive
-│   │   │   ├── GlassButton.tsx # Planned shared primitive
-│   │   │   └── PageShell.tsx   # Planned shared layout primitive
-│   │   └── layouts/
+│   │   ├── terminal/           # RaiTerminal, TerminalHeader, RegistryRail,
+│   │   │                       #   ActivityStrip, ArtStoryOverlay, GuestIntroPanel
+│   │   ├── topology/           # TopologyGraph3D (WebGL 3D graph), ExploreInfoPanel
+│   │   ├── observatory/        # ObservatoryStory (shared art-story renderer, DL-49)
+│   │   ├── studio/             # ObservatoryStudio, NodePreview
+│   │   ├── dashboard/          # DashboardScreen
+│   │   ├── auth/               # AuthCard/Field/Shell/Submit, LoginForm, SignupForm
+│   │   ├── landing/            # TopBar, Footer, Reveal
+│   │   ├── theme/              # ThemeToggle (data-theme, DL-32)
+│   │   └── ui/                 # GlassCard, GlassPanel, GlassButton, PageShell (DL-42 — BUILT)
+│   ├── data/
+│   │   └── mock-observatories.ts    # two demo-seed mocks: Wawel, Signal Garden (DL-46)
 │   ├── hooks/
-│   │   ├── useAuth.ts
-│   │   ├── useTopology.ts
-│   │   └── useDeviceDetect.ts
+│   │   └── useAuth.ts
 │   ├── lib/
-│   │   ├── posthog.ts
-│   │   ├── api-client.ts
-│   │   └── topology-utils.ts   # nameHash, coordinate generation
+│   │   ├── auth-client.ts
+│   │   ├── post-auth-redirect.ts
+│   │   ├── topology-types.ts
+│   │   └── universe-observatories.ts   # real↔mock merge (DL-46)
 │   └── styles/
-├── public/
 ├── next.config.mjs
 └── package.json
 ```
@@ -127,47 +108,56 @@ apps/web/
 apps/api/
 ├── prisma.config.ts           # Prisma 7 configuration entrypoint
 ├── src/
-│   ├── index.ts
+│   ├── index.ts                # registers: health, auth, me, observatories, domains
 │   ├── routes/
-│   │   ├── auth.ts
-│   │   ├── observatories.ts    # GET check/:name; GET / — public list (DL-46); POST / — create (base fields only, no schema change; DL-41)
-│   │   ├── domains.ts
-│   │   ├── systems.ts
-│   │   ├── publications.ts
-│   │   ├── upvotes.ts
-│   │   ├── search.ts
-│   │   ├── generate.ts         # Visual Signature + publication formatting
-│   │   ├── visits.ts
-│   │   ├── payments.ts
-│   │   └── health.ts
-│   ├── plugins/
-│   │   ├── auth-guard.ts
-│   │   ├── rate-limit.ts
-│   │   └── error-handler.ts
-│   ├── queues/
-│   │   ├── visualSignatureQueue.ts
-│   │   └── publicationFormatQueue.ts
-│   ├── workers/
-│   │   ├── visualSignatureWorker.ts
-│   │   └── publicationFormatWorker.ts
-│   ├── services/
-│   │   ├── openai.ts
-│   │   ├── credits.ts
-│   │   ├── reputation.ts
-│   │   ├── stripe.ts
-│   │   └── email.ts
+│   │   ├── health.ts           # GET /api/health
+│   │   ├── auth.ts             # Better Auth handler (/api/auth/*)
+│   │   ├── me.ts               # GET /api/me; GET|PATCH /api/v1/me/observatory (DL-47)
+│   │   ├── observatories.ts    # GET check/:name; GET / (public list, DL-46); POST / (create, DL-41)
+│   │   └── domains.ts          # GET /api/v1/domains
 │   ├── lib/
-│   │   ├── prisma.ts
-│   │   ├── redis.ts
-│   │   └── logger.ts
-│   └── webhooks/
-│       └── stripe.ts
+│   │   ├── auth.ts             # Better Auth config
+│   │   ├── observatory-validation.ts   # shared validators (name/type/socialLinks/visualSignature)
+│   │   ├── prisma.ts           # Prisma singleton
+│   │   └── redis.ts            # Redis singleton
+│   └── plugins/
+│       ├── auth-guard.ts       # requireAuth + request.user
+│       └── rate-limit.ts       # observatory rate limiters
 ├── prisma/
 │   ├── schema.prisma
-│   ├── migrations/
-│   └── seed.ts
+│   ├── generated/              # generated Prisma client
+│   └── seed.ts                 # 7 domains (3 active) + test users/observatories
 └── package.json
+
+# NOT built (were in the earlier issue pack): routes systems/publications/upvotes/
+# search/generate/visits/payments; queues/, workers/, services/ (openai, credits,
+# reputation, stripe, email), webhooks/. No BullMQ/OpenAI/Stripe/SSE code exists today.
 ```
+
+---
+
+## API Surface (current)
+
+The API is a Fastify monolith. Five route files are registered in `src/index.ts` (`health`,
+`auth`, `me`, `observatories` at prefix `/api/v1/observatories`, `domains` at prefix
+`/api/v1/domains`). The complete current surface:
+
+| Method + path | Auth | Notes |
+|---|---|---|
+| `GET /api/health` | no | `{ status, timestamp }` |
+| `GET\|POST /api/auth/*` | — | Better Auth (email sign-up/in, sign-out, get-session; session cookies, DL-09/DL-24) |
+| `GET /api/me` | yes | account summary; `observatory {id,name} \| null` |
+| `GET /api/v1/me/observatory` | yes | caller's full observatory (base fields) or 404 (DL-47) |
+| `PATCH /api/v1/me/observatory` | yes | update base fields; **`name` immutable**; base fields only / no schema change (DL-47) |
+| `GET /api/v1/observatories/check/:name` | no | name availability |
+| `GET /api/v1/observatories` | no | public list (`publicMode:true`), base fields, limit 500 (DL-46) |
+| `POST /api/v1/observatories` | yes | create; base fields only; one-per-user; no schema change (DL-41) |
+| `GET /api/v1/domains` | no | all 7 seeded domains |
+
+**Not built** (were in the earlier issue pack): Systems, Publications, Upvotes, Search, Generate
+(AI), Visits, and Payments endpoints; the BullMQ queues/workers; the OpenAI/Stripe/SSE services.
+**Board / media persistence and file/object storage are UNBUILT and blocked on a storage-provider
+decision** (DL-41/DL-42) — the studio board, photos, and the `world` choice stay local drafts until then.
 
 ---
 
@@ -198,7 +188,7 @@ packages/shared/
 | Table | Purpose |
 |---|---|
 | `User` | Accounts, plan tier, credits balance, Stripe customer ID |
-| `Observatory` | Research spaces: name, type, publicMode, visualSignature (JSONB), domainIds[], bio, socialLinks (JSONB), reputationScore, publicationsCount |
+| `Observatory` | Observatories: name (unique), userId (unique), displayName, type, publicMode, visualSignature (JSONB), domainIds[], bio, socialLinks (JSONB), reputationScore, publicationsCount. **No `world` column** (DL-39 deferred). |
 | `Domain` | 7 thematic Domains — seed data only, includes `active` boolean |
 | `System` | AI agents/tools registered by Observatory owners |
 | `Publication` | Formatted proof of work: title, summary, keyFindings, body, upvoteCount |
@@ -208,7 +198,9 @@ packages/shared/
 | `Subscription` | Stripe subscription sync |
 | `ObservatoryVisit` | Visit records for Observatories |
 
-**Critical rule:** Credit balance changes ONLY via `CreditTransaction` + `User.creditsBalance` in a single Prisma transaction. Never separately.
+> **Built vs. scaffolding:** only `Observatory` and `Domain` are exposed through API routes today. `System`, `Publication`, `PublicationUpvote`, `AIGeneration`, `CreditTransaction`, `Subscription`, and `ObservatoryVisit` exist as Prisma models (pre-pivot scaffolding) with **no routes, services, or UI**. The credit/reputation/publication mechanics below describe intent, not built behavior.
+
+**Critical rule (for if/when credits ship):** Credit balance changes ONLY via `CreditTransaction` + `User.creditsBalance` in a single Prisma transaction. Never separately.
 
 ---
 
@@ -228,6 +220,8 @@ packages/shared/
 ---
 
 ## Data Flow — High Level
+
+> **Reality check:** the high-level web → API → Postgres → Redis path is real. The **Visual Signature Generation** and **Publication Formatting** flows below (BullMQ workers, OpenAI GPT-4o, SSE progress) are **NOT built** — there is no OpenAI, BullMQ, or SSE code in the API today. They are retained as the earlier plan.
 ```
 User (Browser)
     ↓ HTTPS

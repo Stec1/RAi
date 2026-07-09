@@ -1,5 +1,12 @@
 # RAi — GitHub Issues Pack v3
 
+> **⚠️ HISTORICAL / PRE-PIVOT (superseded by DL-31).** This document describes RAi's earlier
+> AI-research product — the "publish → prove → get discovered" platform with Systems,
+> Publications, and upvote-based reputation. RAi has since pivoted to a **universe of
+> observatories** across patches PP-01…PP-09. It is retained for history; **do not treat its
+> product framing as current.** Canonical concept: [`concept-pivot.md`](concept-pivot.md) ·
+> current built reality: [`_reconciliation/PP-01-09-reconciliation.md`](_reconciliation/PP-01-09-reconciliation.md).
+
 > Complete set of GitHub issues for MVP2.
 > Each issue is ready to copy into GitHub.
 > Execution order: ISSUE-00 → ISSUE-20.

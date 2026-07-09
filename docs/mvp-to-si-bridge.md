@@ -1,5 +1,11 @@
 # RAi — MVP to SI Bridge
 
+> **Pivot note (DL-31).** This is a long-term "System Intelligence" north-star and remains
+> post-MVP direction only. Note that RAi's near-term product pivoted to a **universe of
+> observatories** (PP-01…PP-09); read this document as long-range direction, not current scope.
+> Canonical concept: [`concept-pivot.md`](concept-pivot.md) · current reality:
+> [`_reconciliation/PP-01-09-reconciliation.md`](_reconciliation/PP-01-09-reconciliation.md).
+
 > **Status:** Operational bridge document. Updated as MVP issues complete.
 > **Type:** Mapping between current MVP execution and the SI target architecture.
 > **Authoritative for:** Understanding how each MVP issue contributes to the SI destination.
