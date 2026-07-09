@@ -1,5 +1,11 @@
 # RAi — System Intelligence: Target Architecture
 
+> **Pivot note (DL-31).** This is a long-term "System Intelligence" north-star and remains
+> post-MVP direction only. Note that RAi's near-term product pivoted to a **universe of
+> observatories** (PP-01…PP-09); read this document as long-range direction, not current scope.
+> Canonical concept: [`concept-pivot.md`](concept-pivot.md) · current reality:
+> [`_reconciliation/PP-01-09-reconciliation.md`](_reconciliation/PP-01-09-reconciliation.md).
+
 > **Status:** Approved as target architecture (post-MVP, Phase 3+)
 > **Type:** North-star reference. Not MVP scope. Not implementation spec for active issues.
 > **Authoritative for:** Long-term direction, post-MVP planning, conceptual alignment.

@@ -91,8 +91,10 @@ All 7 are seeded in the database. The "Coming Soon" Domains are present in the D
 
 ## Map Positions
 
+> **Legacy (DL-43/DL-50).** These 2D `positionX/positionY` coordinates are from the SVG-era topology. They are retained in the seed and the `Domain` schema, but the current **WebGL 3D spherical layout does not use them** — it distributes the 7 domains on a shell via a golden-spiral (Fibonacci-sphere) rule and places observatories on an outer shell (DL-50). Kept as historical seed data; safe to leave until a future schema pass decides whether to drop them.
+
 Positions are defined as normalized 2D coordinates relative to RA at center (0, 0).
-These values are used in the intelligence topology visualization and must match the seed data.
+These values powered the earlier intelligence topology visualization and still match the seed data.
 
 | Domain | slug | position_x | position_y |
 |---|---|---|---|

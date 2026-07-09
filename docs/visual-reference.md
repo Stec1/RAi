@@ -66,7 +66,7 @@ Reference in words:
 - **Instrumental, not decorative.** Every element serves a function.
 - **Confident, not loud.** No animation for animation's sake.
 - **Editorial, not flat.** Depth is communicated through layering, typography hierarchy, and surface elevation.
-- **Dark but readable.** Dark mode only in MVP. Premium contrast.
+- **Readable in both themes.** Dual theme — dark default + light "paper" (DL-32), not dark-only. Premium contrast in each.
 - **Professional, not corporate.** Warm enough to feel human, structured enough to feel authoritative.
 
 UI text tone: short, specific, no marketing hyperbole. Not "Unleash your AI potential!" — just "Publish your work."
@@ -99,6 +99,8 @@ The intelligence topology (map view in Explore) is the visual representation of 
 ---
 
 ## Color Direction
+
+> **Dual theme (DL-32).** The values below are the DARK theme. The light "paper" theme redefines the semantic token layer in `globals.css` (warm paper surfaces, graphite ink); domain identity colors stay the same in both. The Explore 3D scene background is a literal **true black** in dark (DL-50) and the paper canvas token in light — reacting live to `data-theme`.
 
 ### Backgrounds
 - Deep base: `#030307` — deepest black with faint blue tone
@@ -243,6 +245,7 @@ The intelligence topology (map view in Explore) is the visual representation of 
 
 > Superseded for the Explore Living Crystal Graph — see DL-37 (amended) / DL-38: RA renders as a faceted warm-gold crystal hub with bloom; domains as luminous identity-colored orbs; observatories as signature-driven glowing satellites; edges as thin curved luminous gradients; 1–2 elliptical depth rings cue depth. Rendering stays SVG + CSS (DL-38); a 3D engine remains a deferred Level 2 decision.
 > Superseded by DL-43 (PATCH-PIVOT-05) — Explore uses a WebGL 3D graph (`react-force-graph-3d` + Three.js, lazy client-only): RA as a 3D faceted gold crystal, all 7 domains as glowing orbs (DL-44), observatories in parent-domain color (DL-45).
+> PATCH-PIVOT-07/09 — the scene background is theme-literal, then TRUE BLACK in dark (DL-48 → DL-50); persistent in-scene node labels are removed (identity lives in the Inspector / Registry, DL-48); the layout is a deterministic **bounded sphere** with a visible lat/long shell and orbit controls with a clamped inside-the-sphere dolly (DL-50).
 
 **RA:**
 - Central hub node with warm glow
@@ -265,7 +268,7 @@ The intelligence topology (map view in Explore) is the visual representation of 
 ## Do / Don't
 
 ### DO
-- Dark mode everywhere
+- Support both themes — dark default + light "paper" (DL-32)
 - Breathing room between elements (minimum 24px)
 - Subtle borders (1px, low opacity)
 - Premium editorial typography
@@ -280,7 +283,7 @@ The intelligence topology (map view in Explore) is the visual representation of 
 - Don't use neon as a primary color (accent only)
 - Don't animate every element
 - Don't show more than 5 interactive elements on one section of the screen
-- Don't use light mode
+- Don't assume dark-only — both dark and light "paper" themes are first-class (DL-32); every surface must read in both
 - Don't use cosmic or space language in copy
 - Don't use "metaverse" language in copy
 - Don't put promotional content or banners in the topology canvas
@@ -289,6 +292,11 @@ The intelligence topology (map view in Explore) is the visual representation of 
 ---
 
 ## MVP Art Direction Statement
+
+> **Concept superseded (DL-31).** RAi is a *universe of observatories* (art-stories about real
+> places and virtual worlds), not a research-publication platform — "every publication is
+> evidence" is historical framing. The TONE below — premium, editorial, precise, restrained,
+> and now legible in both dark and light — remains authoritative.
 
 > RAi looks like a premium editorial platform for intelligence.
 > The interface presents work clearly — the content is everything.

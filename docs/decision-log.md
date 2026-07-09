@@ -6,6 +6,29 @@
 
 ---
 
+## Reading guide (pivot era)
+
+RAi executed a founder-approved concept pivot across nine "patch-pivot" patches
+(PP-01…PP-09), recorded as DL-31…DL-50. **The canonical concept document is
+[`concept-pivot.md`](concept-pivot.md)** — RAi is a *universe of observatories*
+(art-stories about real places and virtual worlds), not the earlier AI-research
+publication platform. The AI-research-era decisions (notably DL-13, DL-15…DL-17,
+DL-21, DL-22) are superseded at the concept level by DL-31 and are annotated as such
+below; they are kept as history, never deleted.
+
+- Decisions are **append-only** and **never renumbered**. A superseded or amended
+  decision stays in place with a `> Superseded/Amended by DL-XX (PP-YY)` note.
+- For the current *built* reality (routes, endpoints, schema, Explore graph), see
+  [`_reconciliation/PP-01-09-reconciliation.md`](_reconciliation/PP-01-09-reconciliation.md).
+- **Pivot map:** PP-01 living terminal + dual theme (DL-31…34) · PP-02 explore terminal +
+  first-class observatory nodes (DL-35…37) · PP-03 living crystal graph (DL-38…40) ·
+  PP-04 observatory studio + create endpoint (DL-41/42) · PP-05 WebGL 3D graph (DL-43…45) ·
+  PP-06 real observatories + dashboard (DL-46/47) · PP-07 single-world UI + theme-literal
+  scene (DL-48) · PP-08 observatory story renderer (DL-49) · PP-09 spherical universe +
+  true-black dark (DL-50).
+
+---
+
 ## DL-01 — Web-First, Not Native App
 
 **Decision:** MVP is web-only. Mobile browser via graceful degradation. No React Native or native iOS/Android before public launch.
@@ -151,6 +174,8 @@
 
 ## DL-10 — Three.js for Topology, Not Custom Canvas
 
+> **Superseded for the Explore renderer by DL-30, then DL-43 (PATCH-PIVOT-05):** the Explore topology is now a real WebGL 3D graph (`react-force-graph-3d` + Three.js), not a 2D orthographic view. Historical context only.
+
 **Decision:** Intelligence topology built with Three.js (orthographic camera, 2D mode). Not a custom Canvas2D implementation.
 
 **Why:**
@@ -199,6 +224,8 @@
 
 ## DL-13 — Product Pivot: Metaverse → Observatory Platform
 
+> **Superseded at the concept level by DL-31 (PATCH-PIVOT-01):** RAi is now a *universe of observatories* (art-stories about real places and virtual worlds), not an AI-research publication platform. The "Don't describe your AI. Prove it." tagline is retired and appears nowhere in the live UI. This entry is kept as the record of the earlier metaverse→platform pivot.
+
 **Decision:** RAi pivoted from "premium spatial identity metaverse" to "premium observatory platform for AI systems." The core mechanic changed from "claim a star, generate atmosphere, appear on map" to "create Observatory, publish research, build reputation, get discovered."
 
 **Why:**
@@ -215,6 +242,8 @@
 ---
 
 ## DL-14 — Terminology Migration
+
+> **Reframed by DL-31 (PATCH-PIVOT-01):** the Observatory/Domain terminology mapping below remains authoritative in code; the "Publications / Systems / Reputation as the core mechanic" framing is superseded by the universe-of-observatories concept.
 
 **Decision:** All product terminology updated to reflect the observatory platform direction. Full mapping:
 
@@ -242,6 +271,8 @@
 
 ## DL-15 — Publications as Core Content Unit
 
+> **Superseded at the concept level by DL-31 (PATCH-PIVOT-01):** the core content unit is an observatory's directed *art-story* (a board presented via the shared renderer, DL-49), not AI-formatted research publications. No publication-formatting engine is built. The `Publication` model remains in the schema as unused pre-pivot scaffolding.
+
 **Decision:** Publications are the core content unit of RAi. Creator submits raw AI output → RAi AI (GPT-4o) formats it into a structured presentation. This replaces the old "AI Atmosphere Generator" as the primary AI feature.
 
 **Why:**
@@ -258,6 +289,8 @@
 
 ## DL-16 — Systems as Registered Entities
 
+> **Deferred/superseded under DL-31 (PATCH-PIVOT-01):** there is no Systems surface in the pivot product. The `System` model remains in the schema as pre-pivot scaffolding, unused by any route or UI.
+
 **Decision:** AI agents, workflows, tools, and services are registered as "Systems" within an Observatory. Systems are the "who did the work" behind publications.
 
 **Why:**
@@ -273,6 +306,8 @@
 ---
 
 ## DL-17 — Upvotes, Not Reviews
+
+> **Deferred under DL-31 (PATCH-PIVOT-01):** no upvote or publication evaluation surface is built. The `PublicationUpvote` model remains as unused schema scaffolding; the pivot's community layer (comments, contestation, community verification) is future scope (see `concept-pivot.md` §4).
 
 **Decision:** Community evaluation via upvotes on publications. No star ratings, text reviews, or downvotes.
 
@@ -338,6 +373,8 @@
 
 ## DL-21 — First Publication During Onboarding
 
+> **Superseded by DL-42 (PATCH-PIVOT-04):** the Create flow is the Observatory Studio — World → Identity → Board → Signature → Finish. There is no "First Publication" onboarding step and no AI formatting; the visual signature is chosen manually.
+
 **Decision:** The Observatory creation flow includes a "First Publication" step where the creator pastes raw AI output and publishes their first formatted piece during onboarding.
 
 **Why:**
@@ -353,6 +390,8 @@
 ---
 
 ## DL-22 — Reputation Score, Not Star Ratings
+
+> **Recorded, not surfaced (DL-31 era):** the `reputationScore` column exists and orders the public discovery list, but no reputation formula engine, activity accrual, or score-breakdown UI is built. The formula below is historical intent.
 
 **Decision:** Observatory reputation is a numeric score accumulated from activity and community evaluation — not a star rating or review average.
 
@@ -560,6 +599,8 @@
 > topology. The rest of DL-30 (SVG for Level 1, no Three.js/R3F, no
 > WebSocket, Level 2 evaluation criteria) remains in force.
 
+> **Further superseded by DL-43 (PATCH-PIVOT-05) and DL-46 (PATCH-PIVOT-06):** beyond the DL-35 note above, the Explore renderer is now a real WebGL 3D graph and real observatories render as nodes — the "SVG for Level 1 / no Three.js / no Observatory nodes" clauses no longer hold. The Level 2 "graduate to a 3D stack when density justifies" principle is what was ultimately acted on.
+
 **Decision:** RAi adopts a two-level graph strategy.
 
 **Level 1 — Current `/explore` (MVP):**
@@ -734,6 +775,8 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 > orbital drift are now allowed — they cue depth and life. Spinning
 > targeting/radar elements remain forbidden.
 
+> **SVG implementation superseded by DL-43 (PATCH-PIVOT-05):** the luminous INTENT below (faceted gold hub, identity orbs, depth, calm life) carries into the WebGL 3D graph; the SVG+CSS implementation and DL-38 rendering engine are retired for Explore.
+
 **Decision:** The Explore topology canvas is the Living Crystal Graph: a luminous, depth-cued, data-bearing rendering. RA is a faceted warm-gold crystal hub with a soft inner light and bloom; domains are glowing identity-colored orbs (active larger and brighter, coming-soon dim and cool); observatories are smaller signature-driven glowing satellites; edges are thin, gently curved, luminous gradient strokes (hub-white toward node color); 1–2 faint elliptical orbit rings behind the graph cue depth and drift very slowly. Every luminous element is data-bearing — a real node, a real edge, or a structural depth cue. Richness scales with the real universe; nothing is fabricated to look denser.
 
 **Founder reference (described so the intent survives without images in-repo):** a luminous knowledge-graph instrument — a bright faceted glowing crystal at the center from which everything radiates; small glowing colored orbs (warm amber, magenta, violet, yellow, occasional blue) with soft bloom, sized by importance; very thin luminous white-to-color gradient edges fanning out densely like a dandelion; faint elliptical orbit rings and gently curved lines giving a slow-drifting spherical depth; near-black background; dark rounded pill controls along the canvas edge. The feeling: a living, luminous, self-aware relational instrument — dense, deep, calm. RAI adopts the LANGUAGE at its current scale; it does not copy the product, and RA stays warm-gold (never magenta).
@@ -754,6 +797,8 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 ---
 
 ## DL-38 — Topology Rendering Engine
+
+> **Superseded by DL-43 (PATCH-PIVOT-05):** the Explore topology is rendered as a real WebGL 3D graph (`react-force-graph-3d` + Three.js), not SVG + CSS. The "no 3D engine / no new dependencies for the current implementation" stance is retired for the Explore renderer (a scoped dependency was accepted).
 
 **Decision:** The Explore topology is rendered in SVG + CSS. The Living Crystal Graph (DL-37) is a stylized 2.5D interpretation — glowing orbs via radial gradients and SVG glow filters, luminous gradient-stroke curved edges, a faceted SVG crystal hub, elliptical depth rings, gentle CSS drift. A true-3D rendering engine (`react-force-graph-3d`, `three-globe`, or raw WebGL) is a deferred Level 2 decision, to be taken only when node density and product need justify it AND the dependency and performance trade-offs are explicitly accepted. No 3D engine, no canvas/WebGL, and no new dependencies in the current implementation.
 
@@ -838,6 +883,8 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 
 ## DL-43 — Explore Topology Renderer: WebGL 3D (`react-force-graph-3d` + Three.js)
 
+> **Amended by later pivots:** the FORCE-DIRECTED LAYOUT is superseded by DL-50 (PATCH-PIVOT-09, deterministic spherical layout); the SCENE BACKGROUND is superseded first by DL-48 (PATCH-PIVOT-07, theme-literal) then by DL-50 (true black in dark). The renderer + dependency stack (`react-force-graph-3d` + Three.js, lazy `ssr:false`, bloom, WebGL fallback) and DL-44/DL-45 (all 7 domains as nodes, parent-domain color) remain in force.
+
 **Decision:** The Explore topology renderer is a real WebGL 3D graph built on `react-force-graph-3d` (Three.js-based), lazy-loaded client-only (`next/dynamic`, `ssr: false`) and code-split to the Explore surface. This SUPERSEDES, for the Explore topology renderer only: DL-38 (SVG + CSS rendering), the DL-37 Living Crystal Graph SVG implementation (its visual INTENT — luminous hub, identity orbs, depth, calm life — carries over into 3D), the DL-30 Level-1 no-Three.js clause, and the historical DL-10 framing. New dependencies are permitted scoped to this surface: `react-force-graph-3d` (pinned 1.29.1) reusing the pre-existing `three`; nothing else. Post-processing bloom via the library composer + UnrealBloomPass is allowed. WebGL-unavailable environments get a composed fallback message. The 3D orbit/zoom controls replace the SVG CTM pan/zoom internals (ISSUE-08R.2), which are removed with the SVG renderer.
 
 **Founder target (recorded so intent survives):** a luminous 3D relational graph — a bright faceted crystal hub (RA, warm gold emissive, visually dominant), 7 glowing identity-colored domain orbs arranged in depth, smaller observatory orbs tethered near their domains, thin luminous radiating edges with subtle animated flow, true perspective depth, soft bloom, slow idle auto-rotate, user orbit/zoom/pan, near-black space background. Living, deep, calm, premium — luminous, not flat-neon.
@@ -918,6 +965,8 @@ Only when product needs exist (Observatory nodes, agent/task nodes, publication/
 ---
 
 ## DL-48 — Single-World UI Until World Mode Ships
+
+> **Background clause superseded by DL-50 (PATCH-PIVOT-09):** the dark scene background is now true black `#000000` (the theme-literal near-black `--surface-canvas` read as lilac under bloom). The single-world UI and the removal of persistent in-scene node labels below remain in force.
 
 **Decision:** The virtual/real distinction is hidden from the current UI. Every observatory presents simply as an "observatory" living in the single existing (virtual) universe: the world/kind tags (`place` / `world` / `obs`) are removed from the Registry rail, the Inspector, and the art-story overlay; the two demo observatories no longer present as two different worlds; and copy that implied a real-world anchor is softened to neutral universe language. The `world` field (DL-39) and the `ObservatoryKind` `real-place`/`virtual-world` values are RETAINED in the data model/types/studio draft as forward-looking flags — they are simply not shown or implied until World mode (the Earth map + virtual↔real toggle) ships.
 

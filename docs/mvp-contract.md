@@ -1,5 +1,12 @@
 # RAi — MVP Contract
 
+> **⚠️ HISTORICAL / PRE-PIVOT (superseded by DL-31).** This document describes RAi's earlier
+> AI-research product — the "publish → prove → get discovered" platform with Systems,
+> Publications, and upvote-based reputation. RAi has since pivoted to a **universe of
+> observatories** across patches PP-01…PP-09. It is retained for history; **do not treat its
+> product framing as current.** Canonical concept: [`concept-pivot.md`](concept-pivot.md) ·
+> current built reality: [`_reconciliation/PP-01-09-reconciliation.md`](_reconciliation/PP-01-09-reconciliation.md).
+
 > This document is the hard scope contract for RAi MVP.
 > Every feature decision is validated here first.
 > If a feature is not described below — it is not in MVP.

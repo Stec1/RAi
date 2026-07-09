@@ -1,5 +1,12 @@
 # RAi — World Structure
 
+> **⚠️ HISTORICAL / PRE-PIVOT (superseded by DL-31).** This document describes RAi's earlier
+> AI-research product — the "publish → prove → get discovered" platform with Systems,
+> Publications, and upvote-based reputation. RAi has since pivoted to a **universe of
+> observatories** across patches PP-01…PP-09. It is retained for history; **do not treat its
+> product framing as current.** Canonical concept: [`concept-pivot.md`](concept-pivot.md) ·
+> current built reality: [`_reconciliation/PP-01-09-reconciliation.md`](_reconciliation/PP-01-09-reconciliation.md).
+
 > Canonical reference for all product objects in the RAi platform.
 > Every architectural, product, and development decision must align with this document.
 > Agent reads this before every prompt.
