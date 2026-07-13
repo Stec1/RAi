@@ -32,11 +32,11 @@ export function GuestIntroPanel({ onDismiss }: Props) {
         </svg>
       </button>
       <p className={styles.eyebrow}>RAI</p>
-      <h2 className={styles.tagline}>Every place has a story. Tell yours.</h2>
+      <h2 className={styles.tagline}>Compose your world with RA.</h2>
       <p className={styles.body}>
-        RAI is a universe of observatories — real places, virtual worlds, and
-        the stories people tell about them. Wander the domains, open an
-        observatory, and see how a place becomes a story.
+        RAI is one universe: RA — the mind at the center — and the worlds
+        people compose around it. Select a glowing node to look inside a
+        world, or create your own.
       </p>
       <div className={styles.ctaRow}>
         <Link href="/signup" className={styles.ctaPrimary}>

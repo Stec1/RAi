@@ -1,19 +1,17 @@
 'use client';
 
-// RegistryRail — the terminal's left rail (DL-36): every entity on the
-// topology, reachable as a list. Hovering a row highlights the matching
-// graph node and its edge; clicking a row selects it into the Inspector
-// — the same selection model as clicking the node itself.
+// RegistryRail — the terminal's left rail (DL-36; worlds-only since
+// GENESIS R-01): every world on the topology, reachable as a list.
+// Hovering a row highlights the matching graph node; clicking a row
+// selects it into the Inspector — the same selection model as clicking
+// the node itself. The rail itself is v1 chrome and is demolished at
+// R-03 (kill-map W-04).
 
-import type { DomainSeed } from '../topology/topology-layout';
-import { domainColor } from '../topology/topology-layout';
-import type { EntityRef } from '../../lib/topology-types';
-import type { MockObservatory } from '../../data/mock-observatories';
+import type { EntityRef, World } from '../../lib/topology-types';
 import styles from './RegistryRail.module.css';
 
 interface Props {
-  domains: DomainSeed[];
-  observatories: MockObservatory[];
+  worlds: World[];
   hovered: EntityRef | null;
   selected: EntityRef | null;
   onHover: (ref: EntityRef | null) => void;
@@ -30,8 +28,7 @@ function refMatches(ref: EntityRef | null, target: EntityRef): boolean {
 }
 
 export function RegistryRail({
-  domains,
-  observatories,
+  worlds,
   hovered,
   selected,
   onHover,
@@ -42,8 +39,6 @@ export function RegistryRail({
     key: string,
     marker: React.ReactNode,
     name: string,
-    meta: string,
-    dimmed: boolean,
   ) => {
     const isHot = refMatches(hovered, target) || refMatches(selected, target);
     return (
@@ -52,7 +47,6 @@ export function RegistryRail({
         type="button"
         className={styles.row}
         data-hot={isHot ? 'true' : undefined}
-        data-dimmed={dimmed ? 'true' : undefined}
         aria-pressed={refMatches(selected, target)}
         onPointerEnter={() => onHover(target)}
         onPointerLeave={() => onHover(null)}
@@ -62,7 +56,6 @@ export function RegistryRail({
       >
         {marker}
         <span className={styles.rowName}>{name}</span>
-        {meta ? <span className={styles.rowMeta}>{meta}</span> : null}
       </button>
     );
   };
@@ -71,41 +64,23 @@ export function RegistryRail({
     <nav className={styles.rail} aria-label="Registry">
       <p className={styles.railHeader}>Registry</p>
 
-      <p className={styles.sectionLabel}>Domains</p>
+      <p className={styles.sectionLabel}>Worlds</p>
       <div className={styles.section}>
-        {domains.map((d) =>
-          row(
-            { kind: 'domain', slug: d.slug },
-            `domain-${d.slug}`,
-            <span
-              className={styles.dot}
-              style={{ background: domainColor(d.slug) }}
-              aria-hidden="true"
-            />,
-            d.name,
-            d.active ? 'active' : 'coming',
-            !d.active,
-          ),
-        )}
-      </div>
-
-      <p className={styles.sectionLabel}>Observatories</p>
-      <div className={styles.section}>
-        {/* PP-07 §3: observatories list by name only — no world/kind tag.
-            The dot is the parent-domain color (DL-45). */}
-        {observatories.map((o) =>
-          row(
-            { kind: 'observatory', slug: o.slug },
-            `obs-${o.slug}`,
-            <span
-              className={styles.marker}
-              style={{ borderColor: domainColor(o.domainSlug) }}
-              aria-hidden="true"
-            />,
-            o.title,
-            '',
-            false,
-          ),
+        {worlds.length === 0 ? (
+          <p className={styles.rowName}>No public worlds yet.</p>
+        ) : (
+          worlds.map((w) =>
+            row(
+              { kind: 'observatory', slug: w.slug },
+              `world-${w.slug}`,
+              <span
+                className={styles.dot}
+                style={{ background: w.signature.primaryColor }}
+                aria-hidden="true"
+              />,
+              w.title,
+            ),
+          )
         )}
       </div>
     </nav>

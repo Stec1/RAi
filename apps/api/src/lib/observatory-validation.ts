@@ -1,12 +1,15 @@
-// Shared observatory field validators (PATCH-PIVOT-06, DL-47).
+// Shared observatory field validators (PATCH-PIVOT-06, DL-47; extended at
+// GENESIS R-01 with visibility + content-block validation).
 //
-// Extracted from the PATCH-PIVOT-04 create route so the create (POST) and
-// the dashboard update (PATCH) paths validate base fields identically.
-// Pure functions only — DB-dependent checks (name uniqueness, active
-// domain existence) stay in the routes where the Prisma client lives.
+// The create (POST) and update (PATCH) paths validate identically. Pure
+// functions only — DB-dependent checks (name uniqueness) stay in the
+// routes where the Prisma client lives.
 
 export const OBSERVATORY_TYPES = ['individual', 'studio', 'product'] as const;
 export type ObservatoryTypeInput = (typeof OBSERVATORY_TYPES)[number];
+
+export const OBSERVATORY_VISIBILITIES = ['unpublished', 'private', 'public'] as const;
+export type ObservatoryVisibilityInput = (typeof OBSERVATORY_VISIBILITIES)[number];
 
 export const SOCIAL_KEYS = [
   'github',
@@ -77,6 +80,109 @@ export function isPrismaUniqueViolation(err: unknown): { target: string } | null
   if (Array.isArray(target)) return { target: target.join(',') };
   if (typeof target === 'string') return { target };
   return { target: '' };
+}
+
+// ── World content validation (GENESIS R-01, R-DL-06) ──
+//
+// The content column is the ordered block list. Server-side caps: ≤100
+// blocks, ≤200KB total JSON, per-string caps, unknown keys STRIPPED (the
+// cleaned array is what gets persisted). Image blocks carry no binary
+// until R-02 — they persist as { type:'image', caption?, pendingMedia:true }.
+
+export const CONTENT_BLOCK_TYPES = ['heading', 'text', 'image', 'note', 'link'] as const;
+export type ContentBlockTypeInput = (typeof CONTENT_BLOCK_TYPES)[number];
+
+export interface CleanContentBlock {
+  id: string;
+  type: ContentBlockTypeInput;
+  text?: string;
+  caption?: string;
+  href?: string;
+  label?: string;
+  variant?: string;
+  fullBleed?: boolean;
+  pendingMedia?: boolean;
+}
+
+const MAX_BLOCKS = 100;
+const MAX_CONTENT_BYTES = 200 * 1024;
+const MAX_TEXT_CHARS = 5000;
+const MAX_ID_CHARS = 64;
+const MAX_VARIANT_CHARS = 64;
+
+function cleanString(
+  value: unknown,
+  max: number,
+): { ok: true; value?: string } | { ok: false } {
+  if (value === undefined || value === null) return { ok: true };
+  if (typeof value !== 'string') return { ok: false };
+  if (value.length > max) return { ok: false };
+  if (value.length === 0) return { ok: true }; // empty → omitted
+  return { ok: true, value };
+}
+
+// Validates and CLEANS a content block list. Returns the cleaned blocks
+// (unknown keys stripped, empty strings dropped) or an error string.
+export function validateContent(
+  value: unknown,
+): { blocks: CleanContentBlock[] } | { error: string } {
+  if (!Array.isArray(value)) {
+    return { error: 'content must be an array of blocks' };
+  }
+  if (value.length > MAX_BLOCKS) {
+    return { error: `content must have at most ${MAX_BLOCKS} blocks` };
+  }
+  const blocks: CleanContentBlock[] = [];
+  for (let i = 0; i < value.length; i += 1) {
+    const raw = value[i];
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+      return { error: `content[${i}] must be an object` };
+    }
+    const b = raw as Record<string, unknown>;
+    if (
+      typeof b.id !== 'string' ||
+      b.id.length === 0 ||
+      b.id.length > MAX_ID_CHARS
+    ) {
+      return { error: `content[${i}].id must be a short string` };
+    }
+    if (
+      typeof b.type !== 'string' ||
+      !(CONTENT_BLOCK_TYPES as readonly string[]).includes(b.type)
+    ) {
+      return { error: `content[${i}].type is invalid` };
+    }
+    const clean: CleanContentBlock = {
+      id: b.id,
+      type: b.type as ContentBlockTypeInput,
+    };
+    for (const key of ['text', 'caption', 'href', 'label'] as const) {
+      const res = cleanString(b[key], MAX_TEXT_CHARS);
+      if (!res.ok) {
+        return { error: `content[${i}].${key} must be a string of at most ${MAX_TEXT_CHARS} characters` };
+      }
+      if (res.value !== undefined) clean[key] = res.value;
+    }
+    const variantRes = cleanString(b.variant, MAX_VARIANT_CHARS);
+    if (!variantRes.ok) {
+      return { error: `content[${i}].variant must be a short string` };
+    }
+    if (variantRes.value !== undefined) clean.variant = variantRes.value;
+    for (const key of ['fullBleed', 'pendingMedia'] as const) {
+      const v = b[key];
+      if (v === undefined || v === null) continue;
+      if (typeof v !== 'boolean') {
+        return { error: `content[${i}].${key} must be a boolean` };
+      }
+      if (v) clean[key] = true;
+    }
+    blocks.push(clean);
+  }
+  const bytes = Buffer.byteLength(JSON.stringify(blocks), 'utf8');
+  if (bytes > MAX_CONTENT_BYTES) {
+    return { error: 'content is too large (200KB max)' };
+  }
+  return { blocks };
 }
 
 // Validates a socialLinks object: known keys only, url/email shape.

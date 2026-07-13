@@ -178,3 +178,95 @@ the approved reference, not ad-hoc taste.
 - These are the two surfaces that define how RAI 2.0 feels; v1 showed that iterating visual
   direction inside implementation patches burns cycles (three graph aesthetics in nine patches).
 - A gate makes "what we are building" founder-approved before the expensive step starts.
+
+---
+
+## R-DL-14 — publicMode → visibility mapping (migration #1)
+
+**Decision:** Migration #1 maps existing rows `publicMode=true → public` and
+`publicMode=false → private` (resolving OQ-06 per the R-01 prompt), then drops the column.
+Rows becoming `public` get `publishedAt` backfilled with their `createdAt` (they were already
+publicly visible — their effective first publish was creation); `updatedAt` is likewise
+backfilled with `createdAt` and its temporary SQL default is dropped after the backfill.
+
+**Why:**
+- `true → public` preserves what owners already chose to show; `false → private` is the closest
+  semantic (hidden from discovery but reachable), and nothing silently disappears.
+- Backfilling with `createdAt` keeps R-05 freshness honest instead of stamping migration time.
+
+---
+
+## R-DL-15 — `/@name` via a root `[handle]` dynamic segment
+
+**Decision:** The public world route is `apps/web/src/app/[handle]/page.tsx` — a root dynamic
+segment that requires the decoded segment to start with `@` and 404s otherwise. It is a server
+component: it fetches the world from the API origin (`API_PROXY_ORIGIN`, the same upstream the
+`/api/*` proxy uses) with the request cookies forwarded, wrapped in React `cache()` so
+`generateMetadata` and the page share one request. `force-dynamic` — the page always reflects
+current visibility and content.
+
+**Why:**
+- An `@folder` is a Next.js parallel-route slot, not a path segment; a guarded dynamic segment
+  is the only way to own `rai.app/@name` while every static route keeps precedence.
+- Server-side rendering gives real metadata and lets the owner view an `unpublished` world
+  through the same visibility guard (cookie-forwarded), with 404 for everyone else.
+
+---
+
+## R-DL-16 — pendingMedia: image blocks before media exists
+
+**Decision:** Until R-02, an image block persists as `{ type:'image', caption?,
+pendingMedia:true }` — no binary, no URL. The renderer presents it as the framed placeholder
+plate with its caption; the studio/dashboard upload paths set the flag automatically.
+
+**Why:**
+- Stories can be composed and persisted NOW without inventing a throwaway storage path; R-02
+  replaces the flag with real object keys in place.
+- An honest placeholder is composed, not broken — the story's rhythm survives the wait.
+
+---
+
+## R-DL-17 — RA's first worlds are owned by system users
+
+**Decision:** `wawel-dragons-hill` and `signal-garden` are real DB rows owned by two system
+users (`wawel@system.rai.internal`, `signal-garden@system.rai.internal`, both named "RA").
+The users are unloginable by construction: NO credential Account row is ever created (Better
+Auth email sign-in has nothing to verify against), which is strictly stronger than the
+random-unusable-hash suggested in the R-01 prompt — reported as a deliberate deviation.
+The seed upserts by id/name, never touches real user rows, and never resets `publishedAt`.
+
+**Why:**
+- Real rows mean the graph, the by-name endpoint, and the world pages run on one code path —
+  no demo-mock special-casing anywhere (the mock module is deleted).
+- No-account is unloginable without imitating Better Auth's hash format, which could rot.
+
+---
+
+## R-DL-18 — Content validation caps
+
+**Decision:** Server-side content validation (shared by POST and PATCH): ≤100 blocks, ≤200KB
+total JSON measured on the CLEANED array, per-string caps (text/caption/href/label 5000 chars;
+id/variant 64), type whitelist, booleans only for `fullBleed`/`pendingMedia`, unknown keys
+stripped, empty strings dropped. The cleaned array is what persists. `href` is length-capped
+but not protocol-validated — the renderer treats non-http(s) links as inert labels.
+
+**Why:**
+- Caps bound the JSONB column and the graph-page payloads before any composer exists to
+  generate content at scale (R-06 will lean on the same validator).
+- Cleaning (rather than rejecting unknown keys) keeps old drafts and future additive hints
+  compatible in both directions.
+
+---
+
+## R-DL-19 — Interim node placement: hash-picked golden-spiral slot
+
+**Decision:** Until the R-03 spatial model, a world's node position is `fibDir(floor(u·997),
+997) · R_SHELL` where `u` is the FNV-1a hash of its `name` — a slot on a 997-point
+golden-spiral lattice on the outer shell. Node color is the world's VisualSignature primary
+with a neutral slate fallback; a thin RA→world tether is the only edge type.
+
+**Why:**
+- Position depends only on the world's own name: joining worlds never reshuffle the sky, and
+  the same data lays out identically every load (R-DL-10).
+- 997 is prime and ≫ MVP world counts, spreading hash residues with negligible collision odds;
+  a collision merely overlaps two nodes until R-03's real spatial model lands.

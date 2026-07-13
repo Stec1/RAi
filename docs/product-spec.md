@@ -47,9 +47,10 @@ discovery surface — spatial, not a feed.
 message — kept from v1); reduced motion (static but composed); loading (calm, no spinner in the
 canvas center).
 
-**Current v1 behavior until R-03:** the terminal layout (Registry / sphere graph with domain
-shells / Inspector / Activity) remains. From R-01 the domain nodes are gone and observatories are
-placed by name hash with signature colors — the interim universe (kill-map, row W-01).
+**Current v1 behavior until R-03:** the terminal layout (Registry / sphere graph / Inspector /
+Activity) remains. Since R-01 (delivered) the universe is real: no domain nodes, worlds placed by
+name-hash golden-spiral slots in their signature colors, RA→world tethers, `{N} worlds · RAI
+universe` readouts, no mock fallback (kill-map, row W-01; R-DL-19).
 
 ---
 
@@ -76,9 +77,10 @@ placed by name hash with signature colors — the interim universe (kill-map, ro
 the localStorage era ends); generation in progress (streaming); credit limit reached (clear stop
 + upgrade path after R-09); API failure (draft never lost).
 
-**Current v1 behavior until R-07:** `/create` renders the v1 stepper studio. Its localStorage
-board draft is replaced by server persistence at R-01–R-02; the World (virtual/real) step is
-removed at R-01.
+**Current v1 behavior until R-07:** `/create` renders the v1 stepper studio (since R-01:
+Identity → Board → Signature → Finish — the World step and domain pills are gone, and Finish
+persists the board as server `content`; worlds are created `unpublished` with their `/@name`
+link shown).
 
 ---
 
@@ -100,8 +102,9 @@ publishes.
 **States.** Public; private-by-link; unpublished (owner preview banner / 404 for visitors);
 missing name (404); media loading.
 
-**Current v1 behavior until R-01:** no public world route exists; stories render only inside the
-Explore overlay and the studio preview.
+**Delivered at R-01:** the route is live — ObservatoryStory-rendered, visibility-enforced
+(owner-only view for `unpublished` via cookie-forwarded server fetch), honest status line, calm
+404, basic metadata (R-DL-15). Mastery + share/OG remain R-08.
 
 ---
 
@@ -119,8 +122,9 @@ is where a world is made; the dashboard is where its status is managed.
 
 **States.** No world yet (→ Composer); world at each visibility; credits exhausted (post-R-09).
 
-**Current v1 behavior until R-08:** the v1 dashboard baseline (identity card, node preview,
-identity form, local board-draft section) remains; its domain pills are removed at R-01.
+**Current v1 behavior until R-08:** the v1 dashboard baseline remains (since R-01: 3-state
+visibility control wired to PATCH, world URL with copy + view actions, "Save story to your
+world" for local drafts; domain pills gone; the node preview uses the world's own signature).
 
 ---
 

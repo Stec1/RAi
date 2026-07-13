@@ -23,7 +23,7 @@
 
 import type { CSSProperties } from 'react';
 import { Reveal } from '../landing/Reveal';
-import type { VisualSignature } from '../../data/mock-observatories';
+import type { VisualSignature } from '../../lib/topology-types';
 import styles from './ObservatoryStory.module.css';
 
 export type StoryBlockType = 'heading' | 'text' | 'image' | 'note' | 'link';
@@ -44,7 +44,7 @@ export interface StoryBlock {
 
 interface Props {
   title: string;
-  /** e.g. "Observatory · Vorda". */
+  /** e.g. "World". */
   eyebrow?: string;
   /** Quiet metadata line (displayName / type). */
   metadata?: string;

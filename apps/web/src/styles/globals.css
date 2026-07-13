@@ -52,20 +52,6 @@
   --graph-depth-ring: rgba(232, 237, 245, 0.07);
   --graph-edge-base: rgba(245, 240, 225, 0.55);
 
-  /*
-   * Domain identification tokens.
-   * Values derived directly from the prose "color hints" in
-   * docs/domain-definitions.md. These are ONLY used to tag Domain /
-   * Observatory identity — never as UI chrome.
-   */
-  --domain-nexum: #4aa3bf;   /* cold blue, electric teal */
-  --domain-keth: #b89450;    /* dark gold, slate */
-  --domain-solum: #b8c5d9;   /* white-blue, silver */
-  --domain-vorda: #c47a4a;   /* warm amber, terracotta */
-  --domain-lyren: #7a4d9e;   /* deep purple, violet */
-  --domain-auren: #3d8a6d;   /* deep green, teal */
-  --domain-draxis: #8a3a3a;  /* dark red, near-black */
-
   /* Typography scale — only these sizes are allowed on screen. */
   --font-size-11: 0.6875rem; /* 11px */
   --font-size-13: 0.8125rem; /* 13px */

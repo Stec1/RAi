@@ -1,28 +1,60 @@
-// Local DTO for the public Domain payload returned by `/api/v1/domains`.
+// Local types for the Explore universe (GENESIS R-01).
 //
-// Defined here (instead of importing from `@rai/shared`) so that the web app
-// production build does not depend on resolving workspace package types from
-// outside `apps/web`. The shape mirrors the API response: `createdAt` is an
-// ISO string post JSON serialization.
+// `VisualSignature` and `ContentBlock` MIRROR `packages/shared` (types/
+// visual-signature.ts, types/observatory.ts). Per the repo convention they
+// are declared locally so the web production build never resolves
+// workspace packages outside `apps/web`. Keep the declarations in sync
+// manually.
 
-export interface DomainDTO {
+export type AmbientEffect = 'glow' | 'pulse' | 'static' | 'drift';
+export type SurfaceStyle = 'smooth' | 'grain' | 'mesh' | 'void';
+export type NodeStyle = 'point' | 'ring' | 'pulse' | 'cross';
+
+export type VisualSignature = {
+  primaryColor: string;
+  secondaryColor: string;
+  gradientAngle: number;
+  ambientEffect: AmbientEffect;
+  effectIntensity: number;
+  surfaceStyle: SurfaceStyle;
+  accentColor: string;
+  nodeStyle: NodeStyle;
+};
+
+export type ObservatoryVisibility = 'unpublished' | 'private' | 'public';
+
+// World content — the ordered block list persisted server-side (R-DL-06).
+// Image blocks carry no binary until R-02 (`pendingMedia: true`).
+export type ContentBlockType = 'heading' | 'text' | 'image' | 'note' | 'link';
+
+export type ContentBlock = {
   id: string;
-  name: string;
-  slug: string;
-  description: string;
-  theme: string;
-  positionX: number;
-  positionY: number;
-  active: boolean;
-  createdAt: string;
-}
+  type: ContentBlockType;
+  text?: string;
+  caption?: string;
+  href?: string;
+  label?: string;
+  variant?: string;
+  fullBleed?: boolean;
+  pendingMedia?: boolean;
+};
 
-// A reference to any selectable entity on the Explore topology. Shared
-// by the 3D graph renderer, the Registry rail, and the Inspector
-// (moved here from the retired SVG TopologyCanvas in PATCH-PIVOT-05).
+// A world as the terminal consumes it (graph node, registry row,
+// inspector card). `slug` doubles as the API `name` — the @name address.
+export type World = {
+  slug: string;
+  name: string;
+  title: string;
+  tagline: string;
+  signature: VisualSignature;
+  publishedAt: string | null;
+  updatedAt: string | null;
+};
+
+// A reference to any selectable entity on the Explore topology — RA or a
+// world. (The 'domain' kind died with the domain layer, R-DL-02.)
 export type EntityRef =
   | { kind: 'ra' }
-  | { kind: 'domain'; slug: string }
   | { kind: 'observatory'; slug: string };
 
 // Real view actions for the topology panel's pill controls (DL-37/DL-43).

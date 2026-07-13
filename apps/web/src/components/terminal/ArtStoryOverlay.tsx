@@ -1,12 +1,17 @@
 'use client';
 
-// ArtStoryOverlay — full-screen art-story presentation for an observatory
-// (PATCH-PIVOT-01, DL-31). Opens inside the terminal, not as a route.
+// ArtStoryOverlay — full-screen art-story presentation for a world
+// (PATCH-PIVOT-01, DL-31; world-model since GENESIS R-01). Opens inside
+// the terminal, not as a route; a world's standalone page lives at
+// /@name (linked from the Inspector).
 //
-// The hero field is generative: a linear gradient built from the
-// observatory's VisualSignature (gradientAngle, primaryColor,
-// secondaryColor) with an ambient layer chosen by ambientEffect and
+// The hero field is generative: a linear gradient built from the world's
+// VisualSignature with an ambient layer chosen by ambientEffect and
 // weighted by effectIntensity. No raster assets.
+//
+// Content arrives from the parent (fetched from the by-name endpoint on
+// open — the graph list carries no content): `blocks === null` while
+// loading; `loadFailed` when the fetch failed.
 //
 // Accessibility: role="dialog" aria-modal, focus moves to the close
 // button on open, Tab is trapped inside the overlay, Escape closes, and
@@ -21,7 +26,7 @@
 
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { MockObservatory } from '../../data/mock-observatories';
+import type { World } from '../../lib/topology-types';
 import {
   ObservatoryStory,
   type StoryBlock,
@@ -29,16 +34,22 @@ import {
 import styles from './ArtStoryOverlay.module.css';
 
 interface Props {
-  observatory: MockObservatory;
-  /** The owning domain's display name, when known. */
-  domainName?: string;
+  world: World;
+  /** Bio from the by-name fetch (the graph list has none). */
+  tagline: string;
+  /** null while the content fetch is in flight. */
+  blocks: StoryBlock[] | null;
+  loadFailed?: boolean;
   onClose: () => void;
 }
 
-// PP-07 §3: no world/kind framing in the overlay — the eyebrow shows the
-// parent domain (or a neutral label), never "real place" / "virtual world".
-
-export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
+export function ArtStoryOverlay({
+  world,
+  tagline,
+  blocks,
+  loadFailed = false,
+  onClose,
+}: Props) {
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -88,16 +99,11 @@ export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
     };
   }, []);
 
-  const eyebrow = domainName ? `Observatory · ${domainName}` : 'Observatory';
-
-  // The demo observatories author their story as {heading, body} sections;
-  // flatten to the shared block model (each section → a heading divider +
-  // an editorial text column). Real observatories have no board yet → the
-  // renderer shows the hero + a calm empty state (DL-42/DL-46).
-  const blocks: StoryBlock[] = observatory.sections.flatMap((section, i) => [
-    { id: `sec-h-${i}`, type: 'heading', content: section.heading },
-    { id: `sec-t-${i}`, type: 'text', content: section.body },
-  ]);
+  const emptyMessage = loadFailed
+    ? "Could not load this world's story. Close and try again."
+    : blocks === null
+      ? 'Opening the world…'
+      : 'This world is just getting started — its story will appear here as its creator composes it.';
 
   return createPortal(
     <div
@@ -129,13 +135,12 @@ export function ArtStoryOverlay({ observatory, domainName, onClose }: Props) {
           provides the portal + focus-trap/Esc/restore shell. */}
       <ObservatoryStory
         titleId="art-story-title"
-        title={observatory.title}
-        eyebrow={eyebrow}
-        lede={observatory.tagline}
-        signature={observatory.signature}
-        blocks={blocks}
-        footerCta={observatory.cta}
-        emptyMessage="This observatory is just getting started. Its board — the rooms, notes, and images that make up its story — is being built and will appear here when board publishing ships."
+        title={world.title}
+        eyebrow="World"
+        lede={tagline}
+        signature={world.signature}
+        blocks={blocks ?? []}
+        emptyMessage={emptyMessage}
       />
     </div>,
     document.body,

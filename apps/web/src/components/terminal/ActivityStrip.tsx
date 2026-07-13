@@ -15,11 +15,10 @@
 import styles from './ActivityStrip.module.css';
 
 export const MOCK_ACTIVITY: string[] = [
-  'vorda — new art-story: wawel',
+  'wawel — the dragon stirs',
   'signal garden — night bloom',
-  'draxis — 2 signals',
   'ra — heartbeat steady',
-  'nexum — flow nominal',
+  'universe — flow nominal',
 ];
 
 export function ActivityStrip() {

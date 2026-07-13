@@ -9,7 +9,7 @@ import { RaiTerminal } from '../../components/terminal/RaiTerminal';
 export const metadata: Metadata = {
   title: 'Explore — RAi',
   description:
-    'The RAI universe — domains, observatories, and the stories people pin to places real and imagined.',
+    'The RAI universe — RA at the center and the worlds people compose around it, real and imagined.',
 };
 
 export default function ExplorePage() {

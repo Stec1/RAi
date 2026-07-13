@@ -1,19 +1,17 @@
 'use client';
 
-// /dashboard — the owner's real screen (PATCH-PIVOT-06, DL-47).
+// /dashboard — the owner's world screen (DL-47; adapted at GENESIS R-01).
 //
 // Auth-gated (unauthenticated → /login, unchanged). Fetches the caller's
-// observatory via GET /api/v1/me/observatory: 404 → redirect to /create
+// world via GET /api/v1/me/observatory: 404 → redirect to /create
 // (matching the existing one-per-user routing), otherwise render the
-// Dashboard. Active domains are fetched for the identity pills and the
-// "as a node" preview color.
+// Dashboard. The domain fetch died with the domain layer (R-DL-02).
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageShell } from '../../components/ui/PageShell';
 import { DashboardScreen } from '../../components/dashboard/DashboardScreen';
 import type { OwnerObservatory } from '../../components/dashboard/DashboardScreen';
-import type { DomainDTO } from '../../lib/topology-types';
 import { useAuth } from '../../hooks/useAuth';
 
 export default function DashboardPage() {
@@ -21,7 +19,6 @@ export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const [gate, setGate] = useState<'checking' | 'ok'>('checking');
   const [observatory, setObservatory] = useState<OwnerObservatory | null>(null);
-  const [domains, setDomains] = useState<DomainDTO[]>([]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -57,25 +54,13 @@ export default function DashboardPage() {
     return () => controller.abort();
   }, [isLoading, user, router]);
 
-  // Active domains for the identity pills + node-preview color.
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch('/api/v1/domains', { credentials: 'include', signal: controller.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: { domains?: DomainDTO[] } | null) => {
-        if (j?.domains) setDomains(j.domains.filter((d) => d.active));
-      })
-      .catch(() => {});
-    return () => controller.abort();
-  }, []);
-
   if (isLoading || !user || gate !== 'ok' || !observatory) {
     return <main aria-busy="true" />;
   }
 
   return (
     <PageShell>
-      <DashboardScreen initial={observatory} domains={domains} />
+      <DashboardScreen initial={observatory} />
     </PageShell>
   );
 }

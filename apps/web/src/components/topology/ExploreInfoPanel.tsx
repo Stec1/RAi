@@ -1,22 +1,19 @@
-// ExploreInfoPanel — the terminal's docked Inspector content (DL-36).
-// Persistent (not slide-in): shows the focused entity —
+// ExploreInfoPanel — the terminal's docked Inspector content (DL-36;
+// de-domained at GENESIS R-01). Persistent (not slide-in): shows the
+// focused entity —
 //   • nothing focused → universe intro
-//   • RA             → about RAI + platform stats
-//   • domain         → name, state, theme, description, observatories here
-//   • observatory    → name, kind, domain, tagline + `Open art-story`
-// The auth-aware CTA follows DL-26 and is unchanged by the pivot:
+//   • RA             → about RA + universe stats
+//   • world          → name, tagline, `Open art-story`, and its /@name page
+// The auth-aware CTA follows DL-26 and is unchanged:
 //   guest                  → /signup primary, /login secondary
 //   authNoObservatory      → /create
 //   authWithObservatory    → /dashboard
 //   unknown                → guest CTA (safe default)
-// The `Open art-story` button is the single entry to the overlay
-// (PATCH-PIVOT-02 entry model: node click = select, Inspector = open).
+// This panel is v1 chrome; the floating selected-node card replaces it at
+// R-03 (kill-map W-03).
 
 import Link from 'next/link';
-import type { DomainSeed } from './topology-layout';
-import { domainColor } from './topology-layout';
-import type { EntityRef } from '../../lib/topology-types';
-import type { MockObservatory } from '../../data/mock-observatories';
+import type { EntityRef, World } from '../../lib/topology-types';
 import styles from './ExploreInfoPanel.module.css';
 
 export type AuthState =
@@ -27,48 +24,33 @@ export type AuthState =
 
 interface Props {
   focus: EntityRef | null;
-  domains: DomainSeed[];
-  observatories: MockObservatory[];
+  worlds: World[];
   authState: AuthState;
   onOpenStory: (slug: string) => void;
-  onSelectObservatory: (slug: string) => void;
 }
 
 const DEFAULT_BODY =
-  'This is the RAI universe. RA sits at the center; each domain is a region of stories; observatories settle near the domains they belong to. Select a node to look closer.';
+  'This is the RAI universe. RA — the mind at the center — and the worlds people have composed around it. Select a node to look closer.';
 
 const RA_BODY =
-  'RA is the coordinating core of the universe. It shows stories, coordinates their verification, and settles reputation — it never executes anything itself.';
-
-// PP-07 §3: the virtual/real split is hidden from the UI until World mode
-// ships. Every observatory reads simply as an "Observatory" — no
-// place/world/kind tag anywhere.
-const OBSERVATORY_EYEBROW = 'Observatory';
+  'RA is the mind at the center of the universe. It composes worlds with their creators, shows their stories, and settles what the community verifies — it never executes anything itself.';
 
 export function ExploreInfoPanel({
   focus,
-  domains,
-  observatories,
+  worlds,
   authState,
   onOpenStory,
-  onSelectObservatory,
 }: Props) {
-  const domain =
-    focus?.kind === 'domain'
-      ? domains.find((d) => d.slug === focus.slug) ?? null
-      : null;
-  const observatory =
+  const world =
     focus?.kind === 'observatory'
-      ? observatories.find((o) => o.slug === focus.slug) ?? null
+      ? worlds.find((w) => w.slug === focus.slug) ?? null
       : null;
 
-  const liveText = observatory
-    ? observatory.title
-    : domain
-      ? `${domain.name} — ${domain.active ? 'Active' : 'Coming Soon'}`
-      : focus?.kind === 'ra'
-        ? 'RA — the coordinating core'
-        : 'The RAI universe';
+  const liveText = world
+    ? world.title
+    : focus?.kind === 'ra'
+      ? 'RA — the mind at the center'
+      : 'The RAI universe';
 
   return (
     <aside className={styles.panel} aria-label="Inspector">
@@ -77,20 +59,10 @@ export function ExploreInfoPanel({
         {liveText}
       </p>
 
-      {observatory ? (
-        <ObservatoryView
-          observatory={observatory}
-          domains={domains}
-          onOpenStory={onOpenStory}
-        />
-      ) : domain ? (
-        <DomainView
-          domain={domain}
-          observatories={observatories}
-          onSelectObservatory={onSelectObservatory}
-        />
+      {world ? (
+        <WorldView world={world} onOpenStory={onOpenStory} />
       ) : focus?.kind === 'ra' ? (
-        <RaView domains={domains} observatories={observatories} />
+        <RaView worlds={worlds} />
       ) : (
         <>
           <p className={styles.eyebrow}>Universe</p>
@@ -104,14 +76,7 @@ export function ExploreInfoPanel({
   );
 }
 
-function RaView({
-  domains,
-  observatories,
-}: {
-  domains: DomainSeed[];
-  observatories: MockObservatory[];
-}) {
-  const active = domains.filter((d) => d.active).length;
+function RaView({ worlds }: { worlds: World[] }) {
   return (
     <>
       <p className={styles.eyebrow}>Core</p>
@@ -119,106 +84,47 @@ function RaView({
       <p className={styles.body}>{RA_BODY}</p>
       <dl className={styles.stats}>
         <div className={styles.statRow}>
-          <dt className={styles.statLabel}>Domains</dt>
-          <dd className={styles.statValue}>{domains.length}</dd>
-        </div>
-        <div className={styles.statRow}>
-          <dt className={styles.statLabel}>Active</dt>
-          <dd className={styles.statValue}>{active}</dd>
-        </div>
-        <div className={styles.statRow}>
-          <dt className={styles.statLabel}>Observatories</dt>
-          <dd className={styles.statValue}>{observatories.length}</dd>
+          <dt className={styles.statLabel}>Worlds</dt>
+          <dd className={styles.statValue}>{worlds.length}</dd>
         </div>
       </dl>
     </>
   );
 }
 
-function DomainView({
-  domain,
-  observatories,
-  onSelectObservatory,
-}: {
-  domain: DomainSeed;
-  observatories: MockObservatory[];
-  onSelectObservatory: (slug: string) => void;
-}) {
-  const here = observatories.filter((o) => o.domainSlug === domain.slug);
-  return (
-    <>
-      <p className={styles.eyebrow}>Domain</p>
-      <h2 className={styles.heading}>{domain.name}</h2>
-      <p className={domain.active ? styles.statusActive : styles.statusComing}>
-        {domain.active ? 'Active' : 'Coming Soon'}
-      </p>
-      {domain.theme ? <p className={styles.theme}>{domain.theme}</p> : null}
-      {domain.description ? (
-        <p className={styles.body}>{domain.description}</p>
-      ) : null}
-      <div className={styles.miniList}>
-        <p className={styles.miniListLabel}>
-          Observatories · {here.length}
-        </p>
-        {here.length === 0 ? (
-          <p className={styles.miniListEmpty}>None here yet.</p>
-        ) : (
-          here.map((o) => (
-            <button
-              key={o.slug}
-              type="button"
-              className={styles.miniListRow}
-              onClick={() => onSelectObservatory(o.slug)}
-            >
-              <span
-                className={styles.miniListDot}
-                style={{ background: o.signature.primaryColor }}
-                aria-hidden="true"
-              />
-              <span className={styles.miniListName}>{o.title}</span>
-            </button>
-          ))
-        )}
-      </div>
-    </>
-  );
-}
-
-function ObservatoryView({
-  observatory,
-  domains,
+function WorldView({
+  world,
   onOpenStory,
 }: {
-  observatory: MockObservatory;
-  domains: DomainSeed[];
+  world: World;
   onOpenStory: (slug: string) => void;
 }) {
-  const domainName =
-    domains.find((d) => d.slug === observatory.domainSlug)?.name ||
-    (observatory.domainSlug ? observatory.domainSlug : 'No domain yet');
   return (
     <>
-      <p className={styles.eyebrow}>{OBSERVATORY_EYEBROW}</p>
-      <h2 className={styles.heading}>{observatory.title}</h2>
+      <p className={styles.eyebrow}>World</p>
+      <h2 className={styles.heading}>{world.title}</h2>
       <p className={styles.theme}>
         <span
           className={styles.miniListDot}
-          style={{ background: domainColor(observatory.domainSlug) }}
+          style={{ background: world.signature.primaryColor }}
           aria-hidden="true"
         />
-        {domainName}
+        <span className={styles.body}>rai.app/@{world.slug}</span>
       </p>
       <p className={styles.body}>
-        {observatory.tagline ||
-          'A new observatory in the RAI universe. Open its art-story to look inside.'}
+        {world.tagline ||
+          'A world in the RAI universe. Open its art-story to look inside.'}
       </p>
       <button
         type="button"
         className={styles.openStory}
-        onClick={() => onOpenStory(observatory.slug)}
+        onClick={() => onOpenStory(world.slug)}
       >
         Open art-story
       </button>
+      <Link href={`/@${world.slug}`} className={styles.openStory}>
+        Visit its page
+      </Link>
     </>
   );
 }
@@ -228,7 +134,7 @@ function CtaGroup({ authState }: { authState: AuthState }) {
     return (
       <div className={styles.ctaGroup}>
         <Link href="/create" className={styles.ctaPrimary}>
-          Create Observatory
+          Create your world
         </Link>
       </div>
     );
@@ -246,7 +152,7 @@ function CtaGroup({ authState }: { authState: AuthState }) {
   return (
     <div className={styles.ctaGroup}>
       <Link href="/signup" className={styles.ctaPrimary}>
-        Create Observatory
+        Create your world
       </Link>
       <Link href="/login" className={styles.ctaSecondary}>
         Sign in

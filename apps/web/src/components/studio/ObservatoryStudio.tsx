@@ -1,28 +1,32 @@
 'use client';
 
 // ObservatoryStudio — the /create multi-step creation environment
-// (PATCH-PIVOT-04, DL-42). Steps: World → Identity → Board → Signature →
-// Finish, with a persistent live preview (right pane on desktop, a
-// Preview tab below ~1024px).
+// (PATCH-PIVOT-04, DL-42; adapted at GENESIS R-01). Steps: Identity →
+// Board → Signature → Finish, with a persistent live preview (right pane
+// on desktop, a Preview tab below ~1024px).
 //
-// Persistence model (DL-41/DL-42):
-//   • POSTed to /api/v1/observatories on Finish: name, displayName,
-//     type, publicMode, domainIds, bio, socialLinks, visualSignature.
-//   • LOCAL only (localStorage['rai-observatory-draft'], debounced):
-//     the world choice and the board blocks. After a successful create
-//     the board is re-keyed to `rai-observatory-board-{name}` so it can
-//     attach when board publishing ships.
-//   • Photos are SESSION-ONLY object URLs (no storage provider exists);
-//     they are never sent to the API and do not survive reload.
+// R-01 model: on Finish the board draft is POSTed WITH the base fields as
+// `content` — the world's story persists server-side from day one
+// (R-DL-06). Image blocks carry no binary until media lands (R-02): they
+// are sent as `{ type:'image', caption, pendingMedia:true }` and render
+// as framed placeholder plates. Every world is created `unpublished`;
+// publishing is a deliberate step on the Dashboard.
+//
+// The local draft (localStorage['rai-observatory-draft'], debounced) only
+// bridges page reloads BEFORE the world exists. Photos are session-only
+// object URLs. The v1 `world` (virtual/real) step and the domain pills
+// died at R-01 (kill-map W-11 interim); this whole stepper is replaced by
+// the Composer at R-07.
 //
 // The visual signature is chosen manually — no AI generation.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { GlassCard } from '../ui/GlassCard';
 import { GlassButton } from '../ui/GlassButton';
-import type { DomainDTO } from '../../lib/topology-types';
-import type { VisualSignature } from '../../data/mock-observatories';
+import type { VisualSignature } from '../../lib/topology-types';
+import { draftBoardToContent } from '../../lib/universe-observatories';
 import { NodePreview } from './NodePreview';
 import {
   ObservatoryStory,
@@ -41,26 +45,19 @@ type Block = {
   url?: string;
   /** Session-only object URL — never persisted, never sent to the API. */
   objectUrl?: string;
-  /**
-   * OPTIONAL presentational hints (PATCH-PIVOT-08, DL-49) — additive,
-   * defaulted, ignored when absent so old drafts render unchanged. Set
-   * only via future authoring; the builder does not expose them yet.
-   */
+  /** Optional presentational hints (DL-49) — additive, defaulted. */
   variant?: string;
   fullBleed?: boolean;
 };
 
 type Draft = {
-  world: 'virtual' | 'real' | null;
   name: string;
   displayName: string;
   bio: string;
   type: 'individual' | 'studio' | 'product';
-  domainIds: string[];
   socialLinks: Record<string, string>;
   signature: VisualSignature;
   board: Block[];
-  publicMode: boolean;
 };
 
 const PRESETS: Array<{ label: string; sig: VisualSignature }> = [
@@ -79,19 +76,16 @@ const PRESETS: Array<{ label: string; sig: VisualSignature }> = [
 ];
 
 const EMPTY_DRAFT: Draft = {
-  world: null,
   name: '',
   displayName: '',
   bio: '',
   type: 'individual',
-  domainIds: [],
   socialLinks: {},
   signature: PRESETS[0]!.sig,
   board: [],
-  publicMode: true,
 };
 
-const STEPS = ['World', 'Identity', 'Board', 'Signature', 'Finish'] as const;
+const STEPS = ['Identity', 'Board', 'Signature', 'Finish'] as const;
 const SOCIAL_KEYS = ['github', 'x', 'telegram', 'linkedin', 'email', 'website'] as const;
 const NAME_RE = /^[a-z0-9](?:[a-z0-9-]{1,28})[a-z0-9]$/;
 
@@ -105,10 +99,29 @@ function loadDraft(): Draft {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return EMPTY_DRAFT;
-    const parsed = JSON.parse(raw) as Partial<Draft>;
+    const parsed = JSON.parse(raw) as Partial<Draft> & Record<string, unknown>;
     // Object URLs never survive reload; image blocks come back empty.
-    const board = (parsed.board ?? []).map((b) => ({ ...b, objectUrl: undefined }));
-    return { ...EMPTY_DRAFT, ...parsed, board };
+    // Old drafts may carry retired v1 fields — only the known Draft
+    // fields are lifted, so they simply drop away.
+    const board = (Array.isArray(parsed.board) ? parsed.board : []).map((b) => ({
+      ...(b as Block),
+      objectUrl: undefined,
+    }));
+    return {
+      name: typeof parsed.name === 'string' ? parsed.name : '',
+      displayName: typeof parsed.displayName === 'string' ? parsed.displayName : '',
+      bio: typeof parsed.bio === 'string' ? parsed.bio : '',
+      type:
+        parsed.type === 'studio' || parsed.type === 'product'
+          ? parsed.type
+          : 'individual',
+      socialLinks:
+        parsed.socialLinks && typeof parsed.socialLinks === 'object'
+          ? (parsed.socialLinks as Record<string, string>)
+          : {},
+      signature: (parsed.signature as VisualSignature) ?? EMPTY_DRAFT.signature,
+      board,
+    };
   } catch {
     return EMPTY_DRAFT;
   }
@@ -121,10 +134,9 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
   const [step, setStep] = useState(0);
   const [mobilePane, setMobilePane] = useState<'edit' | 'preview'>('edit');
   const [nameStatus, setNameStatus] = useState<NameStatus>('idle');
-  const [domains, setDomains] = useState<DomainDTO[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [created, setCreated] = useState(false);
+  const [createdName, setCreatedName] = useState<string | null>(null);
 
   // Hydrate the local draft after mount (SSR-safe).
   useEffect(() => {
@@ -160,18 +172,6 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
     return () => {
       urls.forEach((u) => URL.revokeObjectURL(u));
     };
-  }, []);
-
-  // Active domains for the pill selector.
-  useEffect(() => {
-    const c = new AbortController();
-    fetch('/api/v1/domains', { credentials: 'include', signal: c.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: { domains?: DomainDTO[] } | null) => {
-        if (j?.domains) setDomains(j.domains.filter((d) => d.active));
-      })
-      .catch(() => {});
-    return () => c.abort();
   }, []);
 
   // Live name availability (debounced ~300ms).
@@ -258,7 +258,7 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
     draft.displayName.trim().length > 0 &&
     draft.bio.length <= 160;
 
-  // ── Finish: POST base fields only (never board / world / photos). ──
+  // ── Finish: POST base fields + the board as `content` (R-01 §6). ──
   async function submit() {
     if (submitting) return;
     setSubmitting(true);
@@ -272,24 +272,21 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
           name: draft.name,
           displayName: draft.displayName.trim(),
           type: draft.type,
-          publicMode: draft.publicMode,
           bio: draft.bio || undefined,
-          domainIds: draft.domainIds,
           socialLinks: Object.keys(draft.socialLinks).length ? draft.socialLinks : undefined,
           visualSignature: draft.signature,
+          content: draft.board.length > 0 ? draftBoardToContent(draft.board) : undefined,
         }),
       });
       if (res.status === 201) {
-        // Keep the board draft, keyed for later attach; clear the main draft.
+        // The story now lives on the server — the local draft has done
+        // its job.
         try {
-          const board = draft.board.map(({ objectUrl: _drop, ...b }) => b);
-          localStorage.setItem(`rai-observatory-board-${draft.name}`, JSON.stringify(board));
           localStorage.removeItem(DRAFT_KEY);
         } catch {
           /* ignore */
         }
-        setCreated(true);
-        setTimeout(() => router.replace('/dashboard'), 1800);
+        setCreatedName(draft.name);
         return;
       }
       if (res.status === 401) {
@@ -307,12 +304,12 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
       }
       if (res.status === 409 && j?.reason === 'taken') {
         setNameStatus('taken');
-        setStep(1);
+        setStep(0);
         setSubmitError('That name was just taken. Pick another.');
         return;
       }
       setSubmitError(j?.error ?? 'Could not create the observatory. Try again.');
-      if (j?.field === 'name') setStep(1);
+      if (j?.field === 'name') setStep(0);
     } catch {
       setSubmitError('Network error. Check the connection and try again.');
     } finally {
@@ -320,21 +317,25 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
     }
   }
 
-  const activePreviewDomain = domains.find((d) => draft.domainIds.includes(d.id));
-
-  if (created) {
+  if (createdName) {
     return (
       <GlassCard className={styles.success}>
-        <p className={styles.eyebrow}>Observatory created</p>
-        <h2 className={styles.successTitle}>{draft.displayName || draft.name}</h2>
+        <p className={styles.eyebrow}>World created</p>
+        <h2 className={styles.successTitle}>{draft.displayName || createdName}</h2>
+        <p className={styles.addr}>rai.app/@{createdName}</p>
         <p className={styles.help}>
-          Your observatory is created. The board layout is saved on this
-          device and will attach once board publishing ships; photos stay
-          local. Heading to your dashboard.
+          Your world exists — as <strong>unpublished</strong>, so only you can
+          see it until you publish from the dashboard. Your story is saved to
+          it; photos arrive with media support.
         </p>
-        <GlassButton variant="primary" onClick={() => router.replace('/dashboard')}>
-          Go to dashboard
-        </GlassButton>
+        <div className={styles.navRow}>
+          <Link href={`/@${createdName}`} className={styles.resetDraft}>
+            View your world
+          </Link>
+          <GlassButton variant="primary" onClick={() => router.replace('/dashboard')}>
+            Go to dashboard
+          </GlassButton>
+        </div>
       </GlassCard>
     );
   }
@@ -344,7 +345,7 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Observatory Studio</p>
-          <h1 className={styles.title}>Create your observatory</h1>
+          <h1 className={styles.title}>Create your world</h1>
         </div>
         <button type="button" className={styles.resetDraft} onClick={resetDraft}>
           Reset draft
@@ -385,34 +386,6 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
       <div className={styles.body} data-pane={mobilePane}>
         <main className={styles.work}>
           {step === 0 && (
-            <div className={styles.worldGrid}>
-              {(
-                [
-                  ['virtual', 'Virtual', 'Present an idea that may one day become real.'],
-                  ['real', 'Real', 'An existing place on Earth.'],
-                ] as const
-              ).map(([value, label, blurb]) => (
-                <GlassCard key={value} className={styles.worldCard}>
-                  <button
-                    type="button"
-                    className={styles.worldChoice}
-                    aria-pressed={draft.world === value}
-                    data-active={draft.world === value ? 'true' : undefined}
-                    onClick={() => patch({ world: value })}
-                  >
-                    <span className={styles.worldLabel}>{label}</span>
-                    <span className={styles.help}>{blurb}</span>
-                  </button>
-                </GlassCard>
-              ))}
-              <p className={styles.help}>
-                The world choice is saved on this device for now; it is not
-                sent to the API yet.
-              </p>
-            </div>
-          )}
-
-          {step === 1 && (
             <GlassCard className={styles.form}>
               <label className={styles.label} htmlFor="obs-name">
                 Name
@@ -460,33 +433,6 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
                 onChange={(e) => patch({ bio: e.target.value })}
               />
 
-              <p className={styles.label}>Domains (up to 2)</p>
-              <div className={styles.pills}>
-                {domains.map((d) => {
-                  const on = draft.domainIds.includes(d.id);
-                  return (
-                    <button
-                      key={d.id}
-                      type="button"
-                      className={styles.pill}
-                      aria-pressed={on}
-                      data-active={on ? 'true' : undefined}
-                      onClick={() =>
-                        patch({
-                          domainIds: on
-                            ? draft.domainIds.filter((x) => x !== d.id)
-                            : draft.domainIds.length < 2
-                              ? [...draft.domainIds, d.id]
-                              : draft.domainIds,
-                        })
-                      }
-                    >
-                      {d.name}
-                    </button>
-                  );
-                })}
-              </div>
-
               <p className={styles.label}>Type</p>
               <div className={styles.pills}>
                 {(['individual', 'studio', 'product'] as const).map((t) => (
@@ -519,12 +465,11 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
             </GlassCard>
           )}
 
-          {step === 2 && (
+          {step === 1 && (
             <GlassCard className={styles.form}>
               <p className={styles.help}>
-                The board is saved on this device for now. It will attach to
-                your observatory when board publishing ships. Photos stay
-                local and do not survive reload.
+                Your story saves to your world when you create it. Photos are
+                placeholders for now — real images arrive with media support.
               </p>
               {draft.board.length === 0 ? (
                 <p className={styles.empty}>No blocks yet. Start the story below.</p>
@@ -598,7 +543,7 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
             </GlassCard>
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <GlassCard className={styles.form}>
               <p className={styles.label}>Presets</p>
               <div className={styles.pills}>
@@ -673,22 +618,14 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
             </GlassCard>
           )}
 
-          {step === 4 && (
+          {step === 3 && (
             <GlassCard className={styles.form}>
               <p className={styles.help}>
-                Creating persists your identity, domains, links, visibility,
-                and visual signature. The board layout stays on this device
-                until board publishing ships; photos stay local. The world
-                choice is recorded locally.
+                Creating persists your identity, links, visual signature, and
+                your story (the board) to your world. It starts
+                <strong> unpublished</strong> — only you can see it until you
+                publish from the dashboard. Photos arrive with media support.
               </p>
-              <label className={styles.rowField}>
-                <input
-                  type="checkbox"
-                  checked={draft.publicMode}
-                  onChange={(e) => patch({ publicMode: e.target.checked })}
-                />
-                <span className={styles.label}>Public observatory</span>
-              </label>
               {!identityValid && (
                 <p className={styles.error}>
                   Identity is incomplete — the name must be available and the
@@ -701,7 +638,7 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
                 disabled={!identityValid || submitting}
                 onClick={submit}
               >
-                {submitting ? 'Creating…' : 'Create observatory'}
+                {submitting ? 'Creating…' : 'Create world'}
               </GlassButton>
             </GlassCard>
           )}
@@ -724,19 +661,17 @@ export function ObservatoryStudio({ userName }: { userName: string }) {
           <GlassCard className={styles.nodeCard}>
             <NodePreview signature={draft.signature} />
             <p className={styles.nodeName}>{draft.displayName || draft.name || 'Unnamed'}</p>
-            <p className={styles.help}>
-              {draft.world === 'real' ? 'Real place' : draft.world === 'virtual' ? 'Virtual world' : '—'}
-              {activePreviewDomain ? ` · ${activePreviewDomain.name}` : ''}
-            </p>
+            <p className={styles.help}>rai.app/@{draft.name || 'name'}</p>
           </GlassCard>
-          <p className={styles.label}>Observatory view</p>
-          {/* The SAME shared renderer the Explore overlay uses (DL-49), so
-              the studio preview can never diverge from the public story.
-              Board blocks (with local image previews) map to StoryBlocks. */}
+          <p className={styles.label}>World view</p>
+          {/* The SAME shared renderer the Explore overlay and /@name page
+              use (DL-49), so the studio preview can never diverge from the
+              public story. Board blocks (with local image previews) map to
+              StoryBlocks. */}
           <div className={styles.storyPreview}>
             <ObservatoryStory
-              title={draft.displayName || 'Your observatory'}
-              eyebrow={`Observatory${activePreviewDomain ? ` · ${activePreviewDomain.name}` : ''}`}
+              title={draft.displayName || 'Your world'}
+              eyebrow="World"
               metadata={draft.type}
               lede={draft.bio}
               signature={draft.signature}

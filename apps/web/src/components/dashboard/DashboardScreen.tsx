@@ -1,24 +1,37 @@
 'use client';
 
-// DashboardScreen — the owner's observatory management surface
-// (PATCH-PIVOT-06, DL-47). Identity card + "as a node" preview +
-// editable identity form (PATCH /api/v1/me/observatory) + a read-only
-// local board-draft section. `name` is immutable (shown read-only).
+// DashboardScreen — the owner's world management surface (DL-47; adapted
+// at GENESIS R-01). Identity card + "as a node" preview + editable
+// identity form (PATCH /api/v1/me/observatory) + the world's visibility
+// control + a story section. `name` is immutable (shown read-only).
 //
-// The "as a node" preview reuses the studio's SVG NodePreview (no second
-// heavy 3D mount) and colors the orb by the parent domain (DL-45), so it
-// matches how the observatory reads on the Explore graph.
+// R-01 model:
+//   • Visibility is the single publishing control — a 3-state choice
+//     (unpublished / private / public) PATCHed to the API; publishedAt is
+//     stamped server-side on the first transition to public.
+//   • The world URL rai.app/@name is shown with copy + view actions.
+//   • "Save story to your world" uploads the local board draft as server
+//     `content` (image blocks → pendingMedia placeholders until R-02).
+// The domain pills and the domain-colored node preview died with the
+// domain layer (R-DL-02); the node preview is now the world's own
+// signature (R-DL-10). This screen is simplified further at R-08.
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { GlassCard } from '../ui/GlassCard';
 import { GlassButton } from '../ui/GlassButton';
 import { NodePreview } from '../studio/NodePreview';
 import { useAuth } from '../../hooks/useAuth';
-import { domainColor } from '../topology/topology-layout';
-import type { DomainDTO } from '../../lib/topology-types';
-import type { VisualSignature } from '../../data/mock-observatories';
+import type {
+  ContentBlock,
+  ObservatoryVisibility,
+  VisualSignature,
+} from '../../lib/topology-types';
+import {
+  draftBoardToContent,
+  type DraftBoardBlock,
+} from '../../lib/universe-observatories';
 import styles from './DashboardScreen.module.css';
 
 export interface OwnerObservatory {
@@ -26,13 +39,14 @@ export interface OwnerObservatory {
   name: string;
   displayName: string;
   type: 'individual' | 'studio' | 'product';
-  publicMode: boolean;
-  domainIds: string[];
+  visibility: ObservatoryVisibility;
+  content: ContentBlock[] | null;
   bio: string | null;
   socialLinks: Record<string, string> | null;
   visualSignature: VisualSignature | null;
   reputationScore: number;
   publicationsCount: number;
+  publishedAt: string | null;
 }
 
 const SOCIAL_KEYS = ['github', 'x', 'telegram', 'linkedin', 'email', 'website'] as const;
@@ -40,6 +54,16 @@ const TYPES = ['individual', 'studio', 'product'] as const;
 const AMBIENTS = ['glow', 'pulse', 'static', 'drift'] as const;
 const NODE_STYLES = ['point', 'ring', 'pulse', 'cross'] as const;
 const DRAFT_KEY = 'rai-observatory-draft';
+
+const VISIBILITIES: Array<{
+  value: ObservatoryVisibility;
+  label: string;
+  blurb: string;
+}> = [
+  { value: 'unpublished', label: 'Unpublished', blurb: 'Only you can see it.' },
+  { value: 'private', label: 'Private', blurb: 'Anyone with the link.' },
+  { value: 'public', label: 'Public', blurb: 'On the universe graph.' },
+];
 
 const DEFAULT_SIGNATURE: VisualSignature = {
   primaryColor: '#4a7dbf',
@@ -56,9 +80,8 @@ type Form = {
   displayName: string;
   bio: string;
   type: OwnerObservatory['type'];
-  domainIds: string[];
   socialLinks: Record<string, string>;
-  publicMode: boolean;
+  visibility: ObservatoryVisibility;
   signature: VisualSignature;
 };
 
@@ -67,33 +90,35 @@ function toForm(o: OwnerObservatory): Form {
     displayName: o.displayName,
     bio: o.bio ?? '',
     type: o.type,
-    domainIds: [...o.domainIds],
     socialLinks: { ...(o.socialLinks ?? {}) },
-    publicMode: o.publicMode,
+    visibility: o.visibility,
     signature: o.visualSignature ?? DEFAULT_SIGNATURE,
   };
 }
 
-function readBoardDraft(): { count: number; name?: string } | null {
+// The local board draft: the studio's current draft, or the board stashed
+// by a v1 create (`rai-observatory-board-{name}`), whichever holds blocks.
+function readBoardDraft(name: string): DraftBoardBlock[] {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as { board?: unknown[]; name?: string };
-    const count = Array.isArray(parsed.board) ? parsed.board.length : 0;
-    if (count === 0) return null;
-    return { count, name: parsed.name };
+    if (raw) {
+      const parsed = JSON.parse(raw) as { board?: DraftBoardBlock[] };
+      if (Array.isArray(parsed.board) && parsed.board.length > 0) {
+        return parsed.board;
+      }
+    }
+    const legacy = localStorage.getItem(`rai-observatory-board-${name}`);
+    if (legacy) {
+      const parsed = JSON.parse(legacy) as DraftBoardBlock[];
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+    return [];
   } catch {
-    return null;
+    return [];
   }
 }
 
-export function DashboardScreen({
-  initial,
-  domains,
-}: {
-  initial: OwnerObservatory;
-  domains: DomainDTO[];
-}) {
+export function DashboardScreen({ initial }: { initial: OwnerObservatory }) {
   const router = useRouter();
   const { signOut } = useAuth();
   const [current, setCurrent] = useState<OwnerObservatory>(initial);
@@ -102,72 +127,109 @@ export function DashboardScreen({
   const [status, setStatus] = useState<
     { kind: 'success' } | { kind: 'error'; message: string } | null
   >(null);
-  const boardDraft = useRef(readBoardDraft()).current;
+  const [copied, setCopied] = useState(false);
+  const [storySaving, setStorySaving] = useState(false);
+  const [storyStatus, setStoryStatus] = useState<
+    { kind: 'success' } | { kind: 'error'; message: string } | null
+  >(null);
+  // Read once per mount; re-read after a successful story save.
+  const [boardDraft, setBoardDraft] = useState<DraftBoardBlock[]>(() =>
+    typeof window === 'undefined' ? [] : readBoardDraft(initial.name),
+  );
 
   const patch = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }));
 
-  const domainName = (id: string) => domains.find((d) => d.id === id)?.name ?? null;
-  const domainSlug = (id: string) => domains.find((d) => d.id === id)?.slug ?? '';
-
-  // Parent-domain color for the node preview (DL-45): first domain's
-  // color as primary, the observatory's signature accent as accent.
-  const previewSignature: VisualSignature = useMemo(() => {
-    const firstSlug = domainSlug(form.domainIds[0] ?? '');
-    const raw = domainColor(firstSlug);
-    const primary = raw.startsWith('#') ? raw : form.signature.primaryColor;
-    return { ...form.signature, primaryColor: primary };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.signature, form.domainIds, domains]);
+  const worldUrl = `rai.app/@${current.name}`;
+  const savedBlocks = Array.isArray(current.content) ? current.content.length : 0;
 
   const dirty = useMemo(
     () => JSON.stringify(form) !== JSON.stringify(toForm(current)),
     [form, current],
   );
 
-  async function save() {
-    if (saving) return;
-    setSaving(true);
-    setStatus(null);
+  async function patchObservatory(
+    body: Record<string, unknown>,
+  ): Promise<{ ok: true; observatory: OwnerObservatory } | { ok: false; message: string }> {
     try {
-      const socialLinks = Object.fromEntries(
-        Object.entries(form.socialLinks).filter(([, v]) => v.trim().length > 0),
-      );
       const res = await fetch('/api/v1/me/observatory', {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          displayName: form.displayName.trim(),
-          bio: form.bio.trim() || null,
-          type: form.type,
-          domainIds: form.domainIds,
-          socialLinks,
-          publicMode: form.publicMode,
-          visualSignature: form.signature,
-        }),
+        body: JSON.stringify(body),
       });
       if (res.status === 401) {
         router.replace('/login');
-        return;
+        return { ok: false, message: 'Signed out.' };
       }
       if (res.status === 404) {
         router.replace('/create');
-        return;
+        return { ok: false, message: 'No world yet.' };
       }
       const data = (await res.json().catch(() => null)) as
         | { observatory?: OwnerObservatory; error?: string }
         | null;
       if (res.ok && data?.observatory) {
-        setCurrent(data.observatory);
-        setForm(toForm(data.observatory));
-        setStatus({ kind: 'success' });
-        return;
+        return { ok: true, observatory: data.observatory };
       }
-      setStatus({ kind: 'error', message: data?.error ?? 'Could not save. Try again.' });
+      return { ok: false, message: data?.error ?? 'Could not save. Try again.' };
     } catch {
-      setStatus({ kind: 'error', message: 'Network error. Try again.' });
-    } finally {
-      setSaving(false);
+      return { ok: false, message: 'Network error. Try again.' };
+    }
+  }
+
+  async function save() {
+    if (saving) return;
+    setSaving(true);
+    setStatus(null);
+    const socialLinks = Object.fromEntries(
+      Object.entries(form.socialLinks).filter(([, v]) => v.trim().length > 0),
+    );
+    const result = await patchObservatory({
+      displayName: form.displayName.trim(),
+      bio: form.bio.trim() || null,
+      type: form.type,
+      socialLinks,
+      visibility: form.visibility,
+      visualSignature: form.signature,
+    });
+    if (result.ok) {
+      setCurrent(result.observatory);
+      setForm(toForm(result.observatory));
+      setStatus({ kind: 'success' });
+    } else {
+      setStatus({ kind: 'error', message: result.message });
+    }
+    setSaving(false);
+  }
+
+  // "Save story to your world" (R-01): the local draft board becomes the
+  // world's server content. Image blocks upload as pendingMedia
+  // placeholders — real images arrive with media support (R-02).
+  async function saveStory() {
+    if (storySaving || boardDraft.length === 0) return;
+    setStorySaving(true);
+    setStoryStatus(null);
+    const result = await patchObservatory({
+      content: draftBoardToContent(boardDraft),
+    });
+    if (result.ok) {
+      setCurrent(result.observatory);
+      setForm(toForm(result.observatory));
+      setStoryStatus({ kind: 'success' });
+      setBoardDraft(readBoardDraft(result.observatory.name));
+    } else {
+      setStoryStatus({ kind: 'error', message: result.message });
+    }
+    setStorySaving(false);
+  }
+
+  async function copyUrl() {
+    try {
+      await navigator.clipboard.writeText(`https://${worldUrl}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard unavailable — the URL is visible to select manually */
     }
   }
 
@@ -185,7 +247,7 @@ export function DashboardScreen({
         <div>
           <p className={styles.eyebrow}>Dashboard</p>
           <h1 className={styles.title}>{current.displayName}</h1>
-          <p className={styles.addr}>rai.app/@{current.name}</p>
+          <p className={styles.addr}>{worldUrl}</p>
         </div>
         <div className={styles.headerNav}>
           <Link href="/explore" className={styles.navLink}>
@@ -200,11 +262,11 @@ export function DashboardScreen({
       <div className={styles.grid}>
         {/* Identity card */}
         <GlassCard className={styles.card}>
-          <p className={styles.cardLabel}>Identity</p>
+          <p className={styles.cardLabel}>Your world</p>
           <dl className={styles.identity}>
             <div className={styles.row}>
               <dt>Address</dt>
-              <dd className={styles.mono}>rai.app/@{current.name}</dd>
+              <dd className={styles.mono}>{worldUrl}</dd>
             </div>
             <div className={styles.row}>
               <dt>Display name</dt>
@@ -216,34 +278,26 @@ export function DashboardScreen({
             </div>
             <div className={styles.row}>
               <dt>Visibility</dt>
-              <dd>{current.publicMode ? 'Public' : 'Private'}</dd>
+              <dd className={styles.badge}>{current.visibility}</dd>
             </div>
           </dl>
           {current.bio ? <p className={styles.bio}>{current.bio}</p> : null}
           <div className={styles.pills}>
-            {current.domainIds.length === 0 ? (
-              <span className={styles.muted}>No domains</span>
-            ) : (
-              current.domainIds.map((id) => (
-                <span key={id} className={styles.domainPill}>
-                  <span
-                    className={styles.dot}
-                    style={{ background: domainColor(domainSlug(id)) }}
-                    aria-hidden="true"
-                  />
-                  {domainName(id) ?? 'domain'}
-                </span>
-              ))
-            )}
+            <button type="button" className={styles.pill} onClick={copyUrl}>
+              {copied ? 'Copied' : 'Copy link'}
+            </button>
+            <Link href={`/@${current.name}`} className={styles.pill}>
+              View world
+            </Link>
           </div>
           <dl className={styles.stats}>
             <div>
-              <dt>Reputation</dt>
-              <dd className={styles.mono}>{current.reputationScore}</dd>
+              <dt>Story blocks</dt>
+              <dd className={styles.mono}>{savedBlocks}</dd>
             </div>
             <div>
-              <dt>Publications</dt>
-              <dd className={styles.mono}>{current.publicationsCount}</dd>
+              <dt>Reputation</dt>
+              <dd className={styles.mono}>{current.reputationScore}</dd>
             </div>
           </dl>
         </GlassCard>
@@ -251,20 +305,43 @@ export function DashboardScreen({
         {/* As a node */}
         <GlassCard className={`${styles.card} ${styles.nodeCard}`}>
           <p className={styles.cardLabel}>As a node</p>
-          <NodePreview signature={previewSignature} />
+          <NodePreview signature={form.signature} />
           <p className={styles.muted}>
-            How your observatory reads in the universe — colored by its
-            domain.
+            How your world reads in the universe — colored by your visual
+            signature.
+            {current.visibility !== 'public'
+              ? ' It appears on the graph once the world is public.'
+              : ''}
           </p>
         </GlassCard>
 
-        {/* Edit identity */}
+        {/* Edit identity + visibility */}
         <GlassCard className={`${styles.card} ${styles.editCard}`}>
-          <p className={styles.cardLabel}>Edit identity</p>
+          <p className={styles.cardLabel}>Edit</p>
+
+          <p className={styles.fieldLabel}>Visibility</p>
+          <div className={styles.pills}>
+            {VISIBILITIES.map((v) => (
+              <button
+                key={v.value}
+                type="button"
+                className={styles.pill}
+                data-active={form.visibility === v.value ? 'true' : undefined}
+                aria-pressed={form.visibility === v.value}
+                title={v.blurb}
+                onClick={() => patch({ visibility: v.value })}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+          <p className={styles.muted}>
+            {VISIBILITIES.find((v) => v.value === form.visibility)?.blurb}
+          </p>
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Address (permanent)</span>
-            <input className={styles.input} value={`rai.app/@${current.name}`} readOnly />
+            <input className={styles.input} value={worldUrl} readOnly />
           </label>
 
           <label className={styles.field}>
@@ -303,42 +380,6 @@ export function DashboardScreen({
               </button>
             ))}
           </div>
-
-          <p className={styles.fieldLabel}>Domains (up to 2)</p>
-          <div className={styles.pills}>
-            {domains.map((d) => {
-              const on = form.domainIds.includes(d.id);
-              return (
-                <button
-                  key={d.id}
-                  type="button"
-                  className={styles.pill}
-                  data-active={on ? 'true' : undefined}
-                  aria-pressed={on}
-                  onClick={() =>
-                    patch({
-                      domainIds: on
-                        ? form.domainIds.filter((x) => x !== d.id)
-                        : form.domainIds.length < 2
-                          ? [...form.domainIds, d.id]
-                          : form.domainIds,
-                    })
-                  }
-                >
-                  {d.name}
-                </button>
-              );
-            })}
-          </div>
-
-          <label className={styles.checkRow}>
-            <input
-              type="checkbox"
-              checked={form.publicMode}
-              onChange={(e) => patch({ publicMode: e.target.checked })}
-            />
-            <span className={styles.fieldLabel}>Public observatory</span>
-          </label>
 
           <p className={styles.fieldLabel}>Social links</p>
           {SOCIAL_KEYS.map((k) => (
@@ -435,30 +476,36 @@ export function DashboardScreen({
           </div>
         </GlassCard>
 
-        {/* Board draft */}
+        {/* Story */}
         <GlassCard className={`${styles.card} ${styles.boardCard}`}>
-          <p className={styles.cardLabel}>Your board (local draft)</p>
-          {boardDraft ? (
+          <p className={styles.cardLabel}>Your story</p>
+          <p className={styles.muted}>
+            {savedBlocks > 0
+              ? `${savedBlocks} block${savedBlocks === 1 ? '' : 's'} saved to your world.`
+              : 'Your world has no story yet.'}
+          </p>
+          {boardDraft.length > 0 ? (
             <>
               <p className={styles.muted}>
-                {boardDraft.count} block{boardDraft.count === 1 ? '' : 's'} saved on
-                this device. Board publishing to the universe is coming; for
-                now the board and its photos stay local.
+                A local draft with {boardDraft.length} block
+                {boardDraft.length === 1 ? '' : 's'} is on this device. Saving
+                replaces the world&rsquo;s story; photos upload as
+                placeholders until media support ships.
               </p>
-              <Link href="/create" className={styles.navLink}>
-                Continue in the studio
-              </Link>
+              {storyStatus?.kind === 'error' ? (
+                <p className={styles.error}>{storyStatus.message}</p>
+              ) : null}
+              {storyStatus?.kind === 'success' ? (
+                <p className={styles.success}>Story saved to your world.</p>
+              ) : null}
+              <GlassButton disabled={storySaving} onClick={saveStory}>
+                {storySaving ? 'Saving…' : 'Save story to your world'}
+              </GlassButton>
             </>
           ) : (
-            <>
-              <p className={styles.muted}>
-                No board yet. Build the rooms, notes, and images that make up
-                your observatory&rsquo;s story.
-              </p>
-              <Link href="/create" className={styles.navLink}>
-                Build your board
-              </Link>
-            </>
+            <Link href="/create" className={styles.navLink}>
+              {savedBlocks > 0 ? 'Edit in the studio' : 'Build your story'}
+            </Link>
           )}
         </GlassCard>
       </div>

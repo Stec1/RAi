@@ -4,7 +4,7 @@
 // reuses its CSS module so the ambient motion — and its
 // prefers-reduced-motion fallbacks — match the real topology exactly.
 
-import type { VisualSignature } from '../../data/mock-observatories';
+import type { VisualSignature } from '../../lib/topology-types';
 import obsStyles from '../topology/TopologyObservatories.module.css';
 
 export function NodePreview({ signature }: { signature: VisualSignature }) {
