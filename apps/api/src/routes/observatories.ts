@@ -1,40 +1,77 @@
-// Observatory routes (mounted at /api/v1/observatories).
-//   GET  /check/:name  — public name availability (ISSUE-05)
-//   GET  /             — public list for discovery (PATCH-PIVOT-06, DL-46)
-//   POST /             — create the caller's observatory (PP-04, DL-41)
+// Observatory routes (mounted at /api/v1/observatories) — API v2 core
+// (GENESIS R-01).
+//   GET  /check/:name   — public name availability (unchanged)
+//   GET  /              — public GRAPH LIST: visibility=public only, no content
+//   GET  /by-name/:name — resolve a world for its public page (/@name)
+//   POST /              — create the caller's world (always unpublished)
 
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { fromNodeHeaders } from 'better-auth/node';
 import {
   isReserved,
   normalizeObservatoryName,
   validateObservatoryNameFormat,
 } from '@rai/shared';
+import { auth } from '../lib/auth.js';
 import { prisma } from '../lib/prisma.js';
 import type { Prisma } from '../../prisma/generated/prisma/client/client.js';
 import {
   OBSERVATORY_TYPES,
   type ObservatoryTypeInput,
   isPrismaUniqueViolation,
+  validateContent,
   validateSocialLinks,
   validateVisualSignature,
 } from '../lib/observatory-validation.js';
 
-// Base public fields for discovery — never leaks private columns.
-const PUBLIC_LIST_SELECT = {
+// Graph-list fields (R-01 §4): identity + signature + freshness only —
+// never content, never private columns.
+const GRAPH_LIST_SELECT = {
   id: true,
   name: true,
   displayName: true,
   type: true,
-  domainIds: true,
   visualSignature: true,
-  reputationScore: true,
-  publicationsCount: true,
+  publishedAt: true,
+  updatedAt: true,
 } as const;
 
-const PUBLIC_LIST_LIMIT = 500;
+const GRAPH_LIST_LIMIT = 500;
+
+// The full world as its public page renders it (by-name). userId is
+// selected for the owner check only and is stripped before send.
+const WORLD_SELECT = {
+  id: true,
+  userId: true,
+  name: true,
+  displayName: true,
+  type: true,
+  visibility: true,
+  content: true,
+  visualSignature: true,
+  bio: true,
+  socialLinks: true,
+  publishedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+// Resolve the caller's user id if a session cookie is present; null
+// otherwise. The optional-auth counterpart of the auth-guard plugin's
+// requireAuth (same Better Auth session lookup, no 401).
+async function optionalUserId(request: FastifyRequest): Promise<string | null> {
+  try {
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(request.headers),
+    });
+    return session?.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export default async function observatoriesRoutes(server: FastifyInstance) {
-  // GET /check/:name — availability.
+  // GET /check/:name — availability (unchanged from ISSUE-05).
   server.get<{ Params: { name: string } }>(
     '/check/:name',
     { preHandler: server.observatoryRateLimit },
@@ -43,8 +80,7 @@ export default async function observatoriesRoutes(server: FastifyInstance) {
 
       const formatCheck = validateObservatoryNameFormat(normalized);
       // Narrow via `in`: the `reason` property only exists on the invalid
-      // variant of the discriminated union, so this is semantically equal
-      // to `!formatCheck.valid` but narrows reliably across TS configs.
+      // variant of the discriminated union.
       if ('reason' in formatCheck) {
         reply.status(400).send({ available: false, reason: formatCheck.reason });
         return;
@@ -68,44 +104,73 @@ export default async function observatoriesRoutes(server: FastifyInstance) {
     },
   );
 
-  // GET / — public list for the Explore graph (PATCH-PIVOT-06, DL-46).
-  // No auth: public discovery. Only publicMode observatories, base fields
-  // only, capped. Rate-limited via the existing observatory limiter.
+  // GET / — the public graph list (R-01 §4). ONLY public worlds, no
+  // content. Feeds the Explore universe.
   server.get(
     '/',
     { preHandler: server.observatoryRateLimit },
     async () => {
       const observatories = await prisma.observatory.findMany({
-        where: { publicMode: true },
-        select: PUBLIC_LIST_SELECT,
-        orderBy: [{ reputationScore: 'desc' }, { createdAt: 'asc' }],
-        take: PUBLIC_LIST_LIMIT,
+        where: { visibility: 'public' },
+        select: GRAPH_LIST_SELECT,
+        orderBy: { createdAt: 'asc' },
+        take: GRAPH_LIST_LIMIT,
       });
       return { observatories };
     },
   );
 
-  // POST / — create (PATCH-PIVOT-04, DL-41). Defined below; function
-  // declarations hoist, so the same registered plugin wires all routes.
+  // GET /by-name/:name — resolve a world for its public page (R-01 §4).
+  // Visibility guard:
+  //   public | private → 200 for anyone (private is URL-only: it simply
+  //                      never appears on the graph list above)
+  //   unpublished      → 200 ONLY for the authenticated owner, else 404
+  //                      (404, not 403 — existence is not disclosed)
+  server.get<{ Params: { name: string } }>(
+    '/by-name/:name',
+    { preHandler: server.observatoryRateLimit },
+    async (request, reply) => {
+      const name = normalizeObservatoryName(request.params.name);
+      const row = await prisma.observatory.findUnique({
+        where: { name },
+        select: WORLD_SELECT,
+      });
+      if (!row) {
+        reply.status(404).send({ error: 'No such world' });
+        return;
+      }
+      // userId never leaves the server — split it off the payload here
+      // and use it only for the unpublished owner check.
+      const { userId: ownerId, ...world } = row;
+      if (world.visibility === 'unpublished') {
+        const viewerId = await optionalUserId(request);
+        if (!viewerId || viewerId !== ownerId) {
+          reply.status(404).send({ error: 'No such world' });
+          return;
+        }
+      }
+      return { observatory: world };
+    },
+  );
+
   await observatoryCreateRoutes(server);
 }
 
 // ---------------------------------------------------------------------------
-// Observatory create (PATCH-PIVOT-04, DL-41).
+// Observatory create (DL-41, evolved at GENESIS R-01).
 //
 // POST /api/v1/observatories   (auth required — same context as /api/me)
-//   201 { id, name, displayName, type, publicMode, domainIds, bio,
-//         socialLinks, visualSignature }
+//   201 { id, name, displayName, type, visibility, content, bio,
+//         socialLinks, visualSignature, publishedAt, createdAt, updatedAt }
 //   400 { error, field?, reason? }   validation failure
 //   401 { error }                    no session
 //   409 { error, reason: 'already_exists' | 'taken' }
 //   429                              rate limited (10/min/IP)
 //
-// Persists BASE FIELDS ONLY — the studio's board, photos, and `world`
-// choice are local drafts until the content model and storage provider
-// land (DL-39/DL-42). No schema change: every column pre-exists.
-// One-per-user is enforced twice: the handler guard below and the
-// `Observatory.userId @unique` DB backstop (P2002 → 409). No credit cost.
+// R-01 contract: every world is created `unpublished` — client-sent
+// visibility is IGNORED. Optional `content` (the studio board) is
+// validated + cleaned per observatory-validation caps. One-per-user is
+// enforced twice: the handler guard and the `userId @unique` DB backstop.
 // ---------------------------------------------------------------------------
 
 interface CreateObservatoryBody {
@@ -113,10 +178,9 @@ interface CreateObservatoryBody {
   displayName?: unknown;
   type?: unknown;
   bio?: unknown;
-  domainIds?: unknown;
   socialLinks?: unknown;
   visualSignature?: unknown;
-  publicMode?: unknown;
+  content?: unknown;
 }
 
 export async function observatoryCreateRoutes(server: FastifyInstance) {
@@ -210,35 +274,6 @@ export async function observatoryCreateRoutes(server: FastifyInstance) {
         bio = body.bio;
       }
 
-      // domainIds (optional, 0–2, each an existing ACTIVE domain)
-      let domainIds: string[] = [];
-      if (body.domainIds !== undefined && body.domainIds !== null) {
-        if (
-          !Array.isArray(body.domainIds) ||
-          body.domainIds.length > 2 ||
-          !body.domainIds.every((id) => typeof id === 'string')
-        ) {
-          reply
-            .status(400)
-            .send({ error: 'domainIds must be up to 2 domain ids', field: 'domainIds' });
-          return;
-        }
-        domainIds = [...new Set(body.domainIds as string[])];
-        if (domainIds.length > 0) {
-          const found = await prisma.domain.findMany({
-            where: { id: { in: domainIds }, active: true },
-            select: { id: true },
-          });
-          if (found.length !== domainIds.length) {
-            reply.status(400).send({
-              error: 'domainIds must reference active domains',
-              field: 'domainIds',
-            });
-            return;
-          }
-        }
-      }
-
       // socialLinks (optional, known keys only, url/email shape)
       let socialLinks: Record<string, string> | null = null;
       if (body.socialLinks !== undefined && body.socialLinks !== null) {
@@ -261,16 +296,15 @@ export async function observatoryCreateRoutes(server: FastifyInstance) {
         visualSignature = body.visualSignature as Record<string, unknown>;
       }
 
-      // publicMode (optional, default true)
-      let publicMode = true;
-      if (body.publicMode !== undefined && body.publicMode !== null) {
-        if (typeof body.publicMode !== 'boolean') {
-          reply
-            .status(400)
-            .send({ error: 'publicMode must be a boolean', field: 'publicMode' });
+      // content (optional — the studio board; validated + cleaned, R-01 §2.5)
+      let content: Prisma.InputJsonValue | undefined;
+      if (body.content !== undefined && body.content !== null) {
+        const result = validateContent(body.content);
+        if ('error' in result) {
+          reply.status(400).send({ error: result.error, field: 'content' });
           return;
         }
-        publicMode = body.publicMode;
+        content = result.blocks as unknown as Prisma.InputJsonValue;
       }
 
       try {
@@ -280,22 +314,28 @@ export async function observatoryCreateRoutes(server: FastifyInstance) {
             name,
             displayName,
             type,
-            publicMode,
-            domainIds,
+            // R-01 contract: worlds are born unpublished; publishing is a
+            // deliberate PATCH from the dashboard. Client-sent visibility
+            // is ignored by design.
+            visibility: 'unpublished',
             bio,
             socialLinks: socialLinks ?? undefined,
             visualSignature: (visualSignature as Prisma.InputJsonValue | null) ?? undefined,
+            content,
           },
           select: {
             id: true,
             name: true,
             displayName: true,
             type: true,
-            publicMode: true,
-            domainIds: true,
+            visibility: true,
+            content: true,
             bio: true,
             socialLinks: true,
             visualSignature: true,
+            publishedAt: true,
+            createdAt: true,
+            updatedAt: true,
           },
         });
         reply.status(201).send(created);

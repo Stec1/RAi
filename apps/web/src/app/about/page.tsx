@@ -49,12 +49,10 @@ export default function AboutPage() {
                 What RAI is
               </h2>
               <p className={styles.paragraph}>
-                RAI is a universe of observatories — real places, virtual
-                worlds, and the stories people tell about them. You arrive in
-                a living graph: RA at the center, seven domains around it,
-                observatories settling near the domains they belong to. Each
-                observatory opens as a full-screen art-story — one subject,
-                told well.
+                RAI is one universe of worlds. You arrive in a living graph:
+                RA — the mind at the center — with every world people have
+                composed glowing around it. Each world opens as a full-screen
+                art-story — one subject, told well.
               </p>
               <p className={styles.paragraph}>
                 <strong>RAI shows. RAI does not execute.</strong> The platform
@@ -70,21 +68,21 @@ export default function AboutPage() {
             <div className={styles.inner}>
               <p className={styles.tag}>How it&apos;s organized</p>
               <h2 id="structure-heading" className={styles.subheading}>
-                Observatories and Domains
+                RA and the worlds
               </h2>
               <ul className={styles.list}>
                 <li className={styles.listItem}>
-                  <strong>Observatory.</strong> Your place in the RAI universe:
-                  an art-story about something real — a castle, a restaurant,
-                  a street, an event, a business — or something virtual, like
-                  generative art or an imagined space. Any format: narrative,
-                  gallery, graph, presentation room, and 3D in the future.
+                  <strong>RA.</strong> The mind at the center of the universe
+                  and its only fixed point. Every world visibly originates
+                  from it — RA composed the universe&apos;s first worlds
+                  itself.
                 </li>
                 <li className={styles.listItem}>
-                  <strong>Domain.</strong> Seven domains give the universe its
-                  thematic structure. Three are active today; four are being
-                  prepared. An observatory settles near the domain its story
-                  belongs to.
+                  <strong>World.</strong> Your place in the RAI universe — an
+                  observatory: an art-story about something real — a castle, a
+                  restaurant, a street, an event, a business — or something
+                  virtual, like generative art or an imagined space. One per
+                  person, with a permanent address.
                 </li>
                 <li className={styles.listItem}>
                   <strong>Art-story.</strong> The unit of publication: one

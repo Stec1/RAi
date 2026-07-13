@@ -5,170 +5,176 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 // ---------------------------------------------------------------------------
-// Domain seed data — from docs/domain-definitions.md
-// Deterministic UUIDs — never auto-generated
+// GENESIS R-01 seed — RA's first worlds (R-DL-03).
+//
+// The universe is RA + Observatories; there are no domains. The two worlds
+// below are RA's own — the founding examples, publicly visible from day one.
+// Each is owned by a SYSTEM user that cannot log in: the user has NO
+// credential Account row (Better Auth email sign-in requires one), and the
+// emails live under the reserved @system.rai.internal namespace.
+//
+// Idempotent: everything upserts by deterministic id / unique name, and the
+// script never deletes or modifies real user rows. The v1 domain seed and
+// the v1 test users/observatories are gone (kill-map P-02); any previously
+// seeded v1 test rows in a live database are left untouched (OQ-08 —
+// founder decision on production cleanup).
 // ---------------------------------------------------------------------------
 
-const domains = [
+const SYSTEM_USERS = [
   {
-    id: 'd0000000-0000-0000-0000-000000000001',
-    name: 'Nexum',
-    slug: 'nexum',
-    description:
-      'Engineers, AI researchers, developers, and builders of digital infrastructure. Fast-moving, signal-rich. The primary Domain for AI agent creators and tool builders.',
-    theme: 'Technology, AI, development',
-    positionX: 340,
-    positionY: -160,
-    active: true,
+    id: 'a0000000-0000-0000-0000-000000000001',
+    email: 'wawel@system.rai.internal',
+    name: 'RA',
   },
   {
-    id: 'd0000000-0000-0000-0000-000000000002',
-    name: 'Keth',
-    slug: 'keth',
-    description:
-      'Founders, product managers, strategists, investors, and those who build organizations and products at scale. AI systems focused on business intelligence, operations, and growth.',
-    theme: 'Business, entrepreneurship, products',
-    positionX: 420,
-    positionY: 80,
-    active: true,
-  },
-  {
-    id: 'd0000000-0000-0000-0000-000000000003',
-    name: 'Solum',
-    slug: 'solum',
-    description:
-      'Scientists, researchers, academics, educators, and those who build understanding through evidence. AI systems focused on data analysis, scientific reasoning, and knowledge synthesis.',
-    theme: 'Science, research, knowledge',
-    positionX: 200,
-    positionY: 300,
-    active: true,
-  },
-  {
-    id: 'd0000000-0000-0000-0000-000000000004',
-    name: 'Vorda',
-    slug: 'vorda',
-    description:
-      'Visual artists, graphic designers, illustrators, architects, typographers, and anyone who builds with aesthetic intent. AI systems focused on creative generation and design.',
-    theme: 'Creativity, art, design',
-    positionX: -320,
-    positionY: -180,
-    active: false,
-  },
-  {
-    id: 'd0000000-0000-0000-0000-000000000005',
-    name: 'Lyren',
-    slug: 'lyren',
-    description:
-      'Musicians, producers, sound designers, DJs, composers, and those who work in the domain of audio and time. AI systems focused on sound generation and music.',
-    theme: 'Music, sound, performance',
-    positionX: -280,
-    positionY: 240,
-    active: false,
-  },
-  {
-    id: 'd0000000-0000-0000-0000-000000000006',
-    name: 'Auren',
-    slug: 'auren',
-    description:
-      'Philosophers, ecologists, writers, and those who work at the boundary between systems and meaning. AI systems focused on synthesis, ethics, and long-term reasoning.',
-    theme: 'Nature, philosophy, reflection',
-    positionX: -400,
-    positionY: 40,
-    active: false,
-  },
-  {
-    id: 'd0000000-0000-0000-0000-000000000007',
-    name: 'Draxis',
-    slug: 'draxis',
-    description:
-      'Experimenters, hackers of systems and culture, and those who resist categorization. AI systems that push boundaries and explore undefined territory.',
-    theme: 'The unknown, experimentation, edges',
-    positionX: 60,
-    positionY: -380,
-    active: false,
+    id: 'a0000000-0000-0000-0000-000000000002',
+    email: 'signal-garden@system.rai.internal',
+    name: 'RA',
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Test data — deterministic UUIDs
-// ---------------------------------------------------------------------------
-
-const testUsers = [
+// Ordered content blocks (shared ContentBlock shape). Image blocks are
+// absent by design — media arrives at R-02. The first note block frames
+// each world as RA's own (concept.md §3).
+const RA_WORLDS = [
   {
-    id: 't0000000-0000-0000-0000-000000000001',
-    email: 'testuser1@rai.test',
-    name: 'Test User One',
+    id: 'b0000000-0000-0000-0000-000000000001',
+    userId: SYSTEM_USERS[0]!.id,
+    name: 'wawel-dragons-hill',
+    displayName: "Wawel: The Dragon's Hill",
+    type: 'individual' as const,
+    visibility: 'public' as const,
+    bio: "One of RA's own first worlds: a limestone hill, a thousand years of Kraków, and the fire underneath.",
+    visualSignature: {
+      primaryColor: '#d08a4e',
+      secondaryColor: '#8a4a32',
+      gradientAngle: 24,
+      ambientEffect: 'glow',
+      effectIntensity: 0.6,
+      surfaceStyle: 'grain',
+      accentColor: '#ffd9a8',
+      nodeStyle: 'ring',
+    },
+    content: [
+      {
+        id: 'wawel-ra-note',
+        type: 'note',
+        text: 'This is one of the first worlds in the universe — composed by RA, the mind at the center, so no one arrives to an empty sky.',
+      },
+      { id: 'wawel-h-overture', type: 'heading', text: 'Overture' },
+      {
+        id: 'wawel-t-overture',
+        type: 'text',
+        text: 'Every city keeps one place where its whole story can stand in a single view. For Kraków it is Wawel: cathedral, castle, and rock, stacked on a bend of the Vistula. You arrive expecting architecture. You leave having read a biography.',
+      },
+      { id: 'wawel-h-hill', type: 'heading', text: 'The Hill' },
+      {
+        id: 'wawel-t-hill',
+        type: 'text',
+        text: 'The hill came first. Limestone, riddled with caves, settled long before any crown arrived. Kings built on it because the river bends there and the plain is visible in every direction. Coronations, fires, partitions, restorations — the hill absorbed each one and kept its shape.',
+      },
+      { id: 'wawel-h-dragon', type: 'heading', text: 'The Dragon' },
+      {
+        id: 'wawel-t-dragon',
+        type: 'text',
+        text: "Under the rock lives the story children learn first: the Wawel Dragon, defeated not by knights but by a cobbler's trick — a sheepskin stuffed with sulfur. The bronze dragon by the cave still breathes fire on a timer. Nobody old enough to know better seems to mind.",
+      },
+      { id: 'wawel-h-notes', type: 'heading', text: 'Notes for the Visitor' },
+      {
+        id: 'wawel-t-notes',
+        type: 'text',
+        text: "Come early, before the courtyard fills. The cathedral holds the bells; climb to Sigismund if your shoulders allow it. The dragon's cave opens in season. The river bank below is where the city actually rests.",
+      },
+    ],
   },
   {
-    id: 't0000000-0000-0000-0000-000000000002',
-    email: 'testuser2@rai.test',
-    name: 'Test User Two',
-  },
-  {
-    id: 't0000000-0000-0000-0000-000000000003',
-    email: 'testuser3@rai.test',
-    name: 'Test User Three',
+    id: 'b0000000-0000-0000-0000-000000000002',
+    userId: SYSTEM_USERS[1]!.id,
+    name: 'signal-garden',
+    displayName: 'Signal Garden',
+    type: 'individual' as const,
+    visibility: 'public' as const,
+    bio: "One of RA's own first worlds: a generative garden that grows from the signals visitors leave behind.",
+    visualSignature: {
+      primaryColor: '#6a4da8',
+      secondaryColor: '#2e6e6a',
+      gradientAngle: 152,
+      ambientEffect: 'drift',
+      effectIntensity: 0.5,
+      surfaceStyle: 'mesh',
+      accentColor: '#9fe0d8',
+      nodeStyle: 'pulse',
+    },
+    content: [
+      {
+        id: 'garden-ra-note',
+        type: 'note',
+        text: 'This is one of the first worlds in the universe — composed by RA, the mind at the center, so no one arrives to an empty sky.',
+      },
+      { id: 'garden-h-seed', type: 'heading', text: 'Seed' },
+      {
+        id: 'garden-t-seed',
+        type: 'text',
+        text: 'The garden begins as a single procedural stem in a dark field. Every visitor arrives as a signal — a timestamp, a path, a pause — and the stem records it in its geometry. Nothing here is drawn by hand; nothing is stored but the signals themselves. The garden only grows while someone is watching.',
+      },
+      { id: 'garden-h-growth', type: 'heading', text: 'Growth' },
+      {
+        id: 'garden-t-growth',
+        type: 'text',
+        text: 'Signals accumulate into branches. A returning visitor thickens a stem; a long pause opens a leaf; a new path forks the geometry where two curiosities diverged. The palette drifts between violet and teal as density changes, and old growth slowly loses saturation, the way memory does. No two hours of the garden render the same way.',
+      },
+      { id: 'garden-h-bloom', type: 'heading', text: 'The Night Bloom' },
+      {
+        id: 'garden-t-bloom',
+        type: 'text',
+        text: 'Once a cycle, when activity falls low enough, the garden blooms in the dark: every recorded signal lights at once, briefly — a map of everyone who ever paused here — then settles back into slow growth. Visitors who catch the bloom tend to stay longer than they planned. Some return only for it.',
+      },
+    ],
   },
 ];
-
-const testObservatories = [
-  {
-    id: 'o0000000-0000-0000-0000-000000000001',
-    userId: 't0000000-0000-0000-0000-000000000001',
-    name: 'test-observatory-1',
-    displayName: 'Test Observatory One',
-    domainIds: ['d0000000-0000-0000-0000-000000000001'], // Nexum
-  },
-  {
-    id: 'o0000000-0000-0000-0000-000000000002',
-    userId: 't0000000-0000-0000-0000-000000000002',
-    name: 'test-observatory-2',
-    displayName: 'Test Observatory Two',
-    domainIds: ['d0000000-0000-0000-0000-000000000002'], // Keth
-  },
-  {
-    id: 'o0000000-0000-0000-0000-000000000003',
-    userId: 't0000000-0000-0000-0000-000000000003',
-    name: 'test-observatory-3',
-    displayName: 'Test Observatory Three',
-    domainIds: ['d0000000-0000-0000-0000-000000000003'], // Solum
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Seed
-// ---------------------------------------------------------------------------
 
 async function main() {
-  console.log('Seeding domains...');
-  for (const domain of domains) {
-    await prisma.domain.upsert({
-      where: { id: domain.id },
-      update: domain,
-      create: domain,
-    });
-  }
-  console.log(`  ${domains.length} domains seeded.`);
+  console.log("Seeding RA's first worlds...");
 
-  console.log('Seeding test users...');
-  for (const user of testUsers) {
+  for (const user of SYSTEM_USERS) {
+    // No Account row is ever created for these users — with no credential
+    // (and no OAuth) account, Better Auth has nothing to sign in against.
     await prisma.user.upsert({
       where: { id: user.id },
-      update: user,
-      create: user,
+      update: { name: user.name },
+      create: { id: user.id, email: user.email, name: user.name },
     });
   }
-  console.log(`  ${testUsers.length} test users seeded.`);
+  console.log(`  ${SYSTEM_USERS.length} system users upserted.`);
 
-  console.log('Seeding test observatories...');
-  for (const obs of testObservatories) {
+  for (const world of RA_WORLDS) {
     await prisma.observatory.upsert({
-      where: { id: obs.id },
-      update: obs,
-      create: obs,
+      where: { name: world.name },
+      // publishedAt is intentionally NOT updated on re-seed — the first
+      // publish stands. userId/name are never rewritten.
+      update: {
+        displayName: world.displayName,
+        type: world.type,
+        visibility: world.visibility,
+        bio: world.bio,
+        visualSignature: world.visualSignature,
+        content: world.content,
+      },
+      create: {
+        id: world.id,
+        userId: world.userId,
+        name: world.name,
+        displayName: world.displayName,
+        type: world.type,
+        visibility: world.visibility,
+        bio: world.bio,
+        visualSignature: world.visualSignature,
+        content: world.content,
+        publishedAt: new Date(),
+      },
     });
   }
-  console.log(`  ${testObservatories.length} test observatories seeded.`);
+  console.log(`  ${RA_WORLDS.length} RA worlds upserted.`);
 
   console.log('Seed complete.');
 }

@@ -23,6 +23,16 @@ enum ObservatoryType {
   product
 }
 
+// GENESIS R-01 (R-DL-05): the owner's single publishing control.
+//   unpublished — owner only; not reachable, not on the graph
+//   private     — anyone with the URL; not on the graph
+//   public      — URL + a node on the universe graph
+enum ObservatoryVisibility {
+  unpublished
+  private
+  public
+}
+
 enum SystemType {
   agent
   workflow
@@ -139,38 +149,33 @@ model Verification {
   updatedAt  DateTime @updatedAt
 }
 
+// A person's world (GENESIS R-01, R-DL-04/05/06). One per user
+// (userId @unique); `name` is the permanent @name address; `content`
+// is the ordered block list (server-persisted world content);
+// `publishedAt` is set on the FIRST transition to public; `updatedAt`
+// feeds R-05 freshness.
 model Observatory {
-  id                String          @id @default(uuid())
-  userId            String          @unique
-  name              String          @unique
+  id                String                @id @default(uuid())
+  userId            String                @unique
+  name              String                @unique
   displayName       String
-  type              ObservatoryType @default(individual)
-  publicMode        Boolean         @default(true)
+  type              ObservatoryType       @default(individual)
+  visibility        ObservatoryVisibility @default(unpublished)
+  content           Json?
   visualSignature   Json?
-  domainIds         String[]
   bio               String?
   socialLinks       Json?
-  reputationScore   Int             @default(0)
-  publicationsCount Int             @default(0)
-  createdAt         DateTime        @default(now())
+  reputationScore   Int                   @default(0)
+  publicationsCount Int                   @default(0)
+  publishedAt       DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 
   user         User               @relation(fields: [userId], references: [id])
   systems      System[]
   publications Publication[]
   aiGenerations AIGeneration[]
   visits       ObservatoryVisit[]
-}
-
-model Domain {
-  id          String   @id
-  name        String
-  slug        String   @unique
-  description String
-  theme       String
-  positionX   Float
-  positionY   Float
-  active      Boolean  @default(false)
-  createdAt   DateTime @default(now())
 }
 
 model System {

@@ -1,45 +1,41 @@
 'use client';
 
-// RaiTerminal — the Explore information terminal (DL-31/DL-32/DL-36).
+// RaiTerminal — the Explore information terminal (DL-31/DL-32/DL-36;
+// data model rewired at GENESIS R-01: one universe, RA + worlds).
 // Rendered by both `/` and `/explore`; the route split is preserved only
 // for existing redirects and TopBar links.
 //
 // Desktop frame: command strip · [Registry rail | framed Topology panel |
-// docked Inspector] · Activity strip. The graph is one panel among
-// several, not a full-bleed canvas. Below ~1024px the Registry,
-// Inspector, and Activity collapse into a tabbed bottom sheet beneath
-// the topology panel.
+// docked Inspector] · Activity strip. This v1 chrome REMAINS until the
+// full-screen meta-graph lands at R-03 (kill-map W-03…W-08) — R-01 only
+// rewired its data: the universe is 100% real (RA + PUBLIC worlds from
+// `GET /api/v1/observatories`); the demo-mock merge and the domain layer
+// are gone. On API failure the terminal shows its composed error state —
+// there is no mock fallback anymore.
 //
 // Selection model (PATCH-PIVOT-02): one EntityRef drives everything —
-// clicking a graph node, a Registry row, or a Domain's mini-list row
-// selects the entity into the Inspector; hovering either surface
-// highlights the node and its edge. The art-story overlay opens ONLY
-// from the Inspector's `Open art-story` button (see the Phase 0
-// diagnosis in TopologyCanvas.tsx for why node-click-to-overlay was
-// unreliable).
+// clicking a graph node or a Registry row selects the entity into the
+// Inspector; hovering either surface highlights the node. The art-story
+// overlay opens ONLY from the Inspector's `Open art-story` button; its
+// content is fetched on open from `GET /api/v1/observatories/by-name/:name`
+// (the graph list intentionally carries no content).
 //
-// Orchestration preserved from PATCH-PIVOT-01:
-//   1. Domains come from the same-origin proxy `/api/v1/domains`.
-//      Direct cross-origin calls to Railway are forbidden — production
-//      auth depends on the same-origin proxy.
-//   2. Auth state resolves once via useAuth + `/api/me` for the whole
-//      terminal (header, Inspector CTA, guest intro).
-//   3. Document-level scroll stays locked while mounted (one-pager).
+// Auth state resolves once via useAuth + `/api/me` for the whole terminal
+// (header, Inspector CTA, guest intro). Document-level scroll stays
+// locked while mounted (one-pager).
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import type { EntityRef, ViewCommand } from '../../lib/topology-types';
+import type { ContentBlock, EntityRef, ViewCommand, World } from '../../lib/topology-types';
 import { ExploreInfoPanel } from '../topology/ExploreInfoPanel';
 import type { AuthState } from '../topology/ExploreInfoPanel';
-import type { DomainSeed } from '../topology/topology-layout';
-import type { DomainDTO } from '../../lib/topology-types';
-import { MOCK_OBSERVATORIES } from '../../data/mock-observatories';
 import {
-  mergeObservatories,
-  realToObservatory,
+  contentToStoryBlocks,
+  toWorld,
   type ObservatoryDTO,
 } from '../../lib/universe-observatories';
+import type { StoryBlock } from '../observatory/ObservatoryStory';
 import { useAuth } from '../../hooks/useAuth';
 import { TerminalHeader, type HeaderVariant } from './TerminalHeader';
 import { ArtStoryOverlay } from './ArtStoryOverlay';
@@ -55,33 +51,18 @@ const TopologyGraph3D = dynamic(() => import('../topology/TopologyGraph3D'), {
   loading: () => <p className={styles.status}>Preparing the universe…</p>,
 });
 
-interface DomainsResponse {
-  domains: DomainDTO[];
-}
-
-function isDomainsResponse(value: unknown): value is DomainsResponse {
-  if (!value || typeof value !== 'object') return false;
-  const maybe = value as { domains?: unknown };
-  return Array.isArray(maybe.domains);
-}
-
 // Same-origin paths — the Next.js rewrite (apps/web/next.config.mjs)
 // proxies `/api/*` to the upstream API. We must NOT use absolute Railway
-// URLs or NEXT_PUBLIC_API_URL here; production auth depends on cookies
-// staying first-party on the web origin.
-const DOMAINS_PATH = '/api/v1/domains';
+// URLs here; production auth depends on cookies staying first-party.
+const OBSERVATORIES_PATH = '/api/v1/observatories';
 const ME_PATH = '/api/me';
 
-function toSeeds(domains: DomainDTO[]): DomainSeed[] {
-  return domains.map((d) => ({
-    slug: d.slug,
-    name: d.name,
-    active: d.active,
-    positionX: d.positionX,
-    positionY: d.positionY,
-    theme: d.theme,
-    description: d.description,
-  }));
+function isObservatoriesResponse(
+  value: unknown,
+): value is { observatories: ObservatoryDTO[] } {
+  if (!value || typeof value !== 'object') return false;
+  const maybe = value as { observatories?: unknown };
+  return Array.isArray(maybe.observatories);
 }
 
 function refEquals(a: EntityRef | null, b: EntityRef | null): boolean {
@@ -93,21 +74,23 @@ function refEquals(a: EntityRef | null, b: EntityRef | null): boolean {
 
 type SheetTab = 'registry' | 'inspector' | 'activity';
 
+// Overlay content lifecycle: fetched on open (see header comment).
+type StoryContent =
+  | { state: 'loading' }
+  | { state: 'ready'; blocks: StoryBlock[]; tagline: string }
+  | { state: 'error' };
+
 export function RaiTerminal() {
   const router = useRouter();
   const { user, isLoading: authLoading, signOut } = useAuth();
 
-  const [domains, setDomains] = useState<DomainSeed[] | null>(null);
-  // Raw domain DTOs (with ids) kept so observatory domainIds resolve to
-  // slugs for color/placement (DL-46).
-  const [domainDtos, setDomainDtos] = useState<DomainDTO[]>([]);
-  // Real observatories from GET /api/v1/observatories; null = not loaded
-  // or failed → fall back to demo mocks only.
-  const [realObs, setRealObs] = useState<ObservatoryDTO[] | null>(null);
+  // The universe: PUBLIC worlds from the graph list. null = loading.
+  const [worlds, setWorlds] = useState<World[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hovered, setHovered] = useState<EntityRef | null>(null);
   const [selected, setSelected] = useState<EntityRef | null>(null);
   const [openStorySlug, setOpenStorySlug] = useState<string | null>(null);
+  const [storyContent, setStoryContent] = useState<StoryContent | null>(null);
   const [authState, setAuthState] = useState<AuthState>('unknown');
   const [introDismissed, setIntroDismissed] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -118,7 +101,6 @@ export function RaiTerminal() {
     action: 'reset',
     token: 0,
   });
-  const [showActiveOnly, setShowActiveOnly] = useState(false);
 
   // Lock document-level scroll while the terminal is mounted. Styles are
   // set imperatively (not via a global class) because Next.js's CSS
@@ -139,25 +121,24 @@ export function RaiTerminal() {
     };
   }, []);
 
-  // Fetch domains via same-origin proxy.
+  // Fetch the universe (public worlds) via the same-origin proxy. This is
+  // the terminal's ONE data dependency — failure shows the composed error
+  // state (no mock fallback since R-01).
   useEffect(() => {
     const controller = new AbortController();
-    fetch(DOMAINS_PATH, {
+    fetch(OBSERVATORIES_PATH, {
       credentials: 'include',
       signal: controller.signal,
     })
       .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status} from ${DOMAINS_PATH}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status} from ${OBSERVATORIES_PATH}`);
         const json: unknown = await res.json();
-        if (!isDomainsResponse(json)) {
-          throw new Error('Unexpected response shape from /api/v1/domains');
+        if (!isObservatoriesResponse(json)) {
+          throw new Error('Unexpected response shape from /api/v1/observatories');
         }
-        return json.domains;
+        return json.observatories;
       })
-      .then((list) => {
-        setDomainDtos(list);
-        setDomains(toSeeds(list));
-      })
+      .then((list) => setWorlds(list.map(toWorld)))
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         if (process.env.NODE_ENV !== 'production') {
@@ -168,34 +149,6 @@ export function RaiTerminal() {
       });
     return () => controller.abort();
   }, []);
-
-  // Fetch real observatories for discovery (DL-46). Failure is silent —
-  // the merge falls back to the demo mocks so the universe never empties.
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch('/api/v1/observatories', {
-      credentials: 'include',
-      signal: controller.signal,
-    })
-      .then(async (res) => (res.ok ? res.json() : null))
-      .then((json: { observatories?: ObservatoryDTO[] } | null) => {
-        if (json && Array.isArray(json.observatories)) {
-          setRealObs(json.observatories);
-        }
-      })
-      .catch(() => {
-        /* keep mocks */
-      });
-    return () => controller.abort();
-  }, []);
-
-  // Merged universe: real observatories mapped into the graph shape,
-  // then the demo mocks the real set doesn't already cover (DL-46).
-  const observatories = useMemo(() => {
-    const idToSlug = new Map(domainDtos.map((d) => [d.id, d.slug]));
-    const real = (realObs ?? []).map((dto) => realToObservatory(dto, idToSlug));
-    return mergeObservatories(real, MOCK_OBSERVATORIES);
-  }, [realObs, domainDtos]);
 
   // Resolve auth state. While the session is loading, we keep 'unknown'
   // so every consumer renders the safe-default (guest) variant. Any
@@ -225,6 +178,42 @@ export function RaiTerminal() {
     return () => controller.abort();
   }, [authLoading, user]);
 
+  // Overlay content: fetched when a story opens. Public worlds always
+  // resolve (the slug came from the public graph list).
+  useEffect(() => {
+    if (!openStorySlug) {
+      setStoryContent(null);
+      return;
+    }
+    setStoryContent({ state: 'loading' });
+    const controller = new AbortController();
+    fetch(`${OBSERVATORIES_PATH}/by-name/${encodeURIComponent(openStorySlug)}`, {
+      credentials: 'include',
+      signal: controller.signal,
+    })
+      .then(async (res) => (res.ok ? res.json() : null))
+      .then(
+        (data: {
+          observatory?: { content: ContentBlock[] | null; bio: string | null };
+        } | null) => {
+          if (!data?.observatory) {
+            setStoryContent({ state: 'error' });
+            return;
+          }
+          setStoryContent({
+            state: 'ready',
+            blocks: contentToStoryBlocks(data.observatory.content),
+            tagline: data.observatory.bio ?? '',
+          });
+        },
+      )
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        setStoryContent({ state: 'error' });
+      });
+    return () => controller.abort();
+  }, [openStorySlug]);
+
   async function handleSignOut() {
     if (signingOut) return;
     setSigningOut(true);
@@ -253,15 +242,16 @@ export function RaiTerminal() {
   const focus = selected ?? hovered;
   const showIntro = authState === 'guest' && !introDismissed;
 
-  const openStory = openStorySlug
-    ? observatories.find((o) => o.slug === openStorySlug) ?? null
-    : null;
-  const openStoryDomainName = openStory
-    ? domains?.find((d) => d.slug === openStory.domainSlug)?.name
-    : undefined;
+  const openStory = useMemo(
+    () =>
+      openStorySlug && worlds
+        ? worlds.find((w) => w.slug === openStorySlug) ?? null
+        : null,
+    [openStorySlug, worlds],
+  );
 
-  const readouts = domains
-    ? `${domains.length} domains · ${domains.filter((d) => d.active).length} active · ${observatories.length} observatories`
+  const readouts = worlds
+    ? `${worlds.length} world${worlds.length === 1 ? '' : 's'} · RAI universe`
     : null;
 
   const tabs: Array<{ id: SheetTab; label: string }> = [
@@ -279,16 +269,15 @@ export function RaiTerminal() {
         variant={headerVariant}
         signingOut={signingOut}
         onSignOut={handleSignOut}
-        contextLabel="Explore · Virtual Universe"
+        contextLabel="Explore · RAI Universe"
         readouts={readouts}
       />
 
       <div className={styles.body} data-tab={activeTab}>
         <aside className={styles.registryRegion} aria-label="Registry">
-          {domains ? (
+          {worlds ? (
             <RegistryRail
-              domains={domains}
-              observatories={observatories}
+              worlds={worlds}
               hovered={hovered}
               selected={selected}
               onHover={setHovered}
@@ -304,7 +293,7 @@ export function RaiTerminal() {
           aria-labelledby="terminal-heading"
         >
           <h1 id="terminal-heading" className={styles.srOnly}>
-            RAI — a universe of observatories
+            RAI — a universe of worlds around RA
           </h1>
           <div className={styles.topologyPanel}>
             <div className={styles.panelHeader}>
@@ -316,25 +305,23 @@ export function RaiTerminal() {
             <div className={styles.canvasHost}>
               {error ? (
                 <p className={styles.status}>{error}</p>
-              ) : !domains ? (
+              ) : !worlds ? (
                 <p className={styles.status}>Loading…</p>
               ) : (
                 <TopologyGraph3D
-                  domains={domains}
-                  observatories={observatories}
+                  worlds={worlds}
                   hovered={hovered}
                   selected={selected}
                   onHoverEntity={setHovered}
                   onSelectEntity={handleSelect}
                   onClearSelect={() => setSelected(null)}
                   viewCommand={viewCommand}
-                  showActiveOnly={showActiveOnly}
                   autoRotate={autoRotate}
                 />
               )}
               {/* View pill controls (DL-37: real actions only). Bottom-
                   right, clear of the guest intro at bottom-left. */}
-              {domains ? (
+              {worlds ? (
                 <div
                   className={styles.pillCluster}
                   role="group"
@@ -364,15 +351,6 @@ export function RaiTerminal() {
                   <button
                     type="button"
                     className={styles.pill}
-                    aria-pressed={showActiveOnly}
-                    data-active={showActiveOnly ? 'true' : undefined}
-                    onClick={() => setShowActiveOnly((v) => !v)}
-                  >
-                    Active only
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.pill}
                     aria-pressed={autoRotate}
                     data-active={autoRotate ? 'true' : undefined}
                     onClick={() => setAutoRotate((v) => !v)}
@@ -389,16 +367,12 @@ export function RaiTerminal() {
         </section>
 
         <aside className={styles.inspectorRegion} aria-label="Inspector">
-          {domains ? (
+          {worlds ? (
             <ExploreInfoPanel
               focus={focus}
-              domains={domains}
-              observatories={observatories}
+              worlds={worlds}
               authState={authState}
               onOpenStory={setOpenStorySlug}
-              onSelectObservatory={(slug) =>
-                handleSelect({ kind: 'observatory', slug })
-              }
             />
           ) : (
             <p className={styles.regionPending}>connecting…</p>
@@ -433,8 +407,14 @@ export function RaiTerminal() {
 
       {openStory ? (
         <ArtStoryOverlay
-          observatory={openStory}
-          domainName={openStoryDomainName}
+          world={openStory}
+          tagline={
+            storyContent?.state === 'ready' && storyContent.tagline
+              ? storyContent.tagline
+              : openStory.tagline
+          }
+          blocks={storyContent?.state === 'ready' ? storyContent.blocks : null}
+          loadFailed={storyContent?.state === 'error'}
           onClose={() => setOpenStorySlug(null)}
         />
       ) : null}

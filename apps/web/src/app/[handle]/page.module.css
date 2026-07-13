@@ -1,0 +1,84 @@
+/* /@name — the world page shell (GENESIS R-01). The world IS the page:
+   a thin top strip (home + honest visibility status), then the shared
+   ObservatoryStory renderer. Both themes; the strip stays quiet. */
+
+.page {
+  min-height: 100vh;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.strip {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 48px;
+  padding: 0 var(--space-6);
+  background: color-mix(in srgb, var(--surface-base) 82%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.wordmark {
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700;
+  font-size: var(--font-size-15);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.status {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.status[data-visibility='unpublished'] {
+  color: var(--accent-warm, #d08a4e);
+}
+
+/* Calm unreachable state — composed, not broken. */
+.errorState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-3);
+  max-width: var(--measure-prose);
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-6);
+}
+
+.errorEyebrow {
+  margin: 0;
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: var(--font-size-11);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.errorTitle {
+  margin: 0;
+  font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 300;
+  font-size: var(--font-size-36);
+  letter-spacing: var(--tracking-display);
+}
+
+.errorBody {
+  margin: 0;
+  font-size: var(--font-size-15);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}

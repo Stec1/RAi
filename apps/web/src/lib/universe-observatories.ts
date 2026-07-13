@@ -1,56 +1,37 @@
-// Universe observatory normalization (PATCH-PIVOT-06, DL-46).
+// World normalization (GENESIS R-01).
 //
-// The Explore graph, registry, and inspector all consume the
-// `MockObservatory` shape. Real API observatories (from
-// `GET /api/v1/observatories`) and the demo-seed mocks are both mapped
-// into that one shape here, then merged (real replaces same-named mock)
-// so the rest of the terminal needs no per-source branching.
+// The Explore graph, registry, and inspector consume the `World` shape.
+// The graph list API (`GET /api/v1/observatories`) is the ONLY source —
+// the demo-mock era is over; RA's first worlds are real DB rows now.
+// This module also maps server content blocks to the ObservatoryStory
+// renderer's StoryBlock shape (used by the overlay, the /@name page, and
+// the save-story paths).
 
-import type { MockObservatory, VisualSignature } from '../data/mock-observatories';
-import { domainColor } from '../components/topology/topology-layout';
+import type {
+  ContentBlock,
+  ContentBlockType,
+  VisualSignature,
+  World,
+} from './topology-types';
+import type { StoryBlock } from '../components/observatory/ObservatoryStory';
 
-// The public list payload shape (mirrors GET /api/v1/observatories).
+// The graph-list payload shape (mirrors GET /api/v1/observatories).
 export interface ObservatoryDTO {
   id: string;
   name: string;
   displayName: string;
   type: string;
-  domainIds: string[];
   visualSignature: VisualSignature | null;
-  reputationScore: number;
-  publicationsCount: number;
+  publishedAt: string | null;
+  updatedAt: string | null;
 }
 
-// Deterministic offset around the parent domain from the name, so
-// multiple observatories in one domain don't stack. Radius ~40–70,
-// angle spread by hash — stable across reloads.
-function hashOffset(seed: string): { x: number; y: number } {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i += 1) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  const angle = ((h >>> 0) % 360) * (Math.PI / 180);
-  const radius = 42 + ((h >>> 9) % 30);
-  return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius };
-}
-
-// A concrete hex for a domain slug, or a neutral when unknown (real
-// observatories may have no/unresolved domain). domainColor returns a
-// CSS var for unknown slugs, which is not a valid canvas/THREE color.
-function domainHex(slug: string): string {
-  const c = domainColor(slug);
-  return c.startsWith('#') ? c : '#8890a8';
-}
-
-// A signature derived from the parent-domain color, used when a real
-// observatory was created without a visual signature (DL-45: node color
-// is the parent domain's; accent is secondary emphasis).
-function defaultSignature(domainSlug: string): VisualSignature {
-  const primary = domainHex(domainSlug);
+// Neutral identity for worlds created without a signature — quiet slate,
+// never a broken color (R-DL-10 fallback).
+export function neutralSignature(): VisualSignature {
   return {
-    primaryColor: primary,
-    secondaryColor: primary,
+    primaryColor: '#8890a8',
+    secondaryColor: '#22304a',
     accentColor: '#e8edf5',
     gradientAngle: 32,
     ambientEffect: 'glow',
@@ -60,43 +41,75 @@ function defaultSignature(domainSlug: string): VisualSignature {
   };
 }
 
-export function realToObservatory(
-  dto: ObservatoryDTO,
-  idToSlug: Map<string, string>,
-): MockObservatory {
-  const domainSlug =
-    dto.domainIds.map((id) => idToSlug.get(id)).find((s): s is string => Boolean(s)) ?? '';
-  const signature = dto.visualSignature ?? defaultSignature(domainSlug);
-  const offset = hashOffset(dto.name);
+// A signature is usable when its node-facing colors are concrete hexes.
+function usableSignature(sig: VisualSignature | null): sig is VisualSignature {
+  return Boolean(
+    sig &&
+      typeof sig.primaryColor === 'string' &&
+      sig.primaryColor.startsWith('#') &&
+      typeof sig.accentColor === 'string',
+  );
+}
+
+export function toWorld(dto: ObservatoryDTO): World {
   return {
     slug: dto.name,
     name: dto.name,
-    isDemo: false,
     title: dto.displayName || dto.name,
-    domainSlug,
-    kind: 'observatory',
     tagline: '',
-    signature,
-    sections: [], // board isn't persisted yet (DL-42) → empty-state overlay
-    cta: null,
-    offset,
-    fallbackPosition: { x: offset.x * 1.6, y: offset.y * 1.6 },
-    reputationScore: dto.reputationScore,
-    publicationsCount: dto.publicationsCount,
+    signature: usableSignature(dto.visualSignature)
+      ? dto.visualSignature
+      : neutralSignature(),
+    publishedAt: dto.publishedAt ?? null,
+    updatedAt: dto.updatedAt ?? null,
   };
 }
 
-function dedupKey(o: MockObservatory): string {
-  return (o.name ?? o.slug).toLowerCase();
+// Server content blocks → the shared renderer's StoryBlock shape.
+// pendingMedia image blocks map to an image StoryBlock WITHOUT imageUrl,
+// which the renderer presents as its framed placeholder plate.
+export function contentToStoryBlocks(content: ContentBlock[] | null | undefined): StoryBlock[] {
+  if (!Array.isArray(content)) return [];
+  return content.map((b) => ({
+    id: b.id,
+    type: b.type,
+    content: (b.type === 'link' ? b.label : b.text) ?? '',
+    caption: b.caption,
+    url: b.href,
+    variant: b.variant,
+    fullBleed: b.fullBleed,
+  }));
 }
 
-// Real observatories PLUS the demo mocks the real set doesn't already
-// cover (real replaces same-named mock). Real observatories sort first.
-export function mergeObservatories(
-  real: MockObservatory[],
-  mocks: MockObservatory[],
-): MockObservatory[] {
-  const realKeys = new Set(real.map(dedupKey));
-  const keptMocks = mocks.filter((m) => !realKeys.has(dedupKey(m)));
-  return [...real, ...keptMocks];
+// A locally drafted board block (the v1 studio's local draft shape; also
+// read by the dashboard's "Save story to your world" action).
+export interface DraftBoardBlock {
+  id: string;
+  type: ContentBlockType;
+  content?: string;
+  caption?: string;
+  url?: string;
+  variant?: string;
+  fullBleed?: boolean;
+}
+
+// Draft board → server content blocks (R-01). Image blocks carry no
+// binary until media lands (R-02): they are sent as pendingMedia
+// placeholders and keep only their caption.
+export function draftBoardToContent(board: DraftBoardBlock[]): ContentBlock[] {
+  return board.map((b) => {
+    const block: ContentBlock = { id: b.id, type: b.type };
+    if (b.type === 'image') {
+      block.pendingMedia = true;
+    } else if (b.type === 'link') {
+      if (b.content) block.label = b.content;
+      if (b.url) block.href = b.url;
+    } else if (b.content) {
+      block.text = b.content;
+    }
+    if (b.caption) block.caption = b.caption;
+    if (b.variant) block.variant = b.variant;
+    if (b.fullBleed) block.fullBleed = true;
+    return block;
+  });
 }

@@ -8,22 +8,22 @@
 // three/react-force-graph footprint never runs on the server and stays
 // code-split to the Explore surface.
 //
-// Scene contract (PATCH-PIVOT-09 — a BOUNDED SPHERE, DL-50):
+// Scene contract (GENESIS R-01 interim — one universe, engine unchanged):
 //   • RA — faceted gold crystal at the sphere's CENTER (origin).
-//   • All 7 domains — glowing identity-colored orbs on a MIDDLE shell
-//     (Fibonacci-sphere); inactive dimmer but full nodes (DL-44).
-//   • Observatories — smaller orbs on the OUTER shell (the sphere
-//     surface), name-hash placed in a cone biased to their parent
-//     domain (DL-45 color) so many fan out instead of piling up.
-//   • A visible lat/long sphere shell marks the boundary (PP-09 §3).
-//   • Edges — RA→domain spokes + domain→observatory tethers, thin and
-//     luminous; hover/selection brightens node + edge.
-//   • No persistent in-scene labels (PP-07 §2) — identity via Inspector
-//     + Registry. Dark scene background is TRUE BLACK (PP-09 §5).
+//   • Worlds (PUBLIC observatories) — orbs on the OUTER shell, placed
+//     deterministically on the golden-spiral lattice by a hash of their
+//     name (domain bias died with the domains, R-DL-02/R-DL-10).
+//   • Node color = the world's VisualSignature primary (R-DL-10) with a
+//     neutral fallback; the signature accent rings the orb.
+//   • Edges — thin RA→world tethers only.
+//   • A visible lat/long sphere shell marks the boundary (DL-50).
+//   • No persistent in-scene labels — identity via Inspector + Registry.
+//     Dark scene background is TRUE BLACK (DL-50).
 //   • Positions are DETERMINISTIC and pinned (fx/fy/fz); the force sim is
 //     frozen (cooldownTicks/warmupTicks = 0) — same data → same layout.
 //   • Camera uses OrbitControls with a clamped dolly so the viewer can
-//     zoom INSIDE the shell and look outward (PP-09 §4).
+//     zoom INSIDE the shell and look outward (DL-50).
+//   The full-screen meta-graph + new spatial model arrive at R-03.
 //
 // Selection model preserved from PP-02: node click → onSelectEntity;
 // background click → onClearSelect; hover → onHoverEntity; the Registry
@@ -46,22 +46,17 @@ import {
 import ForceGraph3D, { type ForceGraphMethods } from 'react-force-graph-3d';
 import * as THREE from 'three';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import type { DomainSeed } from './topology-layout';
-import { domainColor } from './topology-layout';
-import type { MockObservatory } from '../../data/mock-observatories';
-import type { EntityRef, ViewCommand } from '../../lib/topology-types';
+import type { EntityRef, ViewCommand, World } from '../../lib/topology-types';
 import styles from './TopologyGraph3D.module.css';
 
 interface Props {
-  domains: DomainSeed[];
-  observatories: MockObservatory[];
+  worlds: World[];
   hovered: EntityRef | null;
   selected: EntityRef | null;
   onHoverEntity: (ref: EntityRef | null) => void;
   onSelectEntity: (ref: EntityRef) => void;
   onClearSelect: () => void;
   viewCommand?: ViewCommand;
-  showActiveOnly?: boolean;
   autoRotate?: boolean;
 }
 
@@ -71,8 +66,7 @@ type GNode = {
   label: string;
   color: string;
   accent?: string;
-  kind: 'ra' | 'domain' | 'observatory';
-  active: boolean;
+  kind: 'ra' | 'observatory';
   fx: number;
   fy: number;
   fz: number;
@@ -82,20 +76,22 @@ type GLink = {
   source: string;
   target: string;
   color: string;
-  active: boolean;
 };
 
-// ── Bounded spherical universe (PATCH-PIVOT-09, DL-50) ──
-// RA at the origin; domains on a MIDDLE shell; observatories on the OUTER
-// shell (the sphere surface). Positions are deterministic (golden-spiral),
-// pinned via fx/fy/fz with the force sim frozen — same data → same layout.
-const R_DOMAIN = 150; // middle shell (domains around RA)
-const R_SHELL = 300; // outer shell (observatories + the visible boundary)
+// ── Bounded spherical universe (DL-50, de-domained at GENESIS R-01) ──
+// RA at the origin; worlds on the OUTER shell (the sphere surface).
+// Positions are deterministic (golden-spiral lattice slot from a name
+// hash), pinned via fx/fy/fz with the force sim frozen — same data →
+// same layout, and a world keeps its place as others join (R-DL-10).
+const R_SHELL = 300; // outer shell (worlds + the visible boundary)
 const DEFAULT_CAM = 720; // frames the whole sphere from outside
 const MIN_DIST = 24; // dolly clamp: can go INSIDE the shell, never past RA
 const MAX_DIST = 1200; // dolly clamp: never fly infinitely away
 const FOCUS_CAM = 120; // Focus RA — near the center, looking out
-const SHELL_SPREAD = 0.62; // cone half-angle biasing an observatory to its domain
+// Golden-spiral lattice size: hash picks a slot, so a world's position
+// depends only on its own name (997 slots ≫ MVP world counts; prime to
+// spread hash residues).
+const SHELL_SLOTS = 997;
 
 // RA hub base emissive (A2) — brightest node but shows its gold, not a
 // white core. The vibration loop (A3) modulates around this.
@@ -127,23 +123,12 @@ function hash01(seed: string): [number, number] {
   return [u, v];
 }
 
-// A unit direction inside a cone of half-angle `spread` around `axis`,
-// derived from (u, v). Biases an observatory to its parent domain's
-// direction while spreading names around the shell region (the scaling
-// fix: many observatories fan out instead of piling onto the domain node).
-function coneDir(axis: THREE.Vector3, spread: number, u: number, v: number): THREE.Vector3 {
-  const a = axis.clone().normalize();
-  const ref = Math.abs(a.y) < 0.99 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
-  const t1 = new THREE.Vector3().crossVectors(a, ref).normalize();
-  const t2 = new THREE.Vector3().crossVectors(a, t1).normalize();
-  const alpha = spread * Math.sqrt(v); // polar offset (sqrt → even area)
-  const phi = 2 * Math.PI * u; // around the axis
-  return a
-    .clone()
-    .multiplyScalar(Math.cos(alpha))
-    .add(t1.multiplyScalar(Math.sin(alpha) * Math.cos(phi)))
-    .add(t2.multiplyScalar(Math.sin(alpha) * Math.sin(phi)))
-    .normalize();
+// A world's deterministic shell direction: its name hash picks a slot on
+// the golden-spiral lattice. Independent of every other world — a new
+// world never reshuffles the sky (R-DL-10 interim placement until R-03).
+function shellDir(name: string): THREE.Vector3 {
+  const [u] = hash01(name);
+  return fibDir(Math.floor(u * SHELL_SLOTS), SHELL_SLOTS);
 }
 
 // The visible sphere boundary (PP-09 §3) — a clean lat/long globe of thin
@@ -226,15 +211,13 @@ function refId(ref: EntityRef): string {
 // still highlights the node (scale/emissive) so it reads as interactive.
 
 export default function TopologyGraph3D({
-  domains,
-  observatories,
+  worlds,
   hovered,
   selected,
   onHoverEntity,
   onSelectEntity,
   onClearSelect,
   viewCommand,
-  showActiveOnly = false,
   autoRotate = true,
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -281,12 +264,16 @@ export default function TopologyGraph3D({
   }, []);
 
   // Host sizing (the panel is responsive; the canvas needs pixels).
+  // Measure synchronously at mount — ResizeObserver's initial delivery is
+  // frame-aligned and can be arbitrarily late in a background/hidden tab,
+  // which would leave the graph unmounted behind a 0×0 gate. The observer
+  // then tracks real resizes.
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    const ro = new ResizeObserver(() => {
-      setSize({ w: host.clientWidth, h: host.clientHeight });
-    });
+    const measure = () => setSize({ w: host.clientWidth, h: host.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(host);
     return () => ro.disconnect();
   }, []);
@@ -316,15 +303,13 @@ export default function TopologyGraph3D({
     return () => mo.disconnect();
   }, []);
 
-  // Graph data — DETERMINISTIC spherical layout (PP-09 §2). RA at origin;
-  // domains on the middle shell via Fibonacci-sphere; observatories on the
-  // outer shell via a name-hash cone biased to their parent domain. All
-  // positions are pinned (fx/fy/fz) and the force sim is frozen
-  // (cooldownTicks/warmupTicks = 0), so the same data lays out identically
-  // every load.
+  // Graph data — DETERMINISTIC spherical layout (DL-50, R-01 interim).
+  // RA at the origin; each PUBLIC world on the outer shell at its hash-
+  // picked golden-spiral slot, colored by its own VisualSignature
+  // (R-DL-10). All positions are pinned (fx/fy/fz) and the force sim is
+  // frozen (cooldownTicks/warmupTicks = 0), so the same data lays out
+  // identically every load.
   const graphData = useMemo(() => {
-    const n = domains.length || 1;
-    const domainDir: Record<string, THREE.Vector3> = {};
     const nodes: GNode[] = [
       {
         id: 'ra',
@@ -332,7 +317,6 @@ export default function TopologyGraph3D({
         label: 'RA',
         color: '#f5d68a',
         kind: 'ra',
-        active: true,
         fx: 0,
         fy: 0,
         fz: 0,
@@ -340,60 +324,29 @@ export default function TopologyGraph3D({
     ];
     const links: GLink[] = [];
 
-    domains.forEach((d, i) => {
-      const dir = fibDir(i, n);
-      domainDir[d.slug] = dir;
-      const p = dir.clone().multiplyScalar(R_DOMAIN);
-      const color = domainColor(d.slug);
+    worlds.forEach((w) => {
+      const p = shellDir(w.name).multiplyScalar(R_SHELL);
+      const color = w.signature.primaryColor.startsWith('#')
+        ? w.signature.primaryColor
+        : '#8890a8';
       nodes.push({
-        id: `domain:${d.slug}`,
-        ref: { kind: 'domain', slug: d.slug },
-        label: d.name,
+        id: `observatory:${w.slug}`,
+        ref: { kind: 'observatory', slug: w.slug },
+        label: w.title,
         color,
-        kind: 'domain',
-        active: d.active,
-        fx: p.x,
-        fy: p.y,
-        fz: p.z,
-      });
-      links.push({ source: 'ra', target: `domain:${d.slug}`, color, active: d.active });
-    });
-
-    observatories.forEach((o, i) => {
-      const [u, v] = hash01(o.name ?? o.slug);
-      // Bias to the parent domain's direction; unresolved domain → a
-      // stable hash-picked direction so the node still lands on the shell.
-      const axis = domainDir[o.domainSlug] ?? fibDir(i % n, n);
-      const p = coneDir(axis, SHELL_SPREAD, u, v).multiplyScalar(R_SHELL);
-      // Observatory color = PARENT DOMAIN color (DL-45); signature accent
-      // is secondary emphasis (the ring). Guard: unresolved domain →
-      // domainColor returns a CSS var, so fall back to the signature hex.
-      const rawColor = domainColor(o.domainSlug);
-      const color = rawColor.startsWith('#') ? rawColor : o.signature.primaryColor;
-      nodes.push({
-        id: `observatory:${o.slug}`,
-        ref: { kind: 'observatory', slug: o.slug },
-        label: o.title,
-        color,
-        accent: o.signature.accentColor,
+        accent: w.signature.accentColor,
         kind: 'observatory',
-        active: true,
         fx: p.x,
         fy: p.y,
         fz: p.z,
       });
-      if (domainDir[o.domainSlug]) {
-        links.push({
-          source: `domain:${o.domainSlug}`,
-          target: `observatory:${o.slug}`,
-          color,
-          active: true,
-        });
-      }
+      // Thin RA→world tether — every world visibly originates at the
+      // center (concept.md §3).
+      links.push({ source: 'ra', target: `observatory:${w.slug}`, color });
     });
 
     return { nodes, links };
-  }, [domains, observatories]);
+  }, [worlds]);
 
   // Node meshes. Built once per node id; tracked for disposal and for
   // hover/selection emissive updates.
@@ -425,25 +378,6 @@ export default function TopologyGraph3D({
         // Capture for the vibration loop (A3).
         raMeshRef.current = group;
         raMatRef.current = mat;
-      } else if (node.kind === 'domain') {
-        const r = node.active ? 7.5 : 6;
-        const geo = new THREE.SphereGeometry(r, 24, 24);
-        const color = new THREE.Color(node.color);
-        if (!node.active) color.lerp(new THREE.Color('#6a6f80'), 0.5);
-        const emissive = node.active ? 0.5 : 0.16;
-        const mat = new THREE.MeshStandardMaterial({
-          color,
-          emissive: color,
-          emissiveIntensity: emissive,
-          roughness: 0.45,
-          transparent: true,
-          opacity: 1,
-        });
-        track(geo);
-        track(mat);
-        materials.push(mat);
-        base.push(emissive);
-        group.add(new THREE.Mesh(geo, mat));
       } else {
         const geo = new THREE.SphereGeometry(3.6, 20, 20);
         const mat = new THREE.MeshStandardMaterial({
@@ -483,10 +417,10 @@ export default function TopologyGraph3D({
     [track],
   );
 
-  // Hover / selection / filter → emissive + opacity updates in place.
-  // RA is owned by the vibration loop (A3) when motion is allowed; there
-  // we only record its hot state and let the loop apply scale/emissive.
-  // Under reduced motion the loop is off, so RA is updated here too.
+  // Hover / selection → emissive updates in place. RA is owned by the
+  // vibration loop (A3) when motion is allowed; there we only record its
+  // hot state and let the loop apply scale/emissive. Under reduced motion
+  // the loop is off, so RA is updated here too.
   useEffect(() => {
     const hotIds = new Set<string>();
     if (hovered) hotIds.add(refId(hovered));
@@ -498,14 +432,12 @@ export default function TopologyGraph3D({
       if (!entry) continue;
       const hot = hotIds.has(node.id);
       if (node.kind === 'ra' && !reducedMotion) continue;
-      const ghost = showActiveOnly && node.kind === 'domain' && !node.active;
       entry.materials.forEach((m, i) => {
         m.emissiveIntensity = (entry.base[i] ?? 0.5) * factor * (hot ? HOT_EMISSIVE : 1);
-        m.opacity = ghost ? 0.16 : 1;
       });
       entry.mesh.scale.setScalar(hot ? 1.18 : 1);
     }
-  }, [hovered, selected, showActiveOnly, graphData, reducedMotion, theme]);
+  }, [hovered, selected, graphData, reducedMotion, theme]);
 
   // RA vibration pulse (A3) — a gentle continuous breathing so the hub
   // feels alive as a heartbeat. Small amplitude, calm cadence. Disabled
@@ -732,10 +664,8 @@ export default function TopologyGraph3D({
           nodeLabel={() => ''}
           linkColor={(l: GLink) => l.color}
           linkOpacity={0.35}
-          linkWidth={(l: GLink) => (l.active ? 0.6 : 0.25)}
-          linkDirectionalParticles={(l: GLink) =>
-            reducedMotion || !l.active ? 0 : 2
-          }
+          linkWidth={() => 0.6}
+          linkDirectionalParticles={() => (reducedMotion ? 0 : 2)}
           linkDirectionalParticleSpeed={0.004}
           linkDirectionalParticleWidth={1.6}
           onNodeClick={(node: GNode) => onSelectEntity(node.ref)}

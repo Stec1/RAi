@@ -1,7 +1,8 @@
 // Protected user + owner-observatory endpoints.
 //   GET   /api/me                  — account summary (observatory {id,name}|null)
-//   GET   /api/v1/me/observatory   — the caller's full observatory or 404 (DL-47)
-//   PATCH /api/v1/me/observatory   — update base fields; `name` immutable (DL-47)
+//   GET   /api/v1/me/observatory   — the caller's full world or 404 (DL-47, R-01 shape)
+//   PATCH /api/v1/me/observatory   — update base fields + visibility + content;
+//                                    `name` immutable (DL-47, GENESIS R-01)
 
 import type { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
@@ -11,25 +12,31 @@ import { Prisma } from '../../prisma/generated/prisma/client/client.js';
 import { normalizeObservatoryName } from '@rai/shared';
 import {
   OBSERVATORY_TYPES,
+  OBSERVATORY_VISIBILITIES,
   type ObservatoryTypeInput,
+  type ObservatoryVisibilityInput,
+  validateContent,
   validateSocialLinks,
   validateVisualSignature,
 } from '../lib/observatory-validation.js';
 
-// Full base fields returned to the owner (Dashboard, DL-47).
+// Full owner shape (Dashboard, DL-47 — evolved at R-01: visibility,
+// content, publishedAt, updatedAt; the retired v1 fields are gone).
 const OWNER_SELECT = {
   id: true,
   name: true,
   displayName: true,
   type: true,
-  publicMode: true,
-  domainIds: true,
+  visibility: true,
+  content: true,
   bio: true,
   socialLinks: true,
   visualSignature: true,
   reputationScore: true,
   publicationsCount: true,
+  publishedAt: true,
   createdAt: true,
+  updatedAt: true,
 } as const;
 
 interface PatchObservatoryBody {
@@ -37,10 +44,10 @@ interface PatchObservatoryBody {
   displayName?: unknown;
   type?: unknown;
   bio?: unknown;
-  domainIds?: unknown;
   socialLinks?: unknown;
   visualSignature?: unknown;
-  publicMode?: unknown;
+  visibility?: unknown;
+  content?: unknown;
 }
 
 export default async function meRoutes(server: FastifyInstance) {
@@ -77,7 +84,7 @@ export default async function meRoutes(server: FastifyInstance) {
     };
   });
 
-  // GET /api/v1/me/observatory — the caller's full observatory (DL-47).
+  // GET /api/v1/me/observatory — the caller's full world (DL-47/R-01).
   server.get(
     '/api/v1/me/observatory',
     { preHandler: server.requireAuth },
@@ -99,7 +106,8 @@ export default async function meRoutes(server: FastifyInstance) {
     },
   );
 
-  // PATCH /api/v1/me/observatory — update base fields (DL-47).
+  // PATCH /api/v1/me/observatory — update base fields, visibility
+  // transitions, and content replacement (DL-47, R-01).
   // `name` is immutable post-creation; validation mirrors the create route.
   server.patch<{ Body: PatchObservatoryBody }>(
     '/api/v1/me/observatory',
@@ -113,7 +121,7 @@ export default async function meRoutes(server: FastifyInstance) {
 
       const existing = await prisma.observatory.findUnique({
         where: { userId },
-        select: { id: true, name: true },
+        select: { id: true, name: true, visibility: true, publishedAt: true },
       });
       if (!existing) {
         reply.status(404).send({ error: 'No observatory', reason: 'none' });
@@ -175,33 +183,6 @@ export default async function meRoutes(server: FastifyInstance) {
         }
       }
 
-      if (body.domainIds !== undefined) {
-        if (
-          !Array.isArray(body.domainIds) ||
-          body.domainIds.length > 2 ||
-          !body.domainIds.every((id) => typeof id === 'string')
-        ) {
-          reply
-            .status(400)
-            .send({ error: 'domainIds must be up to 2 domain ids', field: 'domainIds' });
-          return;
-        }
-        const domainIds = [...new Set(body.domainIds as string[])];
-        if (domainIds.length > 0) {
-          const found = await prisma.domain.findMany({
-            where: { id: { in: domainIds }, active: true },
-            select: { id: true },
-          });
-          if (found.length !== domainIds.length) {
-            reply
-              .status(400)
-              .send({ error: 'domainIds must reference active domains', field: 'domainIds' });
-            return;
-          }
-        }
-        data.domainIds = domainIds;
-      }
-
       if (body.socialLinks !== undefined) {
         if (body.socialLinks === null) {
           data.socialLinks = Prisma.DbNull;
@@ -228,12 +209,38 @@ export default async function meRoutes(server: FastifyInstance) {
         }
       }
 
-      if (body.publicMode !== undefined) {
-        if (typeof body.publicMode !== 'boolean') {
-          reply.status(400).send({ error: 'publicMode must be a boolean', field: 'publicMode' });
+      // visibility transition (R-01 §4). publishedAt is stamped on the
+      // FIRST transition to public and never reset afterwards.
+      if (body.visibility !== undefined) {
+        if (
+          typeof body.visibility !== 'string' ||
+          !OBSERVATORY_VISIBILITIES.includes(body.visibility as ObservatoryVisibilityInput)
+        ) {
+          reply.status(400).send({
+            error: 'visibility must be unpublished, private, or public',
+            field: 'visibility',
+          });
           return;
         }
-        data.publicMode = body.publicMode;
+        const next = body.visibility as ObservatoryVisibilityInput;
+        data.visibility = next;
+        if (next === 'public' && existing.publishedAt === null) {
+          data.publishedAt = new Date();
+        }
+      }
+
+      // content replacement (R-01 §4) — validated + cleaned; null clears.
+      if (body.content !== undefined) {
+        if (body.content === null) {
+          data.content = Prisma.DbNull;
+        } else {
+          const result = validateContent(body.content);
+          if ('error' in result) {
+            reply.status(400).send({ error: result.error, field: 'content' });
+            return;
+          }
+          data.content = result.blocks as unknown as Prisma.InputJsonValue;
+        }
       }
 
       const updated = await prisma.observatory.update({

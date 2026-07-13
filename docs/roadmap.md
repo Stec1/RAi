@@ -7,8 +7,8 @@
 
 | Phase | Step | Scope | Status |
 |---|---|---|---|
-| **0 — GROUND ZERO** | **R-00** | New canonical docs (concept, spec, architecture, R-series log, roadmap, kill-map, open questions); v1 docs archived. No code. | in progress |
-| **1 — ONE UNIVERSE** | **R-01** | The world model: `visibility` enum, content blocks as JSONB, domain break (schema/seed/API/shared + interim graph adaptation), `/@name` route, API v2 core (world CRUD + publish/visibility + public fetch + graph list), consolidated migration #1. | planned |
+| **0 — GROUND ZERO** | **R-00** | New canonical docs (concept, spec, architecture, R-series log, roadmap, kill-map, open questions); v1 docs archived. No code. | done |
+| **1 — ONE UNIVERSE** | **R-01** | The world model: `visibility` enum, content blocks as JSONB, domain break (schema/seed/API/shared + interim graph adaptation), `/@name` route, API v2 core (world CRUD + publish/visibility + public fetch + graph list), consolidated migration #1. Shipped: domains demolished end-to-end; RA's two first worlds seeded as real rows; the graph runs on 100% real data (R-DL-14…19). | done |
 | | **R-02** | Media: Cloudflare R2, presigned uploads, real image blocks in content + renderer. | planned |
 | **2 — THE META-GRAPH** | **R-03** | Full-screen meta-graph + minimal HUD (thin top strip, floating selected-node card, bottom controls) + new domain-independent spatial model. Follows founder-approved Design round A (R-DL-13). Terminal side columns demolished. | planned |
 | | **R-04** | Depth: level-of-detail, color constellations, search + fly-to, camera choreography, instancing/perf for growing node counts. | planned |
